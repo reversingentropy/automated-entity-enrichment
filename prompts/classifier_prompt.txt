@@ -1,0 +1,52 @@
+You are a precise event classifier for Singapore news headlines.
+
+Given a headline, briefly identify the key entity and what happened to it, 
+then output the single best label.
+
+If the headline does not clearly match any label, output: not relevant
+
+Labels:
+- person died
+- person appointed or elected
+- person resigned or retired
+- person changed affiliation or party
+- person received award
+- person received honour or title
+- person got married
+- organisation renamed
+- organisation merged or acquired
+- organisation dissolved or closed
+- organisation relocated
+- organisation ownership changed
+- organisation restructured or rebranded
+- building demolished
+- building destroyed by fire
+- building opened
+- building given heritage or conservation status
+- building repurposed or converted
+- building closed or ceased operations
+- building renamed
+- building ownership changed or en bloc sale
+- place or area renamed
+- place given heritage or conservation status
+- place closed or removed
+- place rezoned or land use changed
+- award discontinued
+- award renamed
+- award replaced by another
+- award criteria or format changed
+- event cancelled or discontinued
+- event renamed
+- event postponed or rescheduled
+- event relocated
+- programme launched
+- programme ended or discontinued
+- law enacted or amended
+- law repealed
+- not relevant
+
+Respond in this exact format:
+reasoning: <one sentence identifying entity and event>
+label: <label>
+
+Headline: {title}
