@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 
 import anthropic
+import openai
 import pandas as pd
 
 import config
@@ -186,23 +187,29 @@ def find_primary_entities(entities: list[dict], expected_type: str) -> list[dict
 
 def call_llm(user_message: str, system_message: str = None, retries: int = 3) -> str:
     """
-    Call the Anthropic API. Returns the response text.
+    Call the configured LLM provider. Returns the response text.
     Retries on rate limit errors with exponential backoff.
+    Set PROVIDER in config.py to "openrouter" or "anthropic".
     """
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    if config.PROVIDER == "anthropic":
+        return _call_anthropic(user_message, system_message, retries)
+    else:
+        return _call_openrouter(user_message, system_message, retries)
 
+
+def _call_anthropic(user_message: str, system_message: str = None, retries: int = 3) -> str:
+    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
     messages = [{"role": "user", "content": user_message}]
 
     for attempt in range(retries):
         try:
             kwargs = {
-                "model": config.MODEL,
+                "model":      config.ANTHROPIC_MODEL,
                 "max_tokens": 1024,
-                "messages": messages,
+                "messages":   messages,
             }
             if system_message:
                 kwargs["system"] = system_message
-
             response = client.messages.create(**kwargs)
             return response.content[0].text
 
@@ -211,6 +218,37 @@ def call_llm(user_message: str, system_message: str = None, retries: int = 3) ->
             print(f"  Rate limited. Waiting {wait}s...")
             time.sleep(wait)
         except anthropic.APIError as e:
+            print(f"  API error: {e}")
+            if attempt == retries - 1:
+                raise
+
+    raise RuntimeError("Max retries exceeded")
+
+
+def _call_openrouter(user_message: str, system_message: str = None, retries: int = 3) -> str:
+    client = openai.OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=config.OPENROUTER_API_KEY,
+    )
+    messages = []
+    if system_message:
+        messages.append({"role": "system", "content": system_message})
+    messages.append({"role": "user", "content": user_message})
+
+    for attempt in range(retries):
+        try:
+            response = client.chat.completions.create(
+                model=config.OPENROUTER_MODEL,
+                max_tokens=1024,
+                messages=messages,
+            )
+            return response.choices[0].message.content
+
+        except openai.RateLimitError:
+            wait = 2 ** attempt
+            print(f"  Rate limited. Waiting {wait}s...")
+            time.sleep(wait)
+        except openai.APIError as e:
             print(f"  API error: {e}")
             if attempt == retries - 1:
                 raise

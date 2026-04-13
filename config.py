@@ -6,10 +6,21 @@ Change things here. Nothing else needs to be touched for basic configuration.
 import os
 
 # ─────────────────────────────────────────────
-# API
+# API PROVIDER
+# Set PROVIDER to "openrouter" or "anthropic"
 # ─────────────────────────────────────────────
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL = "claude-haiku-4-5-20251001"   # Fast and cheap. Swap to sonnet for better quality.
+PROVIDER = "openrouter"
+
+# OpenRouter (https://openrouter.ai/models — find model IDs there)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL   = "openrouter/free"  # cheap + fast default
+
+# Anthropic direct
+ANTHROPIC_API_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL    = "claude-haiku-4-5-20251001"
+
+# Convenience alias used in proposal metadata
+MODEL = OPENROUTER_MODEL if PROVIDER == "openrouter" else ANTHROPIC_MODEL
 
 # ─────────────────────────────────────────────
 # PATHS

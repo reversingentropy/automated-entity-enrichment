@@ -28,17 +28,21 @@ utils.print_header("Step 4: Building Update Proposals")
 # LOAD DATA
 # ─────────────────────────────────────────────
 
-utils.print_step(f"Loading extracted facts from {config.FACTS_CSV}")
-facts_df = pd.read_csv(config.FACTS_CSV, dtype=str).fillna("")
-print(f"  Rows loaded: {len(facts_df):,}")
-
 utils.print_step(f"Loading linked entities from {config.LINKED_CSV}")
 linked_df = pd.read_csv(config.LINKED_CSV, dtype=str).fillna("")
 
-# Get the non-high-match rows (low_match, no_match, no_entity_found)
-# These still need to be surfaced for human review
-other_df = linked_df[linked_df["match_type"] != "high_match"].copy()
-print(f"  Non-high-match rows to include: {len(other_df):,}")
+# Load extracted facts if available (requires step 3 to have been run)
+facts_df = pd.DataFrame()
+if os.path.exists(config.FACTS_CSV):
+    facts_df = pd.read_csv(config.FACTS_CSV, dtype=str).fillna("")
+    print(f"  Extracted facts loaded: {len(facts_df):,} rows")
+    other_df = linked_df[linked_df["match_type"] != "high_match"].copy()
+else:
+    print(f"  No extracted_facts.csv found — skipping fact extraction step.")
+    print(f"  All rows will be proposed without pre-filled field values.")
+    other_df = linked_df.copy()  # include everything, facts step was skipped
+
+print(f"  Linked entities: {len(linked_df):,} rows ({len(other_df):,} without extracted facts)")
 
 # ─────────────────────────────────────────────
 # BUILD PROPOSALS
@@ -121,6 +125,7 @@ def make_proposal_from_linked(row: pd.Series, priority: str) -> dict:
 
     match_type = row.get("match_type", "")
     note = {
+        "high_match":      "Good entity match — no fact extraction run, review article directly",
         "low_match":       "Low confidence match — review candidates carefully",
         "no_match":        "No TTE match found — potential new entity candidate",
         "no_entity_found": "No entity of expected type found in article NER output",
@@ -162,10 +167,15 @@ for _, row in facts_df.iterrows():
     proposals.append(proposal)
     proposal_id += 1
 
-# Process other rows (low match, no match)
+# Process other rows (high match without facts, low match, no match)
 for _, row in other_df.iterrows():
     match_type = row.get("match_type", "")
-    priority = "FLAG" if match_type in ("no_match",) else "MEDIUM"
+    if match_type == "no_match":
+        priority = "FLAG"
+    elif match_type == "high_match":
+        priority = "MEDIUM"   # good match but no facts extracted
+    else:
+        priority = "MEDIUM"
     proposal = make_proposal_from_linked(row, priority)
     proposals.append(proposal)
     proposal_id += 1
