@@ -47,15 +47,15 @@ DECISION_LOG_CSV     = os.path.join(OUTPUTS_DIR, "decision_log.csv")
 # Maps NER entity label → TTE CSV filename
 # ─────────────────────────────────────────────
 TTE_FILES = {
-    "PERSON":       "TTE-PEOPLE_FULL_20251001.csv",
-    "ORGANISATION": "TTE-ORGANISATIONS_FULL_20251001.csv",
-    "FACILITY":     "TTE-GEOBUILDINGS_FULL_20251001.csv",
-    "LOCATION":     "TTE-GEOGRAPHICS_FULL_20251001.csv",
-    "EVENT":        "TTE-EVENTS_FULL_20251001.csv",
-    "LEGAL_ACT":    "TTE-LEGALACTS_FULL_20251001.csv",
-    "PROGRAMME":    "TTE-PROGRAMMES_FULL_20251001.csv",
-    "AWARD":        "TTE-AWARDS_FULL_20251001.csv",
-    "COUNTRY":      "TTE-COUNTRIES_FULL_20251001.csv",
+    "PERSON":       "TTE-PEOPLE_FULL_20260401.csv",
+    "ORGANISATION": "TTE-ORGANISATIONS_FULL_20260401.csv",
+    "FACILITY":     "TTE-GEOBUILDINGS_FULL_20260401.csv",
+    "LOCATION":     "TTE-GEOGRAPHICS_FULL_20260401.csv",
+    "EVENT":        "TTE-EVENTS_FULL_20260401.csv",
+    "LEGAL_ACT":    "TTE-LEGALACTS_FULL_20260401.csv",
+    "PROGRAMME":    "TTE-PROGRAMMES_FULL_20260401.csv",
+    "AWARD":        "TTE-AWARDS_FULL_20260401.csv",
+    "COUNTRY":      "TTE-COUNTRIES_FULL_20260401.csv",
 }
 
 # ─────────────────────────────────────────────

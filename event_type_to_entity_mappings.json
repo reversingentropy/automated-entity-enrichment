@@ -1,0 +1,47 @@
+{
+  "person died":                                            "PERSON",
+  "person appointed or elected":                            "PERSON",
+  "person resigned or retired":                             "PERSON",
+  "person changed affiliation or party":                    "PERSON",
+  "person received award":                                  "PERSON",
+  "person received honour or title":                        "PERSON",
+  "person got married":                                     "PERSON",
+  "person renamed":                                         "PERSON",
+
+  "organisation received award":                            "ORGANISATION",
+  "organisation renamed":                                   "ORGANISATION",
+  "organisation merged or acquired / split":                "ORGANISATION",
+  "organisation dissolved or closed":                       "ORGANISATION",
+  "organisation relocated":                                 "ORGANISATION",
+  "organisation ownership changed":                         "ORGANISATION",
+  "organisation restructured or rebranded":                 "ORGANISATION",
+  "organisation launched":                                  "ORGANISATION",
+
+  "building demolished":                                    "FACILITY",
+  "building destroyed by fire":                             "FACILITY",
+  "building opened":                                        "FACILITY",
+  "building given heritage or conservation status / national monument": "FACILITY",
+  "building repurposed or converted":                       "FACILITY",
+  "building closed or ceased operations":                   "FACILITY",
+  "building renamed":                                       "FACILITY",
+  "building ownership changed or en bloc sale":             "FACILITY",
+  "building ownership changed and renamed":                 "FACILITY",
+  "building completed":                                     "FACILITY",
+
+  "place or area renamed":                                  "LOCATION",
+  "place closed or removed / street name expunged":         "LOCATION",
+
+  "award criteria or format changed":                       "AWARD",
+
+  "event cancelled or discontinued":                        "EVENT",
+  "event renamed":                                          "EVENT",
+  "event postponed or rescheduled":                         "EVENT",
+  "event relocated":                                        "EVENT",
+  "event launched":                                         "EVENT",
+
+  "programme launched":                                     "PROGRAMME",
+  "programme ended or discontinued":                        "PROGRAMME",
+
+  "law enacted or amended":                                 "LEGAL_ACT",
+  "law repealed":                                           "LEGAL_ACT"
+}

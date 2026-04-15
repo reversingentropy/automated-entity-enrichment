@@ -1,11 +1,15 @@
 """
-review_app.py — Web-based review queue for the KOS Pipeline.
+review_app.py — Review queue for the KOS Pipeline.
+
+Reads from:
+  outputs/review_queue.csv          — one row per proposed field change
+  outputs/new_entity_candidates.csv — entities with no TTE match
 
 Usage:
-    pip install streamlit
     streamlit run review_app.py
 """
 
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -15,8 +19,9 @@ import streamlit as st
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
-PROPOSALS_JSON = "outputs/proposals.json"
-DECISIONS_JSON = "outputs/decisions.json"
+REVIEW_QUEUE_CSV   = "outputs/review_queue.csv"
+NEW_CANDIDATES_CSV = "outputs/new_entity_candidates.csv"
+DECISIONS_JSON     = "outputs/decisions.json"
 
 # ─── Page config ──────────────────────────────────────────────────────────────
 
@@ -29,42 +34,102 @@ st.set_page_config(
 # ─── Data loading ─────────────────────────────────────────────────────────────
 
 @st.cache_data
-def load_proposals():
-    if not os.path.exists(PROPOSALS_JSON):
-        return []
-    with open(PROPOSALS_JSON, encoding="utf-8") as f:
-        return json.load(f)
+def load_review_queue() -> pd.DataFrame:
+    if not os.path.exists(REVIEW_QUEUE_CSV):
+        return pd.DataFrame()
+    return pd.read_csv(REVIEW_QUEUE_CSV, dtype=str).fillna("")
 
 
-def load_decisions():
+@st.cache_data
+def load_new_candidates() -> pd.DataFrame:
+    if not os.path.exists(NEW_CANDIDATES_CSV):
+        return pd.DataFrame()
+    return pd.read_csv(NEW_CANDIDATES_CSV, dtype=str).fillna("")
+
+
+def load_decisions() -> dict:
     if not os.path.exists(DECISIONS_JSON):
         return {}
     with open(DECISIONS_JSON, encoding="utf-8") as f:
         data = json.load(f)
-    return {str(d["proposal_id"]): d for d in data}
+    # Skip entries from the old decisions format (which used proposal_id instead of group_id)
+    return {d["group_id"]: d for d in data if "group_id" in d}
 
 
-def save_decision(proposal_id: str, decision: str, reason: str = ""):
+def save_decision(group_id: str, decision: str, row_ids: list, edited_fields: dict = None):
     existing = load_decisions()
-    existing[proposal_id] = {
-        "proposal_id": proposal_id,
-        "decision":    decision,
-        "reason":      reason,
-        "reviewer":    st.session_state.get("reviewer", "librarian"),
-        "timestamp":   datetime.now().isoformat(),
+    entry = {
+        "group_id":  group_id,
+        "decision":  decision,
+        "row_ids":   row_ids,
+        "reviewer":  st.session_state.get("reviewer", "librarian"),
+        "timestamp": datetime.now().isoformat(),
     }
+    if edited_fields:
+        entry["edited_fields"] = edited_fields
+    existing[group_id] = entry
     os.makedirs("outputs", exist_ok=True)
     with open(DECISIONS_JSON, "w", encoding="utf-8") as f:
         json.dump(list(existing.values()), f, indent=2, ensure_ascii=False)
     st.session_state.decisions = existing
 
 
-def undo_decision(proposal_id: str):
+def undo_decision(group_id: str):
     existing = load_decisions()
-    existing.pop(str(proposal_id), None)
+    existing.pop(group_id, None)
     with open(DECISIONS_JSON, "w", encoding="utf-8") as f:
         json.dump(list(existing.values()), f, indent=2, ensure_ascii=False)
     st.session_state.decisions = existing
+
+
+# ─── Group building ───────────────────────────────────────────────────────────
+
+def make_group_id(article_url: str, event_type: str, entity_name: str) -> str:
+    key = f"{article_url}|{event_type}|{entity_name}"
+    return hashlib.md5(key.encode()).hexdigest()[:12]
+
+
+def build_groups(df: pd.DataFrame) -> list[dict]:
+    """
+    Group review_queue rows by (article_url, event_type, entity_name).
+    Returns a list of group dicts, each containing entity metadata and a
+    list of field-change dicts.
+    """
+    groups: dict[str, dict] = {}
+    for _, row in df.iterrows():
+        gid = make_group_id(
+            row.get("article_url", ""),
+            row.get("event_type", ""),
+            row.get("entity_name", ""),
+        )
+        if gid not in groups:
+            groups[gid] = {
+                "group_id":          gid,
+                "article_url":       row.get("article_url", ""),
+                "article_title":     row.get("article_title", ""),
+                "event_type":        row.get("event_type", ""),
+                "entity_name":       row.get("entity_name", ""),
+                "entity_type":       row.get("entity_type", ""),
+                "tte_uid":           row.get("tte_uid", ""),
+                "tte_authorised_name": row.get("tte_authorised_name", ""),
+                "tte_vocabulary":    row.get("tte_vocabulary", ""),
+                "match_score":       row.get("match_score", ""),
+                "match_type":        row.get("match_type", ""),
+                "record_richness":   row.get("record_richness", ""),
+                "llm_confidence":    row.get("llm_confidence", ""),
+                "row_ids":           [],
+                "fields":            [],
+            }
+        groups[gid]["row_ids"].append(row.get("row_id", ""))
+        groups[gid]["fields"].append({
+            "field":         row.get("field", ""),
+            "current_value": row.get("current_value", ""),
+            "new_value":     row.get("new_value", ""),
+            "final_value":   row.get("final_value", row.get("new_value", "")),
+            "merge_state":   row.get("merge_state", ""),
+            "evidence":      row.get("evidence", ""),
+        })
+    return list(groups.values())
 
 
 # ─── Session state ────────────────────────────────────────────────────────────
@@ -74,41 +139,31 @@ if "decisions" not in st.session_state:
 if "reviewer" not in st.session_state:
     st.session_state.reviewer = "librarian"
 
-proposals = load_proposals()
+decisions   = st.session_state.decisions
+queue_df    = load_review_queue()
+cands_df    = load_new_candidates()
 
-if not proposals:
-    st.error("No proposals found. Run `python 04_build_proposals.py` first.")
+if queue_df.empty and cands_df.empty:
+    st.error(
+        "No data found. Run `python build_prompts.py` → fill `llm_response` "
+        "column → run `python join_responses.py`, then reopen this app."
+    )
     st.stop()
 
-decisions = st.session_state.decisions
+all_groups    = build_groups(queue_df) if not queue_df.empty else []
+decided_ids   = set(decisions.keys())
+pending_groups = [g for g in all_groups if g["group_id"] not in decided_ids]
 
-# Split into the two review queues
-event_updates = [
-    p for p in proposals
-    if p["entity"]["match_type"] in ("high_match", "low_match")
-    and p["entity"]["tte_uid"]
-]
-new_entities = [
-    p for p in proposals
-    if p["entity"]["match_type"] == "no_match"
-    and p["entity"]["name"].strip()
-]
-
-def is_decided(pid):
-    return str(pid) in decisions
-
-pending_updates = [p for p in event_updates if not is_decided(p["id"])]
-pending_new     = [p for p in new_entities  if not is_decided(p["id"])]
+pending_cands  = 0 if cands_df.empty else int(
+    cands_df.apply(
+        lambda r: make_group_id(r.get("article_url",""), r.get("event_type",""), r.get("entity_name",""))
+        not in decided_ids,
+        axis=1,
+    ).sum()
+)
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
-PRIORITY_ICON = {"HIGH": "🟢", "MEDIUM": "🟡", "FLAG": "🔴"}
-DECISION_ICON = {
-    "approved":    "✅",
-    "rejected":    "❌",
-    "flagged":     "🚩",
-    "no_kb_update": "⏭️",
-}
 ENTITY_ICON = {
     "PERSON":       "👤",
     "ORGANISATION": "🏢",
@@ -120,8 +175,23 @@ ENTITY_ICON = {
     "LEGAL_ACT":    "⚖️",
 }
 
+DECISION_ICON = {
+    "approved":           "✅",
+    "rejected":           "❌",
+    "flagged":            "🚩",
+    "no_kb_update":       "⏭️",
+    "flagged_research":   "🔬",
+    "dismissed":          "✖️",
+}
 
-def score_label(score):
+MERGE_BADGE = {
+    "ADD":     ":green[● ADD]",
+    "APPEND":  ":blue[● APPEND]",
+    "REPLACE": ":orange[● REPLACE]",
+}
+
+
+def score_label(score: str) -> str:
     try:
         s = float(score)
     except (TypeError, ValueError):
@@ -133,8 +203,8 @@ def score_label(score):
     return ":red[Low]"
 
 
-def decision_badge(pid):
-    d = decisions.get(str(pid))
+def decision_badge(group_id: str) -> str:
+    d = decisions.get(group_id)
     if not d:
         return ""
     icon = DECISION_ICON.get(d["decision"], "•")
@@ -151,12 +221,12 @@ with st.sidebar:
     page = st.radio(
         "nav",
         label_visibility="collapsed",
-        options=["Dashboard", "New Entities", "Event Updates", "History & Backup"],
+        options=["Dashboard", "Event Updates", "New Entities", "History & Backup"],
         format_func=lambda x: {
-            "Dashboard":        "🏠  Dashboard",
-            "New Entities":     f"👤  New Entities  ({len(pending_new)} pending)",
-            "Event Updates":    f"🔄  Event Updates  ({len(pending_updates)} pending)",
-            "History & Backup": "🕐  History & Backup",
+            "Dashboard":       "🏠  Dashboard",
+            "Event Updates":   f"🔄  Event Updates  ({len(pending_groups)} pending)",
+            "New Entities":    f"👤  New Entities  ({pending_cands} pending)",
+            "History & Backup":"🕐  History & Backup",
         }[x],
     )
 
@@ -172,149 +242,57 @@ with st.sidebar:
 
 if page == "Dashboard":
     st.title("Dashboard")
-    st.caption("Review and approve changes to your knowledge base")
+    st.caption("Review and approve proposed changes to your knowledge base")
 
     today = datetime.now().date().isoformat()
-    approved_today = sum(1 for d in decisions.values() if d["decision"] == "approved"    and d["timestamp"][:10] == today)
-    rejected_today = sum(1 for d in decisions.values() if d["decision"] == "rejected"    and d["timestamp"][:10] == today)
+    approved_today = sum(
+        1 for d in decisions.values()
+        if d["decision"] == "approved" and d["timestamp"][:10] == today
+    )
+    rejected_today = sum(
+        1 for d in decisions.values()
+        if d["decision"] == "rejected" and d["timestamp"][:10] == today
+    )
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("New Entities to Review",  len(pending_new),     help="Entities not yet in TTE")
-    c2.metric("Event Updates to Review", len(pending_updates), help="Proposed changes to existing TTE records")
-    c3.metric("Approved Today",          approved_today)
-    c4.metric("Rejected Today",          rejected_today)
+    c1.metric("Event Updates Pending", len(pending_groups))
+    c2.metric("New Entities Pending",  pending_cands)
+    c3.metric("Approved Today",        approved_today)
+    c4.metric("Rejected Today",        rejected_today)
 
     st.divider()
 
-    # Attention required
-    flagged_pending  = [p for p in proposals if p.get("priority") == "FLAG"     and not is_decided(p["id"])]
-    low_match_pending = [p for p in event_updates if p["entity"]["match_type"] == "low_match" and not is_decided(p["id"])]
-
-    if flagged_pending or low_match_pending:
-        st.subheader("Attention Required")
-        if flagged_pending:
-            with st.container(border=True):
-                c1, c2 = st.columns([5, 1])
-                c1.warning(f"**{len(flagged_pending)}** proposals with no TTE match — potential new entity candidates")
-                if c2.button("Review now", key="att_flag"):
-                    st.session_state["nav_override"] = "New Entities"
-        if low_match_pending:
-            with st.container(border=True):
-                c1, c2 = st.columns([5, 1])
-                c1.info(f"**{len(low_match_pending)}** low-confidence entity matches need disambiguation")
-                if c2.button("Review now", key="att_low"):
-                    st.session_state["nav_override"] = "Event Updates"
-
-    st.divider()
-
-    # Recent activity
-    st.subheader("Recent Activity")
-    proposals_map = {str(p["id"]): p for p in proposals}
-
-    if not decisions:
-        st.caption("No decisions yet")
-    else:
-        recent = sorted(decisions.values(), key=lambda d: d["timestamp"], reverse=True)[:8]
-        for d in recent:
-            proposal = proposals_map.get(d["proposal_id"], {})
-            entity   = proposal.get("entity", {})
-            name     = entity.get("authorised_name") or entity.get("name") or d["proposal_id"]
-            icon     = DECISION_ICON.get(d["decision"], "•")
-            st.write(f"{icon} **{name}** · {proposal.get('event_type', '')} · {d['timestamp'][:10]}")
-
-    st.divider()
-
-    # Event type breakdown
-    st.subheader("Pending Event Updates by Type")
-    if pending_updates:
-        counts = {}
-        for p in pending_updates:
-            counts[p["event_type"]] = counts.get(p["event_type"], 0) + 1
-        df = pd.DataFrame(
+    # Event type breakdown of pending groups
+    st.subheader("Pending by Event Type")
+    if pending_groups:
+        counts: dict[str, int] = {}
+        for g in pending_groups:
+            counts[g["event_type"]] = counts.get(g["event_type"], 0) + 1
+        breakdown = pd.DataFrame(
             sorted(counts.items(), key=lambda x: -x[1]),
-            columns=["Event Type", "Pending"]
+            columns=["Event Type", "Pending"],
         )
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(breakdown, use_container_width=True, hide_index=True)
     else:
         st.caption("All event updates reviewed.")
 
+    st.divider()
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEW ENTITIES
-# ═══════════════════════════════════════════════════════════════════════════════
+    # Recent decisions
+    st.subheader("Recent Activity")
+    if not decisions:
+        st.caption("No decisions yet.")
+    else:
+        recent = sorted(decisions.values(), key=lambda d: d["timestamp"], reverse=True)[:10]
 
-elif page == "New Entities":
-    st.title("Review New Entities")
-    st.caption("Approve or reject entities not currently in your knowledge base")
-
-    # Filters
-    col_search, col_type, col_show = st.columns([3, 2, 2])
-    search_q     = col_search.text_input("Search", placeholder="Search entities...", label_visibility="collapsed")
-    all_types    = sorted(set(p["entity"]["type"] for p in new_entities if p["entity"]["type"]))
-    type_filter  = col_type.selectbox("Entity Type", ["All"] + all_types, label_visibility="collapsed")
-    show_decided = col_show.checkbox("Show reviewed", value=False)
-
-    filtered = new_entities if show_decided else pending_new
-    if type_filter != "All":
-        filtered = [p for p in filtered if p["entity"]["type"] == type_filter]
-    if search_q:
-        filtered = [p for p in filtered if search_q.lower() in p["entity"]["name"].lower()]
-
-    total_label = "total" if show_decided else "pending"
-    st.caption(f"**{len(filtered)}** {total_label}" + (" — showing first 30" if len(filtered) > 30 else ""))
-
-    if not filtered:
-        st.info("No entities to review with current filters.")
-
-    for p in filtered[:30]:
-        entity  = p["entity"]
-        pid     = str(p["id"])
-        decided = is_decided(pid)
-        icon    = ENTITY_ICON.get(entity["type"], "•")
-        candidates = p.get("top_candidates", [])
-
-        with st.container(border=True):
-            hc1, hc2 = st.columns([5, 1])
-
-            with hc1:
-                st.markdown(f"#### {icon} {entity['name']}")
-                tc = st.columns(4)
-                tc[0].caption(f"**{entity['type']}**")
-                tc[1].caption(f"Linking: {score_label(entity.get('match_score', 0))}")
-                tc[2].caption(f"{PRIORITY_ICON.get(p['priority'], '⚪')} {p['priority']}")
-                if decided:
-                    tc[3].caption(decision_badge(pid))
-
-            with hc2:
-                if p.get("article_url"):
-                    st.link_button("↗ Article", p["article_url"], use_container_width=True)
-
-            st.caption(f"📰 {p.get('article_title', '')}  ·  *{p.get('event_type', '')}*")
-
-            # Duplicate candidates
-            if candidates:
-                with st.expander(f"⚠️ Possible duplicates in TTE ({len(candidates)} candidates found)"):
-                    for c in candidates[:3]:
-                        score = float(c.get("score", 0))
-                        pct   = min(int(score / 20 * 100), 99)
-                        st.write(
-                            f"• **{c.get('authorised_name', '')}**  —  {pct}% match  "
-                            f"(UID: `{c.get('uid', '')}`)"
-                        )
-
-            # Decision buttons
-            if not decided:
-                b1, b2, b3 = st.columns(3)
-                if b1.button("✅ Approve",       key=f"a_{pid}", use_container_width=True, type="primary"):
-                    save_decision(pid, "approved");  st.rerun()
-                if b2.button("❌ Reject",         key=f"r_{pid}", use_container_width=True):
-                    save_decision(pid, "rejected");  st.rerun()
-                if b3.button("⏭️ No KB update",   key=f"n_{pid}", use_container_width=True):
-                    save_decision(pid, "no_kb_update"); st.rerun()
-            else:
-                b1, _ = st.columns([2, 5])
-                if b1.button("↩ Undo", key=f"u_{pid}", use_container_width=True):
-                    undo_decision(pid); st.rerun()
+        # Build a quick lookup from group_id → display name
+        group_map = {g["group_id"]: g for g in all_groups}
+        for d in recent:
+            icon  = DECISION_ICON.get(d["decision"], "•")
+            g     = group_map.get(d["group_id"], {})
+            name  = g.get("tte_authorised_name") or g.get("entity_name") or d["group_id"]
+            etype = g.get("event_type", "")
+            st.write(f"{icon} **{name}** · {etype} · {d['timestamp'][:10]}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -323,100 +301,228 @@ elif page == "New Entities":
 
 elif page == "Event Updates":
     st.title("Review Event Updates")
-    st.caption("Approve or reject proposed changes to existing TTE entities")
+    st.caption("Approve or reject proposed changes to existing TTE records")
+
+    if not all_groups:
+        st.info("No review queue found. Run `python join_responses.py` first.")
+        st.stop()
 
     # Filters
     col_search, col_event, col_show = st.columns([3, 3, 2])
     search_q     = col_search.text_input("Search", placeholder="Search entities...", label_visibility="collapsed")
-    all_events   = sorted(set(p["event_type"] for p in event_updates))
+    all_events   = sorted(set(g["event_type"] for g in all_groups))
     event_filter = col_event.selectbox("Event Type", ["All"] + all_events, label_visibility="collapsed")
     show_decided = col_show.checkbox("Show reviewed", value=False)
 
-    filtered = event_updates if show_decided else pending_updates
+    display_groups = all_groups if show_decided else pending_groups
     if event_filter != "All":
-        filtered = [p for p in filtered if p["event_type"] == event_filter]
+        display_groups = [g for g in display_groups if g["event_type"] == event_filter]
     if search_q:
         q = search_q.lower()
-        filtered = [
-            p for p in filtered
-            if q in p["entity"]["name"].lower()
-            or q in p["entity"].get("authorised_name", "").lower()
+        display_groups = [
+            g for g in display_groups
+            if q in g["entity_name"].lower() or q in g["tte_authorised_name"].lower()
         ]
 
     total_label = "total" if show_decided else "pending"
-    st.caption(f"**{len(filtered)}** {total_label}" + (" — showing first 30" if len(filtered) > 30 else ""))
+    st.caption(
+        f"**{len(display_groups)}** {total_label}"
+        + (" — showing first 30" if len(display_groups) > 30 else "")
+    )
 
-    if not filtered:
+    if not display_groups:
         st.info("No proposals to review with current filters.")
 
-    for p in filtered[:30]:
-        entity  = p["entity"]
-        pid     = str(p["id"])
-        decided = is_decided(pid)
-        changes = p.get("proposed_changes", [])
-        icon    = ENTITY_ICON.get(entity.get("vocabulary", ""), "•")
+    for g in display_groups[:30]:
+        gid     = g["group_id"]
+        decided = gid in decided_ids
+        icon    = ENTITY_ICON.get(g["entity_type"], "•")
+        name    = g["tte_authorised_name"] or g["entity_name"]
 
         with st.container(border=True):
+            # Header row
             hc1, hc2 = st.columns([5, 1])
-
             with hc1:
-                display_name = entity.get("authorised_name") or entity["name"]
-                st.markdown(f"#### {icon} {display_name}")
-                tc = st.columns(5)
-                tc[0].caption(f"**{entity.get('vocabulary', '')}**")
-                tc[1].caption(p["event_type"][:35])
-                tc[2].caption(f"{PRIORITY_ICON.get(p['priority'], '⚪')} {p['priority']}")
-                tc[3].caption(f"Score: {score_label(entity.get('match_score', 0))}")
-                tc[4].caption(f"{entity.get('record_richness', 0)} TTE fields")
+                st.markdown(f"#### {icon} {name}")
+                mc = st.columns(5)
+                mc[0].caption(f"**{g['tte_vocabulary'] or g['entity_type']}**")
+                mc[1].caption(g["event_type"][:38])
+                mc[2].caption(f"Score: {score_label(g['match_score'])}")
+                mc[3].caption(f"{g['record_richness']} TTE fields")
+                mc[4].caption(f"UID: `{g['tte_uid']}`")
                 if decided:
-                    st.caption(decision_badge(pid))
-
+                    st.caption(decision_badge(gid))
             with hc2:
-                if p.get("article_url"):
-                    st.link_button("↗ Article", p["article_url"], use_container_width=True)
+                if g["article_url"]:
+                    st.link_button("↗ Article", g["article_url"], use_container_width=True)
 
             st.caption(
-                f"📰 {p.get('article_title', '')}  ·  "
-                f"Extracted as: *{entity['name']}*  ·  "
-                f"UID: `{entity.get('tte_uid', '')}`"
+                f"📰 {g['article_title']}  ·  "
+                f"Extracted as: *{g['entity_name']}*"
             )
 
-            # Proposed field changes (only present if fact extraction was run)
-            if changes:
-                st.markdown("**Proposed changes:**")
-                for change in changes:
-                    cc1, cc2 = st.columns([2, 5])
-                    cc1.code(change.get("field", ""), language=None)
-                    cc2.write(change.get("new_value", ""))
-                    if change.get("evidence"):
-                        st.caption(f"> *\"{change['evidence'][:250]}\"*")
-            else:
-                note = p.get("note", "No field values extracted — review article directly")
-                st.caption(f"ℹ️ {note}")
+            st.divider()
 
-            # Low-match candidates
-            candidates = p.get("top_candidates", [])
-            if candidates and entity.get("match_type") == "low_match":
-                with st.expander("🔍 Near-match candidates"):
-                    for c in candidates[:3]:
-                        score = float(c.get("score", 0))
-                        st.write(f"• [{score:.2f}] **{c.get('authorised_name', '')}** (UID: `{c.get('uid', '')}`)")
+            # Field changes
+            ACTION_OPTIONS = ["Append to existing", "Replace existing", "Add new field"]
+            ACTION_FROM_MERGE = {
+                "APPEND":  "Append to existing",
+                "REPLACE": "Replace existing",
+                "ADD":     "Add new field",
+            }
+
+            for i, fc in enumerate(g["fields"]):
+                merge_state     = fc["merge_state"]
+                default_action  = ACTION_FROM_MERGE.get(merge_state, "Add new field")
+                key_act         = f"act_{gid}_{i}"
+                key_val         = f"nv_{gid}_{i}"
+
+                # Row 1: field label + current value
+                lc1, lc2 = st.columns([2, 5])
+                lc1.markdown(f"**TTE Field:** {fc['field']}")
+                lc2.markdown(f"**Current value:** {fc['current_value'] or '*empty*'}")
+
+                # Row 2: action dropdown + editable new value
+                ac1, ac2 = st.columns([2, 5])
+                ac1.selectbox(
+                    "Action",
+                    options=ACTION_OPTIONS,
+                    index=ACTION_OPTIONS.index(default_action),
+                    key=key_act,
+                    label_visibility="collapsed",
+                    disabled=decided,
+                )
+                ac2.text_input(
+                    "New value",
+                    value=fc["new_value"],
+                    key=key_val,
+                    label_visibility="collapsed",
+                    disabled=decided,
+                )
+
+                # Evidence
+                if fc["evidence"]:
+                    st.caption(f"> *\"Evidence: {fc['evidence'][:280]}\"*")
+
+                # Collapsed live preview
+                with st.expander("Preview final TTE value ▶", expanded=False):
+                    edited_val     = st.session_state.get(key_val, fc["new_value"])
+                    selected_action = st.session_state.get(key_act, default_action)
+                    current        = fc["current_value"] or ""
+                    if selected_action == "Append to existing" and current:
+                        preview = current + " | " + edited_val
+                    else:
+                        preview = edited_val
+                    st.code(preview, language=None)
+
+                st.write("")
 
             # Decision buttons
             if not decided:
                 b1, b2, b3, b4 = st.columns(4)
-                if b1.button("✅ Approve",      key=f"a_{pid}", use_container_width=True, type="primary"):
-                    save_decision(pid, "approved");     st.rerun()
-                if b2.button("❌ Reject",        key=f"r_{pid}", use_container_width=True):
-                    save_decision(pid, "rejected");     st.rerun()
-                if b3.button("⏭️ No KB update",  key=f"n_{pid}", use_container_width=True):
-                    save_decision(pid, "no_kb_update"); st.rerun()
-                if b4.button("🚩 Flag",           key=f"f_{pid}", use_container_width=True):
-                    save_decision(pid, "flagged");      st.rerun()
+                if b1.button("✅ Approve All",   key=f"a_{gid}", use_container_width=True, type="primary"):
+                    edited_fields = {
+                        g["row_ids"][j]: {
+                            "new_value": st.session_state.get(f"nv_{gid}_{j}", g["fields"][j]["new_value"]),
+                            "action":    st.session_state.get(f"act_{gid}_{j}", ACTION_FROM_MERGE.get(g["fields"][j]["merge_state"], "Add new field")),
+                        }
+                        for j in range(len(g["fields"]))
+                        if j < len(g["row_ids"])
+                    }
+                    save_decision(gid, "approved", g["row_ids"], edited_fields=edited_fields); st.rerun()
+                if b2.button("❌ Reject",          key=f"r_{gid}", use_container_width=True):
+                    save_decision(gid, "rejected",     g["row_ids"]); st.rerun()
+                if b3.button("⏭️ No KB Update",    key=f"n_{gid}", use_container_width=True):
+                    save_decision(gid, "no_kb_update", g["row_ids"]); st.rerun()
+                if b4.button("🚩 Flag",             key=f"f_{gid}", use_container_width=True):
+                    save_decision(gid, "flagged",      g["row_ids"]); st.rerun()
             else:
                 b1, _ = st.columns([2, 5])
-                if b1.button("↩ Undo", key=f"u_{pid}", use_container_width=True):
-                    undo_decision(pid); st.rerun()
+                if b1.button("↩ Undo", key=f"u_{gid}", use_container_width=True):
+                    undo_decision(gid); st.rerun()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NEW ENTITIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+elif page == "New Entities":
+    st.title("Review New Entities")
+    st.caption("Entities not found in TTE — flag for research or dismiss")
+
+    if cands_df.empty:
+        st.info("No new entity candidates found.")
+        st.stop()
+
+    # Attach group_id to candidates
+    cands_df["_gid"] = cands_df.apply(
+        lambda r: make_group_id(r.get("article_url",""), r.get("event_type",""), r.get("entity_name","")),
+        axis=1,
+    )
+    cands_df["_decided"] = cands_df["_gid"].map(lambda gid: gid in decided_ids)
+
+    col_search, col_type, col_show = st.columns([3, 2, 2])
+    search_q     = col_search.text_input("Search", placeholder="Search entities...", label_visibility="collapsed")
+    all_types    = sorted(cands_df["entity_type"].dropna().unique().tolist())
+    type_filter  = col_type.selectbox("Entity Type", ["All"] + all_types, label_visibility="collapsed")
+    show_decided = col_show.checkbox("Show reviewed", value=False)
+
+    filtered = cands_df if show_decided else cands_df[~cands_df["_decided"]]
+    if type_filter != "All":
+        filtered = filtered[filtered["entity_type"] == type_filter]
+    if search_q:
+        q = search_q.lower()
+        filtered = filtered[filtered["entity_name"].str.lower().str.contains(q, na=False)]
+
+    filtered = filtered.reset_index(drop=True)
+    total_label = "total" if show_decided else "pending"
+    st.caption(
+        f"**{len(filtered)}** {total_label}"
+        + (" — showing first 50" if len(filtered) > 50 else "")
+    )
+
+    if filtered.empty:
+        st.info("No entities to review with current filters.")
+
+    for _, row in filtered.head(50).iterrows():
+        gid     = row["_gid"]
+        decided = row["_decided"]
+        icon    = ENTITY_ICON.get(row.get("entity_type", ""), "•")
+
+        with st.container(border=True):
+            hc1, hc2 = st.columns([5, 1])
+            with hc1:
+                st.markdown(f"#### {icon} {row.get('entity_name', '')}")
+                tc = st.columns(3)
+                tc[0].caption(f"**{row.get('entity_type', '')}**")
+                tc[1].caption(f"*{row.get('event_type', '')}*")
+                tc[2].caption(f"Confidence: {row.get('confidence', '')}")
+                if decided:
+                    st.caption(decision_badge(gid))
+            with hc2:
+                if row.get("article_url"):
+                    st.link_button("↗ Article", row["article_url"], use_container_width=True)
+
+            st.caption(f"📰 {row.get('article_title', '')}")
+
+            onesearch_url = (
+                "https://catalogue.nlb.gov.sg/search/card?keywords="
+                + row.get("entity_name", "").replace(" ", "+")
+            )
+            sc1, sc2 = st.columns([4, 2])
+            sc1.caption("🔍 Verify significance: does this entity have 2+ resources in NLB collections?")
+            sc2.link_button("Search OneSearch ↗", onesearch_url, use_container_width=True)
+
+            if not decided:
+                b1, b2 = st.columns(2)
+                if b1.button("🔬 Flag for Research", key=f"fr_{gid}", use_container_width=True, type="primary"):
+                    save_decision(gid, "flagged_research", [row.get("row_id", gid)]); st.rerun()
+                if b2.button("✖️ Dismiss",             key=f"di_{gid}", use_container_width=True):
+                    save_decision(gid, "dismissed",        [row.get("row_id", gid)]); st.rerun()
+            else:
+                b1, _ = st.columns([2, 5])
+                if b1.button("↩ Undo", key=f"u_{gid}", use_container_width=True):
+                    undo_decision(gid); st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -424,8 +530,8 @@ elif page == "Event Updates":
 # ═══════════════════════════════════════════════════════════════════════════════
 
 elif page == "History & Backup":
-    st.title("Decision History & Backup")
-    st.caption("Review, undo, and export your review decisions")
+    st.title("History & Backup")
+    st.caption("Review decisions and export approved changes for TTE import")
 
     total    = len(decisions)
     approved = sum(1 for d in decisions.values() if d["decision"] == "approved")
@@ -440,87 +546,116 @@ elif page == "History & Backup":
 
     st.divider()
 
-    # Export CSV
-    proposals_map = {str(p["id"]): p for p in proposals}
+    # Export approved changes in TTE CSV format
+    st.subheader("Export Approved Changes")
 
-    rows = []
+    # Build row_id → decision lookup (for reviewer, timestamp, and edited values)
+    row_to_decision: dict[str, dict] = {}
     for d in decisions.values():
-        if d["decision"] != "approved":
-            continue
-        proposal = proposals_map.get(d["proposal_id"], {})
-        entity   = proposal.get("entity", {})
-        changes  = proposal.get("proposed_changes") or [{}]
-        for change in changes:
-            rows.append({
-                "tte_uid":             entity.get("tte_uid", ""),
-                "tte_authorised_name": entity.get("authorised_name", ""),
-                "tte_vocabulary":      entity.get("vocabulary", ""),
-                "event_type":          proposal.get("event_type", ""),
-                "entity_name":         entity.get("name", ""),
-                "field":               change.get("field", ""),
-                "new_value":           change.get("new_value", ""),
-                "evidence":            change.get("evidence", ""),
-                "article_url":         proposal.get("article_url", ""),
-                "reviewer":            d.get("reviewer", ""),
-                "timestamp":           d.get("timestamp", ""),
+        if d["decision"] == "approved":
+            for rid in d.get("row_ids", []):
+                row_to_decision[rid] = d
+
+    export_rows = []
+    if not queue_df.empty and row_to_decision:
+        approved_queue = queue_df[queue_df["row_id"].isin(row_to_decision.keys())]
+        for _, row in approved_queue.iterrows():
+            rid  = row["row_id"]
+            d    = row_to_decision[rid]
+            edit = d.get("edited_fields", {}).get(rid, {})
+
+            # Use reviewer-edited value if present, otherwise original
+            new_val = edit.get("new_value") or row.get("new_value", "")
+            action  = edit.get("action", "")
+
+            # Compute final value from action + current value
+            current = row.get("current_value", "")
+            if action == "Append to existing" and current:
+                final = current + " | " + new_val
+            elif action in ("Replace existing", "Add new field"):
+                final = new_val
+            else:
+                # No edit recorded — fall back to join_responses.py final_value
+                final = row.get("final_value") or row.get("new_value", "")
+
+            export_rows.append({
+                "Key UID":            row.get("tte_uid", ""),
+                "Key Descriptor":     row.get("tte_authorised_name", ""),
+                "Key Vocabulary":     row.get("tte_vocabulary", ""),
+                "Relationship Type":  row.get("field", ""),
+                "Related Descriptor": final,
+                "Evidence":           row.get("evidence", ""),
+                "Article URL":        row.get("article_url", ""),
+                "Reviewer":           d.get("reviewer", ""),
+                "Timestamp":          d.get("timestamp", ""),
             })
 
-    csv_data = pd.DataFrame(rows).to_csv(index=False) if rows else "No approved changes yet.\n"
-    st.download_button(
-        "⬇️  Export approved_changes.csv",
-        csv_data,
-        file_name="approved_changes.csv",
-        mime="text/csv",
-        type="primary",
-        disabled=not rows,
-    )
+    if export_rows:
+        export_df = pd.DataFrame(export_rows)
+        csv_bytes = export_df.to_csv(index=False, encoding="utf-8-sig")
+        st.download_button(
+            "⬇️  Export approved_changes.csv (TTE format)",
+            csv_bytes,
+            file_name="approved_changes.csv",
+            mime="text/csv",
+            type="primary",
+        )
+        st.dataframe(export_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No approved changes yet.")
 
     st.divider()
 
-    # History table with filters
-    col_type, col_action = st.columns(2)
-    type_filter   = col_type.selectbox("Type",   ["All", "New Entities", "Updates"])
-    action_filter = col_action.selectbox("Action", ["All", "approved", "rejected", "flagged", "no_kb_update"])
+    # Decision history table
+    st.subheader("All Decisions")
+
+    action_filter = st.selectbox(
+        "Filter by decision",
+        ["All", "approved", "rejected", "flagged", "no_kb_update",
+         "flagged_research", "dismissed"],
+    )
+
+    group_map = {g["group_id"]: g for g in all_groups}
 
     history = []
     for d in sorted(decisions.values(), key=lambda x: x["timestamp"], reverse=True):
-        proposal  = proposals_map.get(d["proposal_id"], {})
-        entity    = proposal.get("entity", {})
-        row_type  = "New Entity" if entity.get("match_type") == "no_match" else "Update"
-
-        if type_filter == "New Entities" and row_type != "New Entity":
-            continue
-        if type_filter == "Updates" and row_type != "Update":
-            continue
         if action_filter != "All" and d["decision"] != action_filter:
             continue
 
+        g     = group_map.get(d["group_id"], {})
+        name  = g.get("tte_authorised_name") or g.get("entity_name") or d["group_id"]
+        etype = g.get("event_type", "")
+        dtype = "New Entity" if d["decision"] in ("flagged_research","dismissed") else "Update"
+
         history.append({
-            "Decision": DECISION_ICON.get(d["decision"], "•") + " " + d["decision"].replace("_", " "),
-            "Entity":   entity.get("authorised_name") or entity.get("name") or d["proposal_id"],
-            "Type":     row_type,
-            "Event":    proposal.get("event_type", "")[:45],
-            "Reviewer": d.get("reviewer", ""),
-            "Date":     d["timestamp"][:10],
-            "_pid":     d["proposal_id"],
+            "Decision":  DECISION_ICON.get(d["decision"],"•") + " " + d["decision"].replace("_"," "),
+            "Entity":    name,
+            "Type":      dtype,
+            "Event":     etype[:45],
+            "Fields":    len(d.get("row_ids", [])),
+            "Reviewer":  d.get("reviewer", ""),
+            "Date":      d["timestamp"][:10],
+            "_gid":      d["group_id"],
         })
 
     st.caption(f"**{len(history)}** decisions")
 
     if history:
-        df_display = pd.DataFrame(history).drop(columns=["_pid"])
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
+        st.dataframe(
+            pd.DataFrame(history).drop(columns=["_gid"]),
+            use_container_width=True,
+            hide_index=True,
+        )
 
-        # Undo last decision
         st.divider()
-        st.caption("Undo a decision by proposal ID")
-        undo_id = st.text_input("Proposal ID to undo", placeholder="e.g. 42")
+        st.caption("Undo a decision by group ID")
+        undo_id = st.text_input("Group ID", placeholder="e.g. a3f2b1c4d5e6")
         if st.button("↩ Undo decision") and undo_id:
             if undo_id in decisions:
                 undo_decision(undo_id)
-                st.success(f"Decision for proposal {undo_id} removed.")
+                st.success(f"Decision for group {undo_id} removed.")
                 st.rerun()
             else:
-                st.error(f"No decision found for proposal ID {undo_id}.")
+                st.error(f"No decision found for group ID {undo_id}.")
     else:
-        st.caption("No decisions found.")
+        st.caption("No decisions match the current filter.")

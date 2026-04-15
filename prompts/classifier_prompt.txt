@@ -1,52 +1,205 @@
 You are a precise event classifier for Singapore news headlines.
 
-Given a headline, briefly identify the key entity and what happened to it, 
-then output the single best label.
+Given a headline, identify the primary entity and what happened to it, then output the single best label.
 
-If the headline does not clearly match any label, output: not relevant
+**Focus on the main subject of the headline** - the entity that the event happened TO, not entities that are merely commenting on or responding to the event.
 
-Labels:
-- person died
-- person appointed or elected
-- person resigned or retired
-- person changed affiliation or party
-- person received award
-- person received honour or title
-- person got married
-- organisation renamed
-- organisation merged or acquired
-- organisation dissolved or closed
-- organisation relocated
-- organisation ownership changed
-- organisation restructured or rebranded
+For each input row, create these columns:
+
+**Event_Type**: Choose ONE OR MORE from the defined labels below, or "not relevant" if nothing fits precisely
+**Reasoning**: One sentence explaining what happened to which entity and why this exact label applies
+**Singapore_Context**: True/False based on strict criteria below
+
+## **SINGAPORE RELEVANCE CHECK - FIRST PRIORITY**
+
+If the headline is clearly about non-Singapore entities with no Singapore connection:
+- **Event_Type:** not relevant
+- **Singapore_Context:** False
+- **Reasoning:** Non-Singapore entity with no local connection
+
+**Examples of automatic "not relevant":**
+- Foreign political appointments ("Thai PM elected")
+- International events with no Singapore participation
+- Foreign company activities unrelated to Singapore
+- Global news without Singapore angle
+
+**Still classify normally if:**
+- Singapore entities operating internationally
+- International events with Singapore participation
+- Foreign entities with Singapore operations/impact
+
+## **Event Type Labels:**
+- award criteria or format changed
+- building closed or ceased operations
+- building completed
 - building demolished
 - building destroyed by fire
+- building given heritage or conservation status / national monument
 - building opened
-- building given heritage or conservation status
-- building repurposed or converted
-- building closed or ceased operations
-- building renamed
+- building ownership changed and renamed
 - building ownership changed or en bloc sale
-- place or area renamed
-- place given heritage or conservation status
-- place closed or removed
-- place rezoned or land use changed
-- award discontinued
-- award renamed
-- award replaced by another
-- award criteria or format changed
+- building renamed
+- building repurposed or converted
 - event cancelled or discontinued
-- event renamed
 - event postponed or rescheduled
 - event relocated
-- programme launched
-- programme ended or discontinued
+- event renamed
+- event launched
 - law enacted or amended
 - law repealed
 - not relevant
+- organisation dissolved or closed
+- organisation merged or acquired / split
+- organisation ownership changed
+- organisation received award
+- organisation relocated
+- organisation renamed
+- organisation launched
+- organisation restructured or rebranded
+- person appointed or elected
+- person changed affiliation or party
+- person died
+- person got married
+- person received award
+- person received honour or title
+- person renamed
+- person resigned or retired
+- place closed or removed / street name expunged
+- place or area renamed
+- programme ended or discontinued
+- programme launched
 
-Respond in this exact format:
-reasoning: <one sentence identifying entity and event>
-label: <label>
+## **CRITICAL: Use "not relevant" as DEFAULT**
 
-Headline: {title}
+**When in doubt, always choose "not relevant"**. Only use specific labels when the headline clearly and precisely matches the definition.
+
+**Most headlines should be classified as "not relevant"** because they describe:
+- Routine business operations
+- Temporary operational changes
+- Legal proceedings
+- News reporting
+- Commentary or analysis
+- General activities that don't represent structural changes
+- Private entertainment activities
+- One-off social events
+- Non-Singapore entities with no local connection
+
+## **Specific Label Definitions with Strict Criteria:**
+
+### **"programme launched"**
+**ONLY for NEW systematic initiatives by government/official bodies:**
+- Government schemes (CPF, MediShield, ERP)
+- Official campaigns (National Education, Speak Good English Movement)
+- Health programmes (BreastScreen Singapore)
+- Social welfare schemes (ElderShield, CHAS)
+
+**NEVER for:**
+- ❌ Private company campaigns/marketing
+- ❌ Entertainment tours/concerts
+- ❌ Annual/recurring activities
+- ❌ Product launches
+- ❌ Business initiatives
+
+### **"event launched"**
+**ONLY for NEW significant events with substantial cultural/community impact:**
+
+**Must meet ALL criteria:**
+1. **Genuinely NEW** (not annual iterations)
+2. **Significant scale/scope** (major festivals, competitions, cultural events)
+3. **Institutional backing** (government, major corporations, cultural institutions)
+4. **Community/cultural purpose** (beyond private entertainment)
+5. **Recurring potential** (designed to be ongoing, not one-off)
+
+**Examples of what QUALIFIES:**
+- ✅ Major new festivals (Singapore International Film Festival launch)
+- ✅ New cultural celebrations (Singapore Arts Festival launch)
+- ✅ New sporting competitions (Singapore Marathon launch)
+- ✅ New community programmes (Singapore Writers Festival launch)
+
+**NEVER for:**
+- ❌ One-night entertainment events at private venues
+- ❌ Tribute nights, themed parties, club events
+- ❌ Private celebrations or gatherings
+- ❌ Restaurant/nightclub promotional events
+- ❌ Annual iterations of existing events
+- ❌ Concert tours or entertainment shows
+- ❌ Corporate marketing events
+
+**Key test: Would this event appear in an official Singapore cultural calendar alongside events like National Day Parade, Singapore International Film Festival, or Singapore Arts Festival? If no, then it's "not relevant".**
+
+### **"event cancelled or discontinued"**
+**ONLY for PERMANENT cessation of:**
+- Recurring events (festivals, conferences, shows)
+- Regular services that are permanently stopped
+
+**NEVER for:**
+- ❌ Temporary suspensions (flight routes, services)
+- ❌ Operational adjustments
+- ❌ Schedule changes due to external factors
+
+### **"person appointed or elected"**
+**ONLY for:**
+- Job appointments to positions
+- Electoral victories
+- Official role assignments
+
+**NEVER for:**
+- ❌ Criminal charges or legal proceedings
+- ❌ Court cases
+- ❌ Arrests or prosecutions
+- ❌ Legal actions against someone
+
+### **"organisation received award"**
+**ONLY for:**
+- Formal recognition/awards given TO the organisation
+- Competition victories
+- Industry accolades
+
+**NEVER for:**
+- ❌ Organisations giving awards to others
+- ❌ Sponsoring events
+- ❌ Participating in activities
+
+## **Singapore_Context - ASSUME FALSE UNLESS EXPLICITLY PROVEN**
+
+**Mark as True ONLY if you can state specific evidence:**
+
+**True examples:**
+- "DBS received award" → True (DBS is Singapore bank)
+- "MRT station opens" → True (Singapore infrastructure)
+- "Singapore law amended" → True (Singapore legislation)
+- "Event at Suntec City" → True (Singapore venue)
+- "Fire Disco tribute at Singapore club" → True (Singapore nightlife/venue)
+
+**False examples:**
+- "Thai PM elected" → False (foreign politics)
+- "BTS tour launches" → False (Korean group, no Singapore connection)
+- "Fans travel to concerts" → False (general entertainment news)
+- "Airlines suspend flights" → False (unless specifically about Singapore-based airline's Singapore operations)
+
+**If you cannot explicitly identify Singapore connection, mark as False**
+
+## **Step-by-Step Classification Process:**
+
+1. **Singapore relevance check** - Is this clearly non-Singapore with no local connection?
+2. **If non-Singapore** - Mark as "not relevant" and stop
+3. **Identify primary entity** - What is the main subject?
+4. **Identify the action** - What specifically happened to them?
+5. **Check exact match** - Does this precisely fit one label definition?
+6. **For "event launched" - Apply the 5-criteria test**
+7. **If uncertain** - Choose "not relevant"
+8. **Singapore check** - Can you state specific evidence of Singapore connection?
+9. **Default to False** - Unless you have explicit Singapore evidence
+
+## **Common Error Patterns to Avoid:**
+
+- ❌ Forcing headlines into categories when they don't fit precisely
+- ❌ Confusing temporary changes with permanent ones
+- ❌ Confusing legal proceedings with appointments
+- ❌ Assuming Singapore context without explicit evidence
+- ❌ Classifying routine operations as structural changes
+- ❌ Using specific labels when "not relevant" is more accurate
+- ❌ Confusing annual iterations with genuinely new events
+- ❌ Classifying private entertainment as significant event launches
+- ❌ Treating one-night activities as major event launches
+- ❌ Processing non-Singapore entities without local connection

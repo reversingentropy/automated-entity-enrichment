@@ -1,0 +1,53 @@
+{
+  "person died":                                    ["Death Year (yyyy)", "Death Month (mm)", "Death Day (dd)"],
+  "person appointed or elected":                    ["Affiliations(groupName)", "Occupation", "Title", "Active Years", "Description"],
+  "person resigned or retired":                     ["Active Years", "Affiliations(groupName)", "Occupation", "Description"],
+  "person changed affiliation or party":            ["Affiliations(groupName)"],
+  "person received award":                          ["Awards"],
+  "person received honour or title":                ["Title", "Achievements"],
+  "person got married":                             ["Spouse"],
+  "person renamed":                                 ["Description", "Name"],
+
+  "organisation received award":                    ["Awards"],
+  "organisation renamed":                           ["Description", "Name", "Successor"],
+  "organisation merged or acquired / split":        ["Successor", "Predecessor", "Year Ended (yyyy)", "Month Ended (mm)", "Day Ended (dd)", "Year Started (yyyy)", "Month Started (mm)", "Day Started (dd)", "Parent Organisation"],
+  "organisation dissolved or closed":               ["Year Ended (yyyy)", "Month Ended (mm)", "Day Ended (dd)"],
+  "organisation relocated":                         ["Street Address", "Postal Code", "Description"],
+  "organisation ownership changed":                 ["Description", "Parent Organisation"],
+  "organisation restructured or rebranded":         ["Parent Organisation", "Description", "Successor", "Predecessor"],
+  "organisation launched":                          ["Description", "Year Started (yyyy)", "Month Started (mm)", "Day Started (dd)"],
+
+  "building demolished":                            ["Description"],
+  "building destroyed by fire":                     ["Description"],
+  "building opened":                                ["Description"],
+  "building given heritage or conservation status / national monument": ["Description"],
+  "building repurposed or converted":               ["Feature Type", "Feature Code", "Feature Class", "Description"],
+  "building closed or ceased operations":           ["Description"],
+  "building renamed":                               ["Description", "Name"],
+  "building ownership changed or en bloc sale":     ["Description"],
+  "building ownership changed and renamed":         ["Description", "Name", "Description"],
+  "building completed":                             ["Year Completed (yyyy)", "Month Completed (mm)", "Day Completed (dd)"],
+
+  "place or area renamed":                          ["Description", "Name"],
+  "place closed or removed / street name expunged": ["Description"],
+  "place rezoned or land use changed":              ["Description"],
+  "place given heritage or conservation status / gazetted national monument": ["Description"],
+
+  "award criteria or format changed":               ["SN"],
+  "award discontinued":                             ["SN"],
+  "award renamed":                                  ["Description", "Name", "Successor"],
+  "award replaced by another":                      ["SN", "Successor", "Predecessor"],
+
+  "event cancelled or discontinued":                ["SN"],
+  "event renamed":                                  ["Description", "Name"],
+  "event postponed or rescheduled":                 ["Year", "Month", "Day"],
+  "event relocated":                                ["Description"],
+  "event launched":                                 ["Description", "Day", "Month", "Year", "SN", "Organiser"],
+  "event change in organiser":                      ["Organiser"],
+
+  "programme launched":                             ["Description", "Successor", "Predecessor"],
+  "programme ended or discontinued":                ["Description", "Successor", "Predecessor"],
+
+  "law enacted or amended":                         ["SN"],
+  "law repealed":                                   ["SN"]
+}
