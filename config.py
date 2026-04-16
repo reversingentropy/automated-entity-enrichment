@@ -34,13 +34,12 @@ PROMPTS_DIR     = "prompts"
 ARTICLES_CSV    = os.path.join(DATA_DIR, "cna_articles.csv")
 
 # Outputs — each script writes here, next script reads from here
-BM25_INDEX_PATH      = os.path.join(OUTPUTS_DIR, "bm25_index.pkl")
-LINKED_CSV           = os.path.join(OUTPUTS_DIR, "linked_entities.csv")
-FACTS_CSV            = os.path.join(OUTPUTS_DIR, "extracted_facts.csv")
-PROPOSALS_JSON       = os.path.join(OUTPUTS_DIR, "proposals.json")
-DECISIONS_JSON       = os.path.join(OUTPUTS_DIR, "decisions.json")
-APPROVED_CSV         = os.path.join(OUTPUTS_DIR, "approved_changes.csv")
-DECISION_LOG_CSV     = os.path.join(OUTPUTS_DIR, "decision_log.csv")
+BM25_INDEX_PATH  = os.path.join(OUTPUTS_DIR, "bm25_index.pkl")
+PROMPTS_CSV      = os.path.join(OUTPUTS_DIR, "prompts_for_batch.csv")
+REVIEW_QUEUE_CSV = os.path.join(OUTPUTS_DIR, "review_queue.csv")
+NEW_ENTITY_CSV   = os.path.join(OUTPUTS_DIR, "new_entity_candidates.csv")
+DECISIONS_JSON   = os.path.join(OUTPUTS_DIR, "decisions.json")
+APPROVED_CSV     = os.path.join(OUTPUTS_DIR, "approved_changes.csv")
 
 # ─────────────────────────────────────────────
 # TTE FILES

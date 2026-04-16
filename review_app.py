@@ -138,6 +138,10 @@ if "decisions" not in st.session_state:
     st.session_state.decisions = load_decisions()
 if "reviewer" not in st.session_state:
     st.session_state.reviewer = "librarian"
+if "page" not in st.session_state:
+    st.session_state.page = "Dashboard"
+
+PAGES = ["Dashboard", "Event Updates", "New Entities", "History & Backup"]
 
 decisions   = st.session_state.decisions
 queue_df    = load_review_queue()
@@ -221,7 +225,8 @@ with st.sidebar:
     page = st.radio(
         "nav",
         label_visibility="collapsed",
-        options=["Dashboard", "Event Updates", "New Entities", "History & Backup"],
+        options=PAGES,
+        index=PAGES.index(st.session_state.page),
         format_func=lambda x: {
             "Dashboard":       "🏠  Dashboard",
             "Event Updates":   f"🔄  Event Updates  ({len(pending_groups)} pending)",
@@ -229,6 +234,7 @@ with st.sidebar:
             "History & Backup":"🕐  History & Backup",
         }[x],
     )
+    st.session_state.page = page
 
     st.divider()
     new_reviewer = st.text_input("Reviewer", value=st.session_state.reviewer)
@@ -343,7 +349,7 @@ elif page == "Event Updates":
             # Header row
             hc1, hc2 = st.columns([5, 1])
             with hc1:
-                st.markdown(f"#### {icon} {name}")
+                st.markdown(f"#### {icon} {name} *(extracted as: {g['entity_name']})*")
                 mc = st.columns(5)
                 mc[0].caption(f"**{g['tte_vocabulary'] or g['entity_type']}**")
                 mc[1].caption(g["event_type"][:38])
@@ -357,9 +363,7 @@ elif page == "Event Updates":
                     st.link_button("↗ Article", g["article_url"], use_container_width=True)
 
             st.caption(
-                f"📰 {g['article_title']}  ·  "
-                f"Extracted as: *{g['entity_name']}*"
-            )
+                f"📰 {g['article_title']}  ·  ")
 
             st.divider()
 
