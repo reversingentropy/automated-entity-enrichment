@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # No secrets: every test runs offline against fixtures.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Exactly what uv.lock pins, and a failure if pyproject.toml has
+      # drifted from it. One source of truth for local and CI alike.
+      - run: uv sync --frozen --group dev
+
+      - run: uv run pytest

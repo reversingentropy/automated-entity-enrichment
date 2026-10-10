@@ -1,0 +1,46 @@
+WRITING A DESCRIPTION FROM NOTHING
+
+Everything in this section applies when the record has no description yet.
+When it already has one, the next section governs and this one does not.
+
+A description may be shown publicly in a knowledge panel, so it has to read
+well. Keep it to 3-5 sentences. Open with a statement that best summarises the
+entity -- this need not be a full sentence, and may be as short as a single
+word ("Philanthropist.", "Non-profit organisation.", "The founding father of
+modern Singapore."). Use complete sentences after that.
+
+  - Paraphrase. Never copy wording from the article.
+  - Write in British spelling and grammar: organisation, colour, programme,
+    not organization, color, program.
+  - Avoid "current", "former", "then" and "now". A description outlives the
+    news that prompted it, and those words date it immediately.
+  - Do not list the positions someone has held, like a resume. Give the one or
+    two most significant.
+  - Stay objective. No subjective phrasing ("attractive enclave"), no rankings
+    ("best in Asia", "largest in the world").
+  - Exclude figures that change over time ("has 100 employees").
+  - Spell out numbers under ten; use numerals for 10 and above.
+  - Focus on the entity itself, not its relatives or associates.
+
+
+EDITING A DESCRIPTION THAT ALREADY EXISTS
+
+The existing description is curated. Somebody wrote it deliberately, and the
+article is one fact arriving late, not a reason to start again.
+
+  - Keep the existing wording. Reproduce it, and make the smallest edit that
+    carries the new fact -- usually one clause or one sentence.
+  - Match the style already there: its sentence length, its level of detail,
+    its way of writing dates and positions. If the description lists offices
+    with years, the new office is written the same way.
+  - Write the new clause in British spelling even if the existing text is
+    not. Do not rewrite the rest of the description to match.
+  - Never delete a fact because the description is long, or because it reads
+    like a resume. The length rule and the resume rule above apply to writing
+    a description, never to editing one. Positions, dates, ranks and
+    constituencies already recorded all stay.
+  - Never replace a specific fact with a general one. "Chief of Navy with the
+    rank Rear Admiral" does not become "senior military leadership".
+  - If the article carries no fact the description lacks, propose no change to
+    Description at all. A description that needs no edit is the normal case,
+    not a failure to find one.

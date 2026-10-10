@@ -1,0 +1,2684 @@
+<title>TTE Review Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* The desk changes with the light; the paper on it does not. Newsprint is
+     newsprint and an index card is cream in any theme, so only the desk tones
+     and the text that sits directly on the desk are redefined for dark. */
+  /* Text on the desk is at least 4.5:1 against it in every theme. The first
+     brown (#8B7A66) put the masthead links at 1.8:1 and the question at 3.7. */
+  :root {
+    --desk:#615243; --desk-deep:#463B30; --desk-edge:#2E2620;
+    --ui:#FAF6EE; --ui-faint:#E9E1D4; --ui-dim:#DDD3C3;
+    --news:#EDE7DA; --news-ink:#1F1B16; --news-soft:#5A5248; --news-rule:#B8AE9C;
+    --card:#F7F0DA; --card-ink:#1B2338; --card-soft:#4A5062; --card-rule:#D5CBAE;
+    --card-red:#B7463B;
+    --pencil:#4E4843; --pencil-lead:#2A2624;
+    --tick:#2E7A4A; --struck:#9A3B32;
+    --stamp-red:#B3322B; --stamp-red-bg:#F3DCD9;
+    /* Yes is green, the colour the desk already uses for "agrees": red
+       reads as stop or delete on a screen, whatever it means on a stamp. */
+    --stamp-go:#1F6B3F; --stamp-go-bg:#DCEBDD;
+    --stamp-grey:#4F5864; --stamp-grey-bg:#E2E6EA;
+    --stamp-amber:#9E6410; --stamp-amber-bg:#F3E6CE;
+    --sheet:#F7F2E8; --sheet-ink:#1F1B16;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --desk:#2B2521; --desk-deep:#1E1A17; --desk-edge:#120F0D;
+      --ui:#EDE6DA; --ui-faint:#C9BFB0; --ui-dim:#ADA292;
+    }
+  }
+  :root[data-theme="dark"] {
+    --desk:#2B2521; --desk-deep:#1E1A17; --desk-edge:#120F0D;
+    --ui:#EDE6DA; --ui-faint:#C9BFB0; --ui-dim:#ADA292;
+  }
+  /* The light desk, asked for by the second reviewer: a pale surface with
+     dark type. The paper and the clippings keep their own colours. */
+  :root[data-theme="light"] {
+    --desk:#EFE9DD; --desk-deep:#D8D0BF; --desk-edge:#BFB5A2;
+    --ui:#2A241E; --ui-faint:#4A4238; --ui-dim:#574E41;
+    --tab:#FBF7EE; --tab-ink:#3A3328; --amber-hint:#7A4E06;
+  }
+  :root { --tab:#D9CFB8; --tab-ink:#3A3328; --amber-hint:#F4D8A4; }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{background:var(--desk);color:var(--ui);
+       font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:15px;
+       line-height:1.5;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{
+    outline:2px solid var(--ui);outline-offset:2px}
+  .wrap{max-width:60rem;margin:0 auto;padding:.9rem 1.25rem 2rem;
+        display:flex;flex-direction:column;gap:.9rem}
+
+  /* masthead: the count on the left; the two pages a reviewer goes to as
+     buttons, help as a link, and everything set once (theme, sound,
+     settings, sign out) in a menu under the reviewer's name. Seven equal
+     underlined links were one too many things to read past. */
+  .top{display:flex;align-items:center;gap:.4rem 1rem;flex-wrap:wrap}
+  .top h1{margin:0;font-family:Newsreader,Georgia,serif;font-weight:600;
+          font-size:1.25rem;letter-spacing:.01em}
+  .count{font-family:"Courier Prime","Courier New",monospace;font-size:.85rem;color:var(--ui-faint)}
+  .outcomes{font-family:"Courier Prime","Courier New",monospace;font-size:.8rem;color:var(--ui-faint)}
+  .top .spacer{flex:1}
+  .top .topbtn{font:inherit;font-size:.85rem;color:var(--ui);background:rgba(0,0,0,.14);
+               border:1.5px solid var(--ui-dim);border-radius:5px;padding:.3rem .75rem}
+  .top .topbtn:hover{background:rgba(0,0,0,.26)}
+  .top .topbtn.plain{background:none;border-color:transparent;text-decoration:underline;
+                     text-underline-offset:.2em;padding:.3rem .2rem}
+  .menu{position:relative}
+  .menu summary{list-style:none;cursor:pointer;font-size:.85rem;color:var(--ui);padding:.3rem .6rem;
+                border-radius:5px;border:1.5px solid transparent}
+  .menu summary::-webkit-details-marker{display:none}
+  .menu summary::after{content:" \25BE";color:var(--ui-faint)}
+  .menu[open] summary,.menu summary:hover{border-color:var(--ui-dim)}
+  .menu-panel{position:absolute;right:0;top:calc(100% + .3rem);z-index:20;min-width:11rem;
+              background:var(--sheet);color:var(--sheet-ink);border-radius:5px;
+              box-shadow:0 8px 24px rgba(0,0,0,.35);padding:.35rem;display:flex;flex-direction:column}
+  .menu-panel button{background:none;border:none;text-align:left;font:inherit;font-size:.88rem;
+                     color:var(--sheet-ink);padding:.45rem .6rem;border-radius:3px}
+  .menu-panel button:hover{background:rgba(0,0,0,.07)}
+  .me{display:contents}
+  .signed-out .top .topbtn,.signed-out .menu,.signed-out .count,.signed-out .outcomes{display:none}
+  .rail{height:3px;background:var(--desk-deep);border-radius:2px;overflow:hidden}
+  #bar{height:100%;background:var(--ui-faint);width:0;transition:width .3s}
+  @media (prefers-reduced-motion:reduce){#bar{transition:none}}
+
+  #stage{display:flex;flex-direction:column;gap:.9rem}
+  .ask{margin:.4rem 0 0;font-family:Newsreader,Georgia,serif;font-weight:400;
+       font-size:clamp(1.35rem,3.6vw,1.8rem);line-height:1.2;text-wrap:balance;color:var(--ui)}
+  .hint{margin:-.3rem 0 0;font-size:.9rem;color:var(--ui-faint);line-height:1.5}
+  .hint.amber{color:var(--amber-hint)}
+  .agree{margin:0;font-size:.88rem;color:var(--ui);line-height:1.5;
+         padding:.5rem .8rem;border-left:3px solid var(--tick);background:rgba(0,0,0,.12);border-radius:0 4px 4px 0}
+  .warnbox{font-size:.9rem;color:var(--ui);padding:.55rem .8rem;border-radius:4px;
+           background:var(--stamp-red);line-height:1.45}
+
+  /* the two documents on the desk */
+  .desk{display:grid;gap:1.1rem;position:relative;align-items:start}
+  @media (min-width:44rem){.desk{grid-template-columns:1fr 1fr}}
+  .clip,.acard{border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.25),0 6px 18px rgba(0,0,0,.22);
+               padding:1rem 1.1rem 1.1rem;min-width:0;overflow-wrap:anywhere}
+  @media (min-width:44rem){
+    .clip{transform:rotate(-.6deg)}
+    .acard{transform:rotate(.45deg)}
+  }
+
+  .clip{background:var(--news);color:var(--news-ink);font-family:Newsreader,Georgia,serif;
+        display:flex;flex-direction:column;gap:.55rem}
+  /* what each side of the desk is, said on it: "left" and "right" meant nothing to a first-time reviewer */
+  .panel-label{font-family:"IBM Plex Sans",sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;
+               text-transform:uppercase}
+  .clip .panel-label{color:var(--news-ink)}
+  .acard .panel-label{color:var(--card-ink);margin-bottom:.1rem}
+  .clip-mast{font-family:"IBM Plex Sans",sans-serif;font-size:.62rem;letter-spacing:.12em;
+             text-transform:uppercase;color:var(--news-soft);padding-bottom:.35rem;
+             border-bottom:1px solid var(--news-rule)}
+  .clip-link{color:var(--news-ink);text-decoration:underline;text-decoration-color:var(--news-rule);
+             text-underline-offset:.15em}
+  .clip-link:hover{text-decoration-color:var(--news-ink)}
+  .clip-ext{color:var(--news-soft)}
+  .clip-sources{font-family:"IBM Plex Sans",sans-serif;font-size:.74rem;color:var(--news-soft);line-height:1.5}
+  .src-tab{background:none;border:none;padding:0 .1rem;font:inherit;color:var(--news-soft);cursor:pointer}
+  .src-open{text-decoration:none;color:var(--news-soft);padding:0 .15rem}
+  .src-open:hover{color:var(--news-ink)}
+  .src-tab sup{font-size:.62rem;color:var(--news-soft)}
+  .src-tab.here{color:var(--news-ink);font-weight:600}
+  .src-tab:hover{color:var(--news-ink)}
+  .src-refs{font-size:.66rem;margin-left:.15rem;white-space:nowrap}
+  .src-ref{background:none;border:none;padding:0 .12rem;font:inherit;font-size:inherit;color:var(--news-soft);cursor:pointer}
+  .src-ref.here{color:var(--news-ink);font-weight:700}
+  .src-ref:hover{color:var(--news-ink)}
+  .corrob .src-refs{align-self:center;margin-right:.5rem}
+  .corrob .src-ref{color:var(--ui)}
+  .clip-head{margin:0;font-size:1.35rem;font-weight:600;line-height:1.15}
+  .clip-body{margin:0;font-size:.98rem;line-height:1.5;color:var(--news-ink)}
+  .clip-body.translated{font-size:.9rem;color:var(--news-soft);font-style:italic;margin-top:-.25rem}
+  .clip-body.translated::before{content:"translated: ";font-style:normal;font-family:"IBM Plex Sans",sans-serif;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase}
+  .clip .lines{border-top:1px solid var(--news-rule);padding-top:.5rem;margin-top:.15rem}
+  .clip .lines dt{color:var(--news-soft)}
+
+  .acard{background:var(--card);color:var(--card-ink);
+         font-family:"Courier Prime","Courier New",monospace;
+         background-image:repeating-linear-gradient(to bottom,transparent 0 1.55rem,var(--card-rule) 1.55rem calc(1.55rem + 1px));
+         background-position:0 3.2rem;display:flex;flex-direction:column;gap:.45rem;position:relative}
+  .acard::before{content:"";position:absolute;left:0;right:0;top:2.55rem;height:2px;background:var(--card-red);opacity:.75}
+  .acard.blank{background-image:none}
+  .acard.blank::before{display:none}
+  .acard-top{display:flex;justify-content:space-between;font-size:.7rem;letter-spacing:.1em;
+             text-transform:uppercase;color:var(--card-soft);min-height:1rem}
+  .acard-name{margin:.35rem 0 0;font-size:1.25rem;font-weight:700;line-height:1.55rem;letter-spacing:.01em}
+  .acard-desc{margin:.3rem 0 0;font-size:.86rem;line-height:1.55rem}
+  .acard-desc.faint,.acard .blank{color:var(--card-soft)}
+  .acard-foot{font-size:.7rem;color:var(--card-soft);margin-top:.2rem}
+
+  /* the aligned facts */
+  .lines{display:grid;grid-template-columns:auto 1fr;gap:0 .8rem;margin:0;font-size:.86rem;line-height:1.55rem}
+  .lines dt{font-family:"IBM Plex Sans",sans-serif;font-size:.68rem;letter-spacing:.08em;
+            text-transform:uppercase;color:var(--card-soft);align-self:baseline;white-space:nowrap}
+  .lines dd{margin:0}
+  .tick{color:var(--tick);font-weight:700}
+  .blank{opacity:.55}
+
+  /* pencil */
+  .pencil .typed{color:var(--card-ink)}
+  .pencil .lead{color:var(--pencil-lead);font-style:italic;
+                background:linear-gradient(transparent 62%,rgba(78,72,67,.22) 62% 88%,transparent 88%)}
+  .pencil .struck{color:var(--struck);text-decoration:line-through;opacity:.8}
+
+  /* the drawer */
+  .drawer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.35rem;padding:.6rem .7rem .55rem;
+          background:var(--desk-deep);border-radius:4px;border-bottom:4px solid var(--desk-edge)}
+  .drawer-label{font-family:"Courier Prime",monospace;font-size:.68rem;letter-spacing:.1em;
+                text-transform:uppercase;color:var(--ui-dim);margin-right:.4rem;align-self:center}
+  .tab{font-family:"Courier Prime","Courier New",monospace;font-size:.78rem;padding:.3rem .65rem;
+       border:none;border-radius:3px 3px 0 0;background:var(--tab);color:var(--tab-ink);
+       max-width:16rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tab.up{background:var(--card);color:var(--card-ink);font-weight:700;transform:translateY(-3px);
+          box-shadow:0 -2px 6px rgba(0,0,0,.25)}
+  .tab.out{text-decoration:line-through;opacity:.45;cursor:default}
+  .tab.find{background:transparent;color:var(--ui-faint);text-decoration:underline}
+  .tab .npt{font-weight:400;opacity:.75}
+  .hit .npt{font-family:"Courier Prime",monospace;font-size:.72rem;letter-spacing:.06em;color:var(--news-soft)}
+  .acard-npt{font-family:"Courier Prime",monospace;font-size:.74rem;letter-spacing:.06em;color:var(--card-soft);margin-top:.1rem}
+
+  .find{display:flex;flex-direction:column;gap:.4rem}
+  .find input{font-family:inherit;font-size:.95rem;padding:.55rem .7rem;border-radius:4px;
+              border:1.5px solid var(--ui-dim);background:var(--sheet);color:var(--sheet-ink);width:100%}
+  .hits{display:flex;flex-direction:column;gap:.25rem;max-height:14rem;overflow-y:auto}
+  .hit{display:flex;gap:.6rem;align-items:baseline;text-align:left;padding:.4rem .6rem;
+       border:none;border-radius:3px;background:var(--sheet);color:var(--sheet-ink);font-size:.86rem}
+  .hit span{color:var(--news-soft);font-size:.78rem}
+  .nohits{font-size:.84rem;color:var(--ui-faint)}
+
+  /* the stamps, in a bar held at the foot of the window: on a 1280x720
+     laptop they were below the fold on every screen, and each of the five
+     or so decisions per record needed a scroll first */
+  .actions{position:sticky;bottom:0;z-index:5;display:flex;gap:.7rem;align-items:stretch;
+           margin:.2rem -1.25rem 0;padding:.65rem 1.25rem .75rem;background:var(--desk);
+           box-shadow:0 -1px 0 var(--desk-edge),0 -14px 18px -14px rgba(0,0,0,.55)}
+  .actions .stamps{flex:1}
+  .actions .tray-btn{flex-direction:column;justify-content:center;gap:.2rem;padding:.4rem .75rem;font-size:.82rem}
+  .stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+  @media (max-width:36rem){
+    .stamps{grid-template-columns:1fr}
+    .actions{position:static;flex-direction:column-reverse;box-shadow:none}
+  }
+  .stamp{border:2.5px solid;border-radius:6px;padding:.55rem .7rem;display:flex;
+         flex-direction:column;align-items:center;justify-content:center;gap:.15rem;text-align:center;
+         box-shadow:inset 0 0 0 2px var(--desk),inset 0 0 0 3.5px currentColor}
+  .stamp-top{display:inline-flex;align-items:center;gap:.55rem}
+  .stamp-face{font-family:"Courier Prime","Courier New",monospace;font-weight:700;font-size:.86rem;
+              letter-spacing:.1em;text-transform:uppercase;line-height:1.3}
+  .stamp-sub{font-size:.76rem;line-height:1.3;opacity:.9}
+  .stamp kbd{font-family:"IBM Plex Sans",sans-serif;font-size:.62rem;opacity:.75;
+             border:1px solid currentColor;border-radius:3px;padding:0 .3rem}
+  .stamp.go{color:var(--stamp-go);background:var(--stamp-go-bg)}
+  .stamp.red{color:var(--stamp-red);background:var(--stamp-red-bg)}
+  .stamp.grey{color:var(--stamp-grey);background:var(--stamp-grey-bg)}
+  .stamp.amber{color:var(--stamp-amber);background:var(--stamp-amber-bg)}
+  .stamp:hover{filter:brightness(.97)}
+  .stamp:active{transform:translateY(1px)}
+  .acard,.clip{position:relative}
+  .impression{position:absolute;top:22%;left:8%;transform:rotate(-11deg);pointer-events:none;
+              border:4px double currentColor;border-radius:6px;padding:.35rem .8rem;
+              font-family:"Courier Prime","Courier New",monospace;font-weight:700;
+              font-size:1.25rem;letter-spacing:.14em;white-space:nowrap;
+              mix-blend-mode:multiply;opacity:.92;animation:stampdown .16s cubic-bezier(.2,.9,.3,1.2) both}
+  .impression.go{color:var(--stamp-go)}
+  .impression.red{color:var(--stamp-red)}
+  .impression.grey{color:var(--stamp-grey)}
+  .impression.amber{color:var(--stamp-amber)}
+  @keyframes stampdown{from{transform:rotate(-11deg) scale(1.4);opacity:0}to{transform:rotate(-11deg) scale(1);opacity:.92}}
+  @media (prefers-reduced-motion:reduce){.impression{animation:none}}
+  .closure{font-family:"Courier Prime",monospace;font-size:.8rem;color:var(--ui-faint);margin:-.4rem 0 0}
+  .decided-line{font-family:"Courier Prime",monospace;font-size:.8rem;color:var(--ui-faint);margin:-.2rem 0 0}
+  .tray-btn:disabled{opacity:.45;cursor:default}
+  .reviewed-mark{position:absolute;right:.9rem;bottom:.8rem;transform:rotate(-6deg);
+                 border:3px double var(--stamp-go);color:var(--stamp-go);border-radius:5px;padding:.25rem .6rem;
+                 font-family:"Courier Prime",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+                 line-height:1.3;text-align:center;opacity:.85;pointer-events:none}
+
+  .trayrow{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.85rem;margin-top:.2rem}
+  .tray-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem .8rem;border-radius:5px;
+            border:1.5px solid var(--ui-dim);background:rgba(0,0,0,.12);color:var(--ui);font-size:.85rem}
+  .tray-btn:hover{border-color:var(--ui);background:rgba(0,0,0,.2)}
+  .tray-btn kbd{font-family:"IBM Plex Sans",sans-serif;font-size:.62rem;opacity:.7;
+                border:1px solid currentColor;border-radius:3px;padding:0 .3rem}
+  .quiet{background:none;border:none;padding:0;color:var(--ui-faint);font-size:.8rem;text-decoration:underline}
+  .spacer{flex:1}
+  /* where the reviewer is, above the question: the record, and the change
+     within it, which was in faint type at the foot of the page */
+  .kicker{margin:.35rem 0 -.6rem;font-size:.84rem;color:var(--ui-faint);letter-spacing:.01em}
+  .kicker b{color:var(--ui);font-weight:600}
+  /* the record a "create" would make, drawn on a card with a dashed edge:
+     it does not exist yet */
+  .acard.draft{outline:2px dashed var(--card-soft);outline-offset:-7px}
+  .draft-note{font-family:"IBM Plex Sans",sans-serif;font-size:.8rem;line-height:1.45;color:var(--card-soft);margin:.3rem 0 0}
+  .notewrap{display:flex;flex-direction:column;gap:.3rem}
+  .note-line{font-size:.86rem;color:var(--ui);line-height:1.5;padding:.4rem .7rem;border-left:3px solid var(--ui-dim);background:rgba(0,0,0,.1);border-radius:0 4px 4px 0}
+  .note-mark{font-family:"Courier Prime",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ui-faint)}
+  .notewrap textarea,.editor{width:100%;min-height:3.4rem;font-family:inherit;font-size:.9rem;
+      line-height:1.5;padding:.6rem .7rem;border-radius:4px;border:1.5px solid var(--ui-dim);
+      background:var(--sheet);color:var(--sheet-ink);resize:vertical}
+  .editor{font-family:"Courier Prime","Courier New",monospace;min-height:5rem}
+  .editwrap{display:flex;flex-direction:column;gap:.4rem}
+  .edit-label{font-family:"IBM Plex Sans",sans-serif;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ui-faint)}
+  .result{font-family:"Courier Prime","Courier New",monospace;font-size:.86rem;line-height:1.5;padding:.6rem .8rem;
+          border-radius:4px;background:var(--card);color:var(--card-ink);display:flex;flex-direction:column;gap:.2rem}
+  .result-label{font-family:"IBM Plex Sans",sans-serif;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--card-soft)}
+
+  .why{display:flex;flex-wrap:wrap;gap:.4rem}
+  .chip{font-size:.8rem;padding:.3rem .7rem;border-radius:999px;border:1.5px solid var(--ui-dim);
+        background:transparent;color:var(--ui);text-align:left}
+  .chip span{opacity:.75}
+  .chip.on{background:var(--sheet);color:var(--sheet-ink);border-color:var(--sheet)}
+
+  .gist{display:flex;flex-direction:column;gap:.3rem}
+  .gline{display:flex;gap:.5rem;font-size:.92rem;line-height:1.45;padding:.35rem .6rem;border-radius:3px;
+         background:rgba(0,0,0,.05);color:var(--news-ink);font-family:Newsreader,Georgia,serif}
+  .gline.add{border-left:3px solid var(--tick)}
+  .gline.cut{border-left:3px solid var(--struck);text-decoration:line-through;opacity:.85}
+  .gline.sub{border-left:3px solid var(--stamp-amber)}
+  .gline .struck{color:var(--struck);text-decoration:line-through;opacity:.85}
+  .gline .lead{font-style:italic;background:linear-gradient(transparent 62%,rgba(78,72,67,.22) 62% 88%,transparent 88%)}
+  .gmark{font-family:"Courier Prime",monospace;font-weight:700}
+  .gtext{flex:1}
+  .gline.out .gtext,.vline.out .lead{text-decoration:line-through;opacity:.55}
+  .gline.out{border-left-color:var(--news-rule)}
+  .leave{color:var(--news-soft);font-size:.74rem;font-family:"IBM Plex Sans",sans-serif;white-space:nowrap;align-self:center}
+  .leave:disabled{opacity:.4;text-decoration:none;cursor:default}
+
+  .corrob{font-size:.9rem;color:var(--ui);padding:.55rem .8rem;border-radius:4px;
+          background:rgba(0,0,0,.14);border-left:3px solid var(--tick);line-height:1.5;
+          display:flex;flex-wrap:wrap;gap:.3rem .4rem;align-items:baseline}
+  .corrob.conflict{border-left-color:#E0A84E}
+  .cb-lead{font-weight:600}
+  .corrob .quiet{color:var(--ui);font-size:.86rem;text-align:left}
+  .corrob .why{width:100%;margin-top:.2rem}
+
+  /* what the article proposes, on the clipping side; the record stays as it is */
+  .proposal{border-top:2px solid var(--news-ink);margin-top:.35rem;padding-top:.55rem;
+            display:flex;flex-direction:column;gap:.3rem;font-family:"IBM Plex Sans",sans-serif}
+  .prop-label{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--news-soft)}
+  .prop-value{font-family:Newsreader,Georgia,serif;font-size:1.02rem;line-height:1.45;color:var(--news-ink)}
+  .prop-value .lead{font-style:italic;background:linear-gradient(transparent 62%,rgba(78,72,67,.22) 62% 88%,transparent 88%)}
+  .prop-value .struck{color:var(--struck);text-decoration:line-through;opacity:.8}
+  .prop-result{font-size:.8rem;color:var(--news-soft);line-height:1.45}
+  .prop-result b{color:var(--news-ink);font-weight:600}
+  .badge{display:inline-block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;
+         padding:.05rem .4rem;border-radius:3px;margin-left:.35rem;vertical-align:middle;
+         font-family:"IBM Plex Sans",sans-serif;font-style:normal}
+  .badge.ok{background:rgba(46,122,74,.16);color:var(--tick)}
+  .badge.no{background:rgba(158,100,16,.18);color:var(--stamp-amber)}
+  .badge.long{text-transform:none;letter-spacing:0}
+  .vgroup{display:flex;flex-direction:column;gap:.15rem;margin:.25rem 0}
+  .vgroup .badge{margin-left:0;align-self:flex-start;margin-bottom:.1rem}
+  .vline{padding-left:.6rem;border-left:2px solid var(--news-rule)}
+  .near-as{font-family:"IBM Plex Sans",sans-serif;font-size:.78rem;color:var(--news-soft)}
+  .use-name{color:var(--news-ink);font-size:.76rem;font-family:"IBM Plex Sans",sans-serif}
+  .also{font-size:.84rem;color:var(--ui-faint);line-height:1.5;margin:0}
+  .also b{color:var(--ui);font-weight:500}
+  .noted{font-size:.84rem;line-height:1.5;color:#4A4338;margin:0;padding-left:1.1rem;max-height:14rem;overflow-y:auto}
+  .noted a{color:inherit}
+
+  /* the same fact, lit on both papers */
+  .lines dd.hi,.acard-desc.hi{background:rgba(46,122,74,.16);border-radius:2px;margin:0 -.25rem;padding:0 .25rem}
+  .acard-desc.hi{margin-top:.3rem}
+
+  /* sign-in, tutorial sheet, end of shift */
+  .signin{display:flex;flex-direction:column;gap:.8rem;max-width:30rem;margin:2rem auto 0}
+  .signin input[type=email],.signin input[type=password],.request input,.request textarea{font-family:inherit;font-size:1rem;padding:.6rem .8rem;border-radius:4px;
+          border:1.5px solid var(--ui-dim);background:var(--sheet);color:var(--sheet-ink);width:100%}
+  .signin a{color:var(--ui-faint)}
+  .request{display:flex;flex-direction:column;gap:.5rem;padding:.8rem;border-radius:4px;background:rgba(0,0,0,.12)}
+  .request textarea{min-height:3.4rem}
+  .signin input[type=text],.signin input:not([type]){font-family:inherit;font-size:1.05rem;padding:.7rem .8rem;border-radius:4px;
+                border:1.5px solid var(--ui-dim);background:var(--sheet);color:var(--sheet-ink)}
+  .langs{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center}
+  .langs .edit-label{width:100%}
+  .lang{font-size:.95rem;color:var(--ui);display:inline-flex;gap:.35rem;align-items:center}
+  .langs .hint{width:100%;margin:0}
+  .coach{background:var(--stamp-amber-bg);color:#4A3A10;border-left:4px solid var(--stamp-amber);
+         padding:.6rem .9rem;border-radius:0 4px 4px 0;font-size:.92rem;line-height:1.5}
+  .coach b{font-family:"Courier Prime",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.15rem}
+  .veil{position:fixed;inset:0;background:rgba(20,16,13,.72);display:grid;place-items:center;padding:1rem;z-index:10}
+  .sheet{background:var(--sheet);color:var(--sheet-ink);border-radius:4px;max-width:30rem;width:100%;
+         padding:1.4rem 1.5rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;
+         box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  .sheet h2{margin:0;font-family:Newsreader,Georgia,serif;font-weight:600;font-size:1.4rem;line-height:1.2}
+  .sheet p{margin:0;font-size:.95rem;line-height:1.55;color:#3A342C}
+  .sheet ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.4rem;
+            font-size:.95rem;line-height:1.5;color:#3A342C}
+  .sheet-step{font-family:"Courier Prime",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#7A705F}
+  .sheet-row{display:flex;gap:.8rem;align-items:center;margin-top:.4rem}
+  .sheet-row .quiet{white-space:nowrap}
+  .sheet .quiet{color:#6B6153}
+  .sheet .stamp{padding:.5rem .9rem;box-shadow:inset 0 0 0 2px var(--sheet),inset 0 0 0 3.5px currentColor}
+  .report{background:var(--sheet);color:var(--sheet-ink);border-radius:4px;padding:1.4rem 1.5rem;
+          max-width:34rem;margin:1rem auto 0;display:flex;flex-direction:column;gap:.9rem;
+          box-shadow:0 6px 18px rgba(0,0,0,.25)}
+  .report .ask{color:var(--sheet-ink)}
+  .report .hint{color:#4A4338}
+  .tally{display:grid;grid-template-columns:1fr auto;gap:.35rem 1.2rem;margin:0;font-size:.95rem;align-items:baseline}
+  .tally dt{color:#4A4338}
+  .tally dd{margin:0;font-family:"Courier Prime",monospace;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .report .stamp{padding:.6rem 1rem;box-shadow:inset 0 0 0 2px var(--sheet),inset 0 0 0 3.5px currentColor}
+  .report .quiet{color:#6B6153}
+  .report.ledger{max-width:46rem}
+  .filters{display:flex;gap:.5rem;flex-wrap:wrap}
+  .filter{font-family:inherit;font-size:.86rem;padding:.35rem .5rem;border-radius:4px;border:1.5px solid #B8AE9C;
+          background:#FFFDF8;color:var(--sheet-ink)}
+  .ledger-rows{display:flex;flex-direction:column;gap:.15rem;max-height:24rem;overflow:auto}
+  .ledger-row{display:grid;grid-template-columns:1fr auto auto auto;gap:.8rem;align-items:baseline;text-align:left;
+              font:inherit;font-size:.9rem;padding:.4rem .6rem;border:none;border-radius:3px;background:none;
+              color:var(--sheet-ink);cursor:pointer}
+  .ledger-row:hover{background:rgba(0,0,0,.06)}
+  .ledger-row b{font-weight:600}
+  .ledger-outcome{font-family:"Courier Prime",monospace;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:#4A4338}
+  .ledger-record,.ledger-when{font-size:.8rem;color:#6B6153}
+  .team-table{border-collapse:collapse;font-size:.88rem;width:100%;margin:.4rem 0}
+  .team-table th,.team-table td{padding:.3rem .5rem;text-align:right;border-bottom:1px solid rgba(0,0,0,.08)}
+  .team-table th:first-child,.team-table td:first-child{text-align:left}
+  .team-table th{font-weight:600;font-size:.78rem;color:#4A4338}
+  .team-table tr.total td{font-weight:600;border-top:1.5px solid #B8AE9C}
+  .ledger-line{display:flex;align-items:center;gap:.4rem}
+  .ledger-line .ledger-row{flex:1}
+  .done-toggle{font:inherit;font-size:.74rem;padding:.2rem .45rem;border-radius:3px;border:1.5px solid #B8AE9C;
+               background:#FFFDF8;color:#4A4338;cursor:pointer;white-space:nowrap}
+  .done-toggle.on{background:#E3EEDC;border-color:#7FA36A;color:#2F5A1E}
+  .evaluation{margin-top:1.6rem;display:flex;flex-direction:column;gap:.7rem}
+  .evaluation h2{font-size:1.1rem;margin:0}
+  .evaluation label{display:flex;flex-direction:column;gap:.2rem;font-size:.82rem;color:#4A4338}
+  .request select{font-family:inherit;font-size:1rem;padding:.5rem .6rem;border-radius:4px}
+  .form-row{display:flex;gap:.6rem;flex-wrap:wrap}
+  .form-row label{flex:1;min-width:9rem}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>TTE Review Desk</h1>
+    <span class="count" id="count"></span>
+    <span class="outcomes" id="outcomes"></span>
+    <span class="spacer"></span>
+    <button id="sheet" class="topbtn" title="Every decision so far, and the two sheets to download"></button>
+    <button id="team" class="topbtn" title="The whole team's progress, and how the pipeline is doing"></button>
+    <button id="help" class="topbtn plain" title="How the desk works, and the practice records"></button>
+    <details class="menu" id="menu">
+      <summary id="who" title="Theme, sound, settings and sign out"></summary>
+      <div class="menu-panel">
+        <button id="theme" title="A paler desk, or the brown one"></button>
+        <button id="sound" title="A small thud when a stamp lands"></button>
+        <span class="me" id="me"></span>
+      </div>
+    </details>
+  </div>
+  <div class="rail"><div id="bar"></div></div>
+  <div id="stage"></div>
+</div>
+
+<script>window.__CARDS__=[];window.__INDEX__=[];window.__NPT__={};window.__NOTED__=[];</script>
+<script>
+
+
+const REAL = window.__CARDS__;
+let CARDS = REAL;
+const KEY = "tte-review-v5";
+const LANG_KEY = "tte-languages";
+const PRACTICE_KEY = "tte-desk-practice-v1";
+// Which languages the reviewer reads, asked once at sign-in. Cards are not
+// withheld on it: every card carries English, and a Tamil card with no Tamil
+// reader must still be reviewable. It orders the deck, labels a card whose
+// sources the reviewer cannot read, and is saved with each decision so a
+// verdict made from the original can later be told from one made from the
+// translation.
+let langs = ["en"];
+try { langs = JSON.parse(localStorage.getItem(LANG_KEY) || '["en"]'); } catch (e) {}
+const LANG_NAMES = { en: "English", zh: "Chinese", ms: "Malay", ta: "Tamil" };
+const langOf = link => /zaobao/.test(link) ? "zh" : /beritaharian/.test(link) ? "ms" : /tamilmurasu/.test(link) ? "ta" : "en";
+const cardLangs = c => [...new Set((c.sources || []).map(s => langOf(s.link || "")))];
+const readable = c => cardLangs(c).some(l => langs.includes(l));
+// What to work on, asked at sign-in beside the languages: the second
+// reviewer wanted the deck split so a librarian who knows organisations can
+// take those. In the file version it is also how two reviewers divide the
+// deck without a server. Null means everything.
+const TYPE_KEY = "tte-types";
+const GROUPS = [["people", "People", t => t === "PERSON"],
+                ["organisations", "Organisations", t => t === "ORGANISATION"],
+                ["legal acts", "Legal acts", t => t === "LEGAL_ACT"],
+                ["everything else", "Everything else", t => true]];
+const groupOf = c => GROUPS.find(g => g[2](c.type))[0];
+let types = null;
+try { types = JSON.parse(localStorage.getItem(TYPE_KEY) || "null"); } catch (e) {}
+function orderDeck() {
+  // A card this reviewer already holds first, whatever the settings say;
+  // then the chosen groups, cards in the reviewer's languages before the
+  // rest, each in the order they came (latest news first).
+  if (practising) return;
+  const held = REAL.filter(c => heldByMe.has(c.key));
+  const pool = REAL.filter(c => !heldByMe.has(c.key) && (!types || types.includes(groupOf(c))) && !taken.has(c.key));
+  CARDS = held.concat(pool.filter(readable), pool.filter(c => !readable(c)));
+  CARDS.forEach((c, i) => { c.i = i; });
+}
+const NEW = "__new__";
+
+// Rejecting every candidate can mean several different things, and which one
+// it is matters. A homonym says retrieval worked and the entity is genuinely
+// missing -- the new record will need disambiguating from its namesake.
+// "Not there yet" says nothing about the records offered. "Can't tell" is an
+// honest answer that should not be forced into either.
+const REASONS = [
+  ["homonym", "Same name, different person or thing"],
+  ["absent", "Not in the knowledge base yet"],
+  ["unsure", "Can't tell from what's here"],
+];
+
+let labels = {};
+try { labels = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+
+// Several librarians review the same proposals, so each writes under their own
+// name. Without this they share one document per proposal and the second
+// verdict silently overwrites the first.
+const WHO_KEY = "tte-reviewer";
+let reviewer = "";
+try { reviewer = localStorage.getItem(WHO_KEY) || ""; } catch (e) {}
+const slug = name => name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")
+                         .replace(/^-|-$/g, "").slice(0, 40);
+
+// ---- online -----------------------------------------------------------------
+// With `window.__ONLINE__` set (the site build), the deck comes from the
+// `deck` table after sign-in, every decision goes to `reviews`, and a card
+// is one reviewer's while they hold it (`claims`). Without it (the zip),
+// everything stays in this browser, as before. The browser copy is kept
+// online too, as a cache: a dropped connection loses nothing.
+const ONLINE = window.__ONLINE__ || null;
+let sb = null;          // the Supabase client, online only
+let me = null;          // the signed-in user
+let taken = new Set();  // cards another reviewer has decided or holds
+let claimed = {};       // card key -> true (mine), false (someone else's)
+let loading = "";       // a line to show while the deck is fetched
+let others = 0;         // decisions by other reviewers, for the count
+let bump = "";          // a card that left this desk, said once
+let unsent = {};        // card key -> decision rows the table has not taken yet
+let testing = false;    // a test account: looks at the real deck, writes nothing
+let onTeam = false;     // the team page is showing
+let allReviews = [];    // everyone's decisions, for the team page
+let allHolds = [];      // every card on someone's desk
+let STATUS = null;      // the pipeline's status, published with the deck
+let heldByMe = new Set();  // cards this reviewer held when the deck was fetched
+const NOTED = window.__NOTED__ || [];
+if (ONLINE && window.supabase) {
+  try { sb = window.supabase.createClient(ONLINE.url, ONLINE.anonKey); } catch (e) { sb = null; }
+}
+const whoAmI = user => (user.user_metadata && user.user_metadata.name) || (user.email || "").split("@")[0] || "reviewer";
+
+// Paged in a fixed order: unordered pages can repeat or skip rows.
+async function pageAll(table, columns, order) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from(table).select(columns).order(order).range(from, from + 999);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+// The search index and the noted list: one large file that only the search
+// drawer and the last screen need, so it comes down while the first card is
+// on the screen rather than before it.
+async function loadDesk() {
+  try {
+    const { data } = await sb.storage.from("desk").download("desk.json");
+    const text = data && data.text ? await data.text() : (typeof data === "string" ? data : "");
+    const desk = text ? JSON.parse(text) : {};
+    INDEX.length = 0; (desk.index || []).forEach(r => INDEX.push(r));
+    Object.keys(NPT).forEach(k => delete NPT[k]); Object.assign(NPT, desk.npt || {});
+    NOTED.length = 0; (desk.noted || []).forEach(n => NOTED.push(n));
+    STATUS = desk.status || null;
+    // Only a screen that reads it needs redrawing; a card being worked on is left alone.
+    if (me && !loading && !showPrefs && (onTeam || at >= CARDS.length)) render();
+  } catch (e) { /* search works without it; the card still does */ }
+}
+
+// After sign-in: the deck, everyone's decisions and holds, and the search
+// index, all asked for at once: each is a round trip to a distant database.
+async function loadOnline() {
+  loading = "Fetching the deck…"; render();
+  loadDesk();
+  const [rows, reviews, holds] = await Promise.all([
+    pageAll("deck", "key,card", "key"),
+    pageAll("reviews", "pid,card_key,reviewer,decision", "pid"),
+    pageAll("claims", "card_key,reviewer", "card_key"),
+  ]);
+  REAL.length = 0;
+  // The table keeps no order of its own; the card builder's is latest news first.
+  rows.map(r => r.card).sort((a, b) => a.i - b.i).forEach(c => REAL.push(c));
+  labels = {}; taken = new Set(); others = 0;
+  reviews.forEach(r => {
+    if (r.reviewer === me.id) labels[r.pid] = r.decision;
+    else { taken.add(r.card_key); others++; }
+  });
+  // A card someone else holds stays out of this deck; one this reviewer
+  // already holds, from an earlier sitting, comes back first.
+  allReviews = reviews; allHolds = holds;
+  heldByMe = new Set(); claimed = {};
+  holds.forEach(h => { if (h.reviewer === me.id) heldByMe.add(h.card_key); else taken.add(h.card_key); });
+  // A decision the browser kept that the table lacks was written while the
+  // connection was down; it goes up now.
+  let cached = {};
+  if (testing) { try { localStorage.removeItem(cacheKey()); } catch (e) {} }
+  else { try { cached = JSON.parse(localStorage.getItem(cacheKey()) || "{}"); } catch (e) {} }
+  // One decided by someone else meanwhile is theirs, and is dropped here.
+  const byKey = {};
+  REAL.forEach(c => c.pids.forEach(pid => { byKey[pid] = c.key; }));
+  const late = Object.keys(cached).filter(pid => !labels[pid] && !taken.has(byKey[pid]));
+  late.forEach(pid => { labels[pid] = cached[pid]; });
+  const pending = late.filter(pid => byKey[pid]).map(pid => ({ pid: Number(pid), card_key: byKey[pid], reviewer: me.id,
+                                                              verdict: cached[pid].verdict, decision: cached[pid] }));
+  if (pending.length && !testing) Promise.resolve(sb.from("reviews").upsert(pending, { onConflict: "pid" })).then(r => {
+    if (r && r.error) return;
+    new Set(pending.map(p => p.card_key)).forEach(key => { Promise.resolve(sb.rpc("release_card", { key })).catch(() => {}); });
+  }).catch(() => {});
+  loading = "";
+  keep();
+}
+// Online, the browser copy is per account, so two reviewers on one machine
+// do not read each other's decisions.
+const cacheKey = () => (me ? KEY + ":" + me.id : KEY);
+// The browser's copy of the decisions. A test account keeps none: what it does
+// is gone with the page.
+function keep() {
+  if (testing) return;
+  try { localStorage.setItem(cacheKey(), JSON.stringify(labels)); } catch (e) {}
+}
+
+// Two people never work on the same record. A card is shown only once the
+// table says it is this reviewer's, and it stays theirs until they stamp
+// it; there is no expiry to watch. A claim refused means someone else has
+// it: move on without a word. If the table cannot be reached, the desk
+// says so and waits for the reviewer to try again; it never guesses.
+function holdCard(c, ahead) {
+  if (!sb || practising || testing || labels[c.pids[0]]) return;
+  if (claimed[c.key] !== undefined) return;
+  claimed[c.key] = "asking";
+  // A card asked for ahead of time is not on the screen yet: its answer is
+  // kept, and nothing is redrawn unless the reviewer has meanwhile reached it.
+  const shown = () => !ahead || CARDS[at] === c;
+  Promise.resolve(sb.rpc("claim_card", { key: c.key })).then(({ data, error }) => {
+    claimed[c.key] = error ? "retry" : !!data;
+    if (!shown()) return;
+    if (data === false) at = firstUndecided();
+    render();
+  }).catch(() => { claimed[c.key] = "retry"; if (shown()) render(); });
+}
+// While a card is being worked on, the next one is checked out, so opening it
+// does not wait on the table. It is still shown only once it is the reviewer's.
+function holdNext() {
+  for (let i = at + 1; i < CARDS.length; i++) {
+    if (labels[CARDS[i].pids[0]] || !mine(CARDS[i])) continue;
+    holdCard(CARDS[i], true);
+    return;
+  }
+}
+// The card stays held until its decision is in the table; only then is it
+// let go. A dropped connection keeps both, and the renewal sends it again.
+async function pushReview(c, entry) {
+  if (!sb || practising || testing) return;
+  unsent[c.key] = c.pids.map(pid => ({ pid, card_key: c.key, reviewer: me.id, verdict: entry.verdict, decision: labels[pid] }));
+  await Promise.all(Object.keys(unsent).map(sendReview));
+}
+// The table keeps one decision per proposal. The holds above mean a second
+// never arises; if one ever did, the table refuses it (a unique clash, or
+// the policy barring a change to someone else's row) and the reviewer is
+// told rather than left believing it saved.
+const LOST = new Set(["23505", "42501"]);
+async function sendReview(key) {
+  const rows = unsent[key];
+  if (!rows) return;
+  let error = null;
+  try { ({ error } = await sb.from("reviews").upsert(rows, { onConflict: "pid" })); } catch (e) { error = e || {}; }
+  if (error && !LOST.has(error.code)) return;
+  delete unsent[key]; delete claimed[key];
+  Promise.resolve(sb.rpc("release_card", { key })).catch(() => {});
+  if (error) {
+    const c = REAL.find(x => x.key === key);
+    if (c) lostTo(c);
+  }
+}
+function lostTo(c) {
+  c.pids.forEach(pid => { delete labels[pid]; });
+  keep();
+  taken.add(c.key); others++;
+  bump = `The database already holds a decision on ${c.entity}, so yours was not kept.`;
+  if (CARDS[at] === c) at = firstUndecided();
+  render();
+}
+const mine = c => !taken.has(c.key) && claimed[c.key] !== false;
+
+const DSTATE = {
+  new: "not on the record",
+  extra: "adds to what is there",
+  differs: "different wording",
+  same: "already recorded",
+};
+
+// "LEGAL_ACT" is a legal act on screen.
+const kind = c => c.type.toLowerCase().replace(/_/g, " ");
+// "The Straits Times, 28 Aug" from a source's link and date.
+const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"]];
+function outletOf(c, key) {
+  const src = c.sources[sourceIndex(c, key)] || {};
+  const host = (src.link || "").split("/")[2] || "";
+  const name = (OUTLET.find(([k]) => host.includes(k)) || [null, host])[1] || src.article || "";
+  const d = src.date ? new Date(src.date + "T00:00:00") : null;
+  const when = d && !isNaN(d) ? d.toLocaleDateString("en-SG", { day: "numeric", month: "short" }) : "";
+  return when ? `${name}, ${when}` : name;
+}
+
+// Sources are numbered once, under the headline, and referred to by
+// number everywhere else, the way footnotes work: the names appear one
+// time, not beside every value. A name or a number brings that source
+// to the front of the clipping; the headline is the one thing that opens
+// an article, and the only thing underlined.
+function sourceTab(c, st, key, current, asNumber) {
+  const i = sourceIndex(c, key);
+  const src = c.sources[i] || {};
+  const b = el("button", (asNumber ? "src-ref" : "src-tab") + (i === current ? " here" : ""));
+  if (asNumber) b.textContent = String(i + 1);
+  else b.append(el("sup", null, String(i + 1)), " " + outletOf(c, key));
+  b.title = src.article ? `Show source ${i + 1}: ${src.article}` : "";
+  b.onclick = () => { if (st) { st.clipAt = i; st.clipPinned = true; render(); } };
+  return b;
+}
+
+// A name not written in Latin script. Its English form, if any, is the
+// extractor's guess, and TTE may hold the record under another spelling.
+const nonLatin = s => /[^\x00-\x7F\u00C0-\u024F\s.,'’()\-]/.test(String(s || ""));
+
+const el = (t, cls, txt) => {
+  const n = document.createElement(t);
+  if (cls) n.className = cls;
+  if (txt != null) n.textContent = txt;
+  return n;
+};
+
+function kv(pairs) {
+  const dl = el("dl", "kv");
+  pairs.forEach(f => {
+    dl.append(el("dt", null, f.key));
+    const dd = el("dd", f.value.length > 150 ? "clip" : null, f.value);
+    if (f.value.length > 150) dd.onclick = e => { e.stopPropagation(); dd.classList.toggle("clip"); };
+    dl.append(dd);
+  });
+  return dl;
+}
+
+// Per-card working state: which record, and which changes are ticked.
+const draft = {};
+function stateFor(c) {
+  if (!draft[c.key]) {
+    draft[c.key] = {
+      // Nothing is pre-chosen: the identity question is asked outright rather
+      // than defaulted into, which is where the homonym errors live.
+      uid: null, no: {}, i: 0, tick: {}, edits: {},
+      why: "", note: "", noteOpen: false,
+    };
+  }
+  return draft[c.key];
+}
+
+// Every change the reviewer can act on, for whichever record is selected. The
+// model's proposals belong to the record it matched; for any other candidate,
+// and for anything it did not propose, the article's own facts are offered
+// unticked -- it saw those fields and chose not to propose them.
+// The model's own match is offered first even when another name scores higher:
+// it is the only candidate anything has actually reasoned about.
+function ordered(c) {
+  return c.options.slice().sort((a, b) =>
+    (b.uid === c.picked) - (a.uid === c.picked) || (b.similarity || 0) - (a.similarity || 0));
+}
+
+function rowsFor(c, st) {
+  const chosen = c.options.find(o => o.uid === st.uid);
+  const mine = st.uid === c.picked ? c.changes : [];
+  return mine.concat((chosen && chosen.extra) || []);
+}
+const keyOf = ch => ch.field + "|" + ch.strategy + "|" + ch.adding;
+const isOn = (st, ch) => {
+  const k = keyOf(ch);
+  return st.tick[k] === undefined ? !ch.derived : st.tick[k];
+};
+
+// The decisions, one per card: a card that settled two proposals wrote two
+// labels, and counting labels once showed "139 of 116 reviewed".
+const decided = () => CARDS.map(c => labels[c.pids[0]]).filter(Boolean);
+
+function firstUndecided() {
+  const i = CARDS.findIndex(c => !labels[c.pids[0]] && mine(c));
+  return i === -1 ? CARDS.length : i;
+}
+let at = firstUndecided();
+
+function save(c, verdict) {
+  const st = stateFor(c);
+  const entry = {
+    verdict,
+    entity: c.entity,
+    chose: verdict === "reject" ? null : (st.uid === NEW ? "new-entity" : st.uid),
+    // Whether the reviewer had to go and find the record themselves, which
+    // says the retriever missed it.
+    foundBySearch: !!st.foundBySearch,
+    reason: st.uid === NEW ? (st.why || "") : "",
+    note: st.note || "",
+    changes: rowsFor(c, st).filter(ch => isOn(st, ch)).map(ch => ch.field),
+    // The reviewer's own wording, where they rewrote a proposal rather than
+    // rejecting it outright.
+    edits: Object.fromEntries(rowsFor(c, st)
+      .filter(ch => isOn(st, ch) && (st.edits || {})[keyOf(ch)] != null)
+      .map(ch => [ch.field, st.edits[keyOf(ch)]])),
+    dropped: rowsFor(c, st).filter(ch => !isOn(st, ch)).map(ch => ch.field),
+    // Each accepted change with its current and proposed values and the
+    // article it came from, so the approved-changes sheet can be written
+    // after the page has been closed and reopened.
+    rows: rowsFor(c, st).filter(ch => isOn(st, ch)).map(ch => ({
+      field: ch.field,
+      current: ch.strategy === "APPEND" ? (ch.existing || []).join(" | ")
+             : (ch.diff ? ch.diff.filter(d => d.op !== "in").map(d => d.text).join(" ") : (ch.existing || []).join(" | ")),
+      proposed: (st.edits || {})[keyOf(ch)] != null ? st.edits[keyOf(ch)] : ch.result,
+      from: ch.from || (c.sources[0] || {}).link,
+    })),
+    record: st.uid === NEW ? "" : ((c.options.find(o => o.uid === st.uid) || {}).name || ""),
+    reviewer,
+    at: new Date().toISOString(),
+  };
+  // One card can settle several proposals: the same record reported by
+  // several articles is one decision, recorded against each of them.
+  entry.languages = langs.slice();
+  entry.types = types ? types.slice() : null;
+  // Seconds from the card first coming onto the desk this session to the
+  // stamp, added to any earlier visit's.
+  const earlier = (labels[c.pids[0]] || {}).seconds || 0;
+  entry.seconds = earlier + (openedAt[c.key] ? Math.round((Date.now() - openedAt[c.key]) / 1000) : 0);
+  delete openedAt[c.key];
+  c.pids.forEach(pid => { labels[pid] = { ...entry, pid }; });
+  if (!practising) keep();
+  bump = "";
+  pushReview(c, entry);
+  at = firstUndecided();
+  render();
+}
+
+// [uid, name, type, identity, opening of the description] for every canonical, active record.
+const INDEX = window.__INDEX__ || [];
+// Every non-preferred term by the record it names. Most candidates arrive
+// through one of these, and a reviewer searching by the name an article used
+// should find the record it is a variant of.
+const NPT = window.__NPT__ || {};
+
+const esc = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+
+// Every decision, one row per proposal: what the pipeline needs back.
+function csv() {
+  const lines = [["proposal_id", "entity", "verdict", "chose", "found_by_search", "reason", "note",
+                  "applied", "dropped", "seconds", "reviewer", "at"].join(",")];
+  REAL.forEach(c => c.pids.forEach(pid => {
+    const l = labels[pid];
+    if (!l) return;
+    lines.push([pid, c.entity, l.verdict, l.chose, l.foundBySearch ? "yes" : "", l.reason || "", l.note || "",
+                (l.changes || []).join("; "), (l.dropped || []).join("; "), l.seconds == null ? "" : l.seconds, l.reviewer || reviewer, l.at]
+               .map(esc).join(","));
+  }));
+  return lines.join("\n");
+}
+
+// Every accepted change, one row per attribute: what a cataloguer applies in
+// TTE. The columns are the ones the first reviewer asked for.
+function changesCsv() {
+  const lines = [["TTE_UUID", "Entity", "Attribute", "Current_Value", "Proposed_Value",
+                  "Article_URL", "Article_Title", "Article_Summary", "Person Who Approved"].join(",")];
+  REAL.forEach(c => {
+    const l = labels[c.pids[0]];
+    if (!l || l.verdict !== "approve") return;
+    const srcFor = key => c.sources[sourceIndex(c, key)] || c.sources[0] || {};
+    const who = l.reviewer || reviewer;
+    if (l.chose === "new-entity") {
+      const src = c.sources[0] || {};
+      lines.push(["NEW", c.entity, "Name", "", c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity,
+                  src.link, src.article, src.says, who].map(esc).join(","));
+      (c.newsFields || []).forEach(f => lines.push(
+        ["NEW", c.entity, f.key, "", f.value, src.link, src.article, src.says, who].map(esc).join(",")));
+      return;
+    }
+    const rows = l.rows || [];
+    if (!rows.length) {
+      const src = c.sources[0] || {};
+      lines.push([l.chose, c.entity, "(match confirmed)", l.record || "", "", src.link, src.article, src.says, who]
+                 .map(esc).join(","));
+    }
+    // A Chinese name confirmed against an English record is a variant name
+    // TTE does not hold: of 66 Chinese-named people in the feed, TTE had the
+    // Chinese name for 17. Once the cataloguer adds it, the next article in
+    // that language matches on it directly, with no spelling guessed.
+    if (nonLatin(c.entity) && l.record && !nonLatin(l.record)) {
+      const src = c.sources[0] || {};
+      lines.push([l.chose, c.entity, "Variant name", "", c.entity, src.link, src.article, src.says, who]
+                 .map(esc).join(","));
+    }
+    rows.forEach(r => {
+      const src = srcFor(r.from);
+      lines.push([l.chose, c.entity, r.field, r.current, r.proposed, src.link, src.article, src.says, who]
+                 .map(esc).join(","));
+    });
+  });
+  return lines.join("\n");
+}
+
+// A blob download, with the reviewer's name on the file. The byte-order
+// mark is for Excel, which otherwise reads a UTF-8 sheet as ANSI and shows
+// every Chinese name as noise.
+function download(filename, data) {
+  if (testing) return;
+  const blob = new Blob(["\ufeff" + data], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.replace(/\.csv$/, "") + "-" + (slug(reviewer) || "anon") + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const downloadCsv = () => download("review-decisions.csv", csv());
+const downloadChanges = () => download("approved-changes.csv", changesCsv());
+
+// ---------------------------------------------------------------------------
+// The Clippings Desk.
+//
+// Before the pipeline, a librarian read the newspapers with scissors: cut the
+// paragraph that mattered, pulled the drawer, found the authority card, and
+// pencilled a line on it or typed a new one. This is that desk. Every screen
+// the review app asks is one physical action here, and nothing is scored:
+// there is no clock, no quota and no wage, because the judgement being asked
+// for is the kind those things ruin.
+// ---------------------------------------------------------------------------
+
+const TUTORIAL_KEY = "tte-desk-tutorial-v1";
+let KEYS = {};
+
+// Fields shown on both documents, in the same order, so a mismatch is
+// something you see rather than something you work out.
+const LINES = ["Occupation", "Title", "Affiliations(groupName)", "Awards",
+               "Nationality", "Birth Year (yyyy)", "Death Year (yyyy)", "Country",
+               "Parent Organisation", "Feature Type", "Street Address"];
+// How a field is named inside a question: "Set the birth year to this?",
+// not "Set Born to this?".
+const ASK_NAME = {"Birth Year (yyyy)": "the birth year", "Death Year (yyyy)": "the death year",
+                  "Year Started (yyyy)": "the year started", "Year Ended (yyyy)": "the year ended",
+                  "Street Address": "the address", "Parent Organisation": "the parent organisation"};
+const SHORT = {"Affiliations(groupName)": "Affiliations",
+               "Birth Year (yyyy)": "Born", "Death Year (yyyy)": "Died",
+               "Parent Organisation": "Parent org.", "Feature Type": "Type",
+               "Street Address": "Address"};
+
+// The same fact on both papers, so hovering one lights the other.
+let lineEls = {};
+
+function fieldMap(pairs) {
+  const m = {};
+  (pairs || []).forEach(f => { if (f.key) m[f.key] = f.value; });
+  return m;
+}
+
+// ---- documents -------------------------------------------------------------
+
+// The newspaper clipping: what the article says, on newsprint.
+// Which clipping to show. One at a time, always: the identity question needs
+// one good sentence, not four articles, and a pencil note needs the clipping
+// that produced it. The rest wait in a stack behind, a flip away.
+// A source is named by its link; older data named it by headline.
+const sourceIndex = (c, key) => c.sources.findIndex(s => s.link === key || s.article === key);
+function clipFor(c, st, ch) {
+  if (st && st.clipPinned && st.clipAt != null) return Math.min(st.clipAt, c.sources.length - 1);
+  if (ch) {
+    const i = sourceIndex(c, ch.from || (c.newsFrom || {})[ch.field]);
+    if (i >= 0) return i;
+  }
+  return Math.min((st && st.clipAt) || 0, c.sources.length - 1);
+}
+
+function clipping(c, o, idx, st, proposal) {
+  // The field the proposal is about is stated in full below; the line for
+  // it here would say the same thing twice.
+  const newsFields = proposal ? (c.newsFields || []).filter(f => f.key !== proposal.field) : c.newsFields;
+  idx = idx || 0;
+  const src = c.sources[idx] || {};
+  const doc = el("div", "clip");
+  doc.append(el("div", "panel-label", "In the news"));
+  // The masthead is the article's headline, and it opens the article. A
+  // clipping you cannot check against its source is an assertion, not
+  // evidence.
+  const mast = el("div", "clip-mast");
+  if (src.link) {
+    const a = el("a", "clip-link", src.article || "Read the article");
+    a.href = src.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.title = "Open the article in a new tab";
+    mast.append(a, el("span", "clip-ext", " \u2197"));
+  } else {
+    mast.textContent = src.article || "Singapore news";
+  }
+  doc.append(mast);
+  if (c.sources.length > 1) {
+    // Every source as a tab; the one on view is marked, the others a
+    // click away. The headline above opens whichever is on view.
+    const all = el("div", "clip-sources");
+    all.append("Sources: ");
+    c.sources.forEach((s2, j) => {
+      if (j) all.append(" · ");
+      all.append(sourceTab(c, st, s2.link, idx));
+      // The arrow opens that article directly; the name only brings it forward.
+      const open = el("a", "clip-link src-open", "\u2197");
+      open.href = s2.link; open.target = "_blank"; open.rel = "noopener noreferrer";
+      open.title = "Open: " + (s2.article || s2.link);
+      all.append(open);
+    });
+    doc.append(all);
+  }
+  doc.append(el("h2", "clip-head", c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity));
+  // A change may carry its own sentence from this article: the one the person
+  // was given can back a different fact (her awards, under her new post).
+  const own = proposal && (proposal.quotes || {})[src.link];
+  const quote = own ? own.quote : src.quote, original = own ? own.original : src.original;
+  if (original && original !== quote) {
+    // The sentence as printed first, its translation under it in a lighter
+    // hand: the translation is the model's, the sentence is the paper's.
+    doc.append(el("p", "clip-body", "“" + original + "”"));
+    if (quote) doc.append(el("p", "clip-body translated", quote));
+  } else if (quote) doc.append(el("p", "clip-body", "“" + quote + "”"));
+  else if (c.newsSays) doc.append(el("p", "clip-body", c.newsSays));
+  doc.append(lines(fieldMap(newsFields), o ? fieldMap(o.fields) : {}, "news", null, proposal && proposal.field));
+  if (proposal) doc.append(proposalBlock(proposal, c, st, idx));
+  else if (c.isNew && c.newsLinked) Object.entries(c.newsLinked).forEach(([f, list]) => { if (list && list.length) doc.append(linkedNote(f, list)); });
+  return doc;
+}
+
+// What the article proposes, stated on the clipping: the attribute, the value
+// in pencil, and what the field would read afterwards. The record on the
+// right is never drawn on; the first reviewer could not tell the proposal
+// from the record when it was.
+// A rewrite changes the existing text when it removes or replaces anything.
+const changesText = ch => !!(ch.diff && ((ch.drops && ch.drops.length) || (ch.subs && ch.subs.length)));
+
+// The pieces of a proposal a reviewer can take or leave one by one: the
+// values of a list field, or the sentences added to a description. The
+// second reviewer asked what to do when only part of an amendment is wanted;
+// the answer is to leave the rest out and accept, with nothing to type.
+function partsOf(ch) {
+  if (ch.strategy === "APPEND") return ch.adding.split(" | ").map(x => x.trim()).filter(Boolean);
+  if (ch.diff && !changesText(ch)) {
+    return (ch.adds && ch.adds.length) ? ch.adds : ch.diff.filter(d => d.op === "in").map(d => d.text);
+  }
+  return [];
+}
+const leftOut = (st, ch) => ((st.left || {})[keyOf(ch)] || []);
+function leaveOut(ch, st, part) {
+  const k = keyOf(ch);
+  const left = (st.left || (st.left = {}))[k] || (st.left[k] = []);
+  const i = left.indexOf(part);
+  if (i >= 0) left.splice(i, 1); else left.push(part);
+  const keep = partsOf(ch).filter(p => !left.includes(p));
+  const joiner = ch.strategy === "APPEND" ? " | " : " ";
+  // What is kept becomes the reviewer's wording, the same way an edit does,
+  // so the sheets carry it without knowing how it came about.
+  if (left.length) {
+    (st.editText || (st.editText = {}))[k] = keep.join(joiner);
+    (st.edits || (st.edits = {}))[k] = editUnit(ch).compose(keep.join(joiner));
+  } else {
+    if (st.editText) delete st.editText[k];
+    if (st.edits) delete st.edits[k];
+  }
+  render();
+}
+function leaveOutButton(ch, st, part) {
+  const left = leftOut(st, ch);
+  const out = left.includes(part);
+  const last = !out && partsOf(ch).length - left.length <= 1;
+  const b = el("button", "quiet leave", out ? "put back" : "leave out");
+  b.title = last ? "To add nothing, stamp NO CHANGE" : (out ? "Add this after all" : "Accept the rest without this");
+  b.disabled = last;
+  b.onclick = () => { if (!last) leaveOut(ch, st, part); };
+  return b;
+}
+function leftLine(ch, st) {
+  const left = leftOut(st, ch);
+  if (!left.length) return null;
+  const n = partsOf(ch).length, unit = ch.strategy === "APPEND" ? "value" : "line";
+  return el("div", "prop-result", `${n - left.length} of ${n} ${unit}s will be added; ${left.length} left out.`);
+}
+
+function proposalBlock(ch, c, st, current) {
+  const box = el("div", "proposal");
+  const cuts = changesText(ch);
+  const verb = ch.strategy === "APPEND" ? "Add to" : (ch.diff ? (cuts ? "Rewrite" : "Add to") : "Set");
+  box.append(el("div", "prop-label", `${verb} ${SHORT[ch.field] || ch.field}`));
+  const v = el("div", "prop-value");
+  const left = leftOut(st, ch);
+  if (ch.diff) {
+    // What comes in and what goes out, one line each, marked. The full
+    // diff follows only when something is removed, so the reviewer can see
+    // where; a pure addition needs no wall of text.
+    const g = el("div", "gist");
+    // An addition already shown inside a replacement is not listed twice.
+    const inSub = t => (ch.subs || []).some(sb => sb.now.includes(t) || t.includes(sb.now));
+    (ch.adds || []).filter(t => !inSub(t)).forEach(t => {
+      const l = el("div", "gline add" + (left.includes(t) ? " out" : ""));
+      l.append(el("span", "gmark", "+"), el("span", "gtext", t));
+      if (!cuts) l.append(leaveOutButton(ch, st, t));
+      g.append(l);
+    });
+    // A replacement is shown as was → now, so a changed year or a joined
+    // sentence is a line of its own and not something to find in the text.
+    (ch.subs || []).forEach(sb => {
+      const l = el("div", "gline sub");
+      l.append(el("span", "gmark", "~"), el("span", "struck", sb.was), el("span", null, " → "), el("span", "lead", sb.now));
+      g.append(l);
+    });
+    (ch.drops || []).forEach(t => { const l = el("div", "gline cut"); l.append(el("span", "gmark", "−"), el("span", null, t)); g.append(l); });
+    if (!g.children.length) {
+      ch.diff.filter(d => d.op === "in").forEach(d => {
+        const l = el("div", "gline add" + (left.includes(d.text) ? " out" : ""));
+        l.append(el("span", "gmark", "+"), el("span", "gtext", d.text));
+        if (!cuts) l.append(leaveOutButton(ch, st, d.text));
+        g.append(l);
+      });
+    }
+    v.append(g);
+    if (cuts) {
+      const full = el("div", "prop-result");
+      ch.diff.forEach(part => {
+        if (part.op === "same") full.append(el("span", "typed", part.text + " "));
+        else if (part.op === "in") full.append(el("span", "lead", part.text + " "));
+        else full.append(el("span", "struck", part.text + " "));
+      });
+      box.append(v, full);
+      return box;
+    }
+  } else if (ch.strategy === "REPLACE" && (ch.existing || []).length) {
+    // A value replaced: the old one struck, the new in pencil.
+    v.append(el("span", "struck", ch.existing.join(" | ")), " ", el("span", "lead", ch.adding));
+  } else if (ch.strategy === "APPEND" && ch.adding.includes(" | ")) {
+    // Several values: grouped by what TTE holds, one label per group, so
+    // the same badge is not printed after every value. The source numbers
+    // stay with their value.
+    const flags = {};
+    (ch.inTTE || []).forEach(a => { flags[a.name] = a; });
+    const many = (ch.supporters || []).length > 1;
+    const values = ch.perValue || ch.adding.split(" | ").map(x => ({ value: x.trim(), sources: [] }));
+    const groups = { ok: [], no: [], none: [] };
+    values.forEach(pv => {
+      const a = flags[pv.value];
+      groups[a ? (a.uid ? "ok" : "no") : "none"].push({ pv, a });
+    });
+    [["ok", "in TTE"], ["no", "not in TTE yet"], ["none", ""]].forEach(([g, label]) => {
+      if (!groups[g].length) return;
+      const sec = el("div", "vgroup");
+      if (label && ch.inTTE) sec.append(el("span", "badge " + g, label));
+      groups[g].forEach(({ pv, a }) => {
+        const line = el("div", "vline" + (left.includes(pv.value) ? " out" : ""));
+        line.append(el("span", "lead", pv.value));
+        if (a && a.wrote) line.append(el("span", "near-as", " · the article wrote: " + a.wrote));
+        if (a && a.nearest) {
+          line.append(el("span", "near-as", " · nearest: " + a.nearest + ", may be a different thing "));
+          line.append(useName(ch, pv.value, a.nearest));
+        }
+        if (many && pv.sources.length) {
+          const who = el("sup", "src-refs");
+          pv.sources.forEach(t => who.append(sourceTab(c, st, t, current, true)));
+          line.append(who);
+        }
+        line.append(" ", leaveOutButton(ch, st, pv.value));
+        sec.append(line);
+      });
+      v.append(sec);
+    });
+    box.append(v);
+    const kept = leftLine(ch, st);
+    if (kept) box.append(kept);
+    if ((ch.existing || []).length) {
+      box.append(el("div", "prop-result", `Added to the ${ch.existing.length} already on the record, under In TTE today.`));
+    }
+    return box;
+  } else {
+    v.append(el("span", "lead", ch.adding));
+  }
+  (ch.inTTE || []).forEach(a => {
+    v.append(badge(a));
+    if (a.wrote) v.append(el("span", "near-as", " · the article wrote: " + a.wrote));
+    if (a.nearest) v.append(el("span", "near-as", " "), useName(ch, a.name, a.nearest));
+  });
+  box.append(v);
+  if (ch.strategy === "APPEND" && (ch.existing || []).length) {
+    box.append(el("div", "prop-result", `Added to the ${ch.existing.length} already on the record, under In TTE today.`));
+  } else if (ch.diff) {
+    const kept = leftLine(ch, st);
+    if (kept) box.append(kept);
+    box.append(el("div", "prop-result", "Added to the description as it stands; nothing removed or changed."));
+  }
+  return box;
+}
+
+// One click to take the nearest record's name instead of the article's,
+// for a reviewer who has judged them the same thing. It is an edit of the
+// value, so it shows in the sheet as the reviewer's wording.
+function useName(ch, from, to) {
+  const b = el("button", "quiet use-name", "use this name");
+  b.title = `Propose "${to}" instead of "${from}"`;
+  b.onclick = () => {
+    const st = stateFor(CARDS[at]);
+    const k = keyOf(ch);
+    const unit = editUnit(ch);
+    const draft = ((st.editText || {})[k] != null ? st.editText[k] : unit.text).split(from).join(to);
+    (st.editText || (st.editText = {}))[k] = draft;
+    (st.edits || (st.edits = {}))[k] = unit.compose(draft);
+    (st.open || (st.open = {}))[k] = true;
+    render();
+  };
+  return b;
+}
+
+// An award or organisation a record would carry must itself be a TTE
+// record; the badge says whether it is, and under what name when TTE
+// spells it differently, so a missing one is created rather than
+// forgotten and a present one is not created twice.
+function badge(a) {
+  // in TTE: the name itself. in TTE as: the same thing in TTE's house
+  // style ("Singapore. Ministry of Health"). not in TTE yet: nothing by that
+  // name; a different-looking record that is merely close is named as a
+  // hint, since "Inspiring Teacher Award" was nearest to a different award.
+  const cls = a.uid ? "ok" : "no";
+  const text = a.uid ? "in TTE"
+                     : (a.nearest ? "not in TTE yet · nearest: " + a.nearest : "not in TTE yet");
+  const b = el("span", "badge " + cls + (a.as || a.nearest ? " long" : ""), text);
+  b.title = a.uid ? `${a.name}: TTE record ${a.uid}` + (a.as ? `, named "${a.as}"` : "")
+                  : (a.nearest ? `No record named "${a.name}". The nearest, "${a.nearest}" (${a.nearest_uid}), may be a different thing.`
+                               : `${a.name}: no TTE record by this name`);
+  return b;
+}
+const LINKED_LABEL = {"Awards": "Awards named", "Affiliations(groupName)": "Organisations named",
+                      "Parent Organisation": "Parent organisation named"};
+function linkedNote(field, list) {
+  const box = el("div", "proposal");
+  box.append(el("div", "prop-label", LINKED_LABEL[field] || field));
+  list.forEach(a => { const v = el("div", "prop-value", a.name); v.append(badge(a)); box.append(v); });
+  return box;
+}
+
+// The authority card: what TTE holds, typed on an index card, as it is.
+function authorityCard(c, o, focus) {
+  const doc = el("div", "acard");
+  // A record already decided carries who decided it and when, and what:
+  // every change ends at a named person, and the paper says so.
+  const done = labels[c.pids[0]];
+  if (done && !practising) {
+    const when = done.at ? new Date(done.at).toLocaleDateString("en-SG", { day: "numeric", month: "short" }) : "";
+    const verdict = { approve: "reviewed", reject: "rejected", unsure: "kept for review" }[done.verdict] || done.verdict;
+    doc.append(el("div", "reviewed-mark", `${verdict} · ${done.reviewer || reviewer}${when ? " · " + when : ""}`));
+  }
+  doc.append(el("div", "panel-label", "In TTE today"));
+  const top = el("div", "acard-top");
+  top.append(el("span", "acard-type", c.type));
+  top.append(el("span", "acard-uid", o ? "no. " + o.uid : ""));
+  doc.append(top);
+  doc.append(el("h2", "acard-name", o ? o.name : " "));
+  if (o && o.npt) doc.append(el("div", "acard-npt", "NPT " + o.npt));
+  const of = o ? fieldMap(o.fields) : {};
+  doc.append(lines(of, fieldMap(c.newsFields), "card", focus));
+  const desc = of["Description"];
+  if (desc) {
+    doc.append(el("p", "acard-desc" + (focus === "Description" ? " hi" : ""), desc));
+  } else if (focus === "Description") {
+    // The attribute being added, shown absent, so the reviewer can see
+    // there is nothing there yet.
+    doc.append(el("p", "acard-desc blank", "—"));
+  }
+  if (o && o.thin) {
+    doc.append(el("p", "acard-desc blank", o.failed ? "The rest of this record could not be loaded."
+      : sb ? "Loading the record…" : "Only the opening of the description is held for a record found by search."));
+  }
+  // The name-similarity score is not shown: it orders the candidates, and
+  // on the card it was a model's number where a librarian reads a record.
+  return doc;
+}
+
+// The aligned field lines. `mine` is this document's values, `theirs` the
+// other document's, so a shared value gets a tick and an absent one a dash.
+function lines(mine, theirs, side, focus, omit) {
+  const dl = el("dl", "lines");
+  // The fixed order first, then anything else either document carries, then
+  // whatever the pencil is about to touch. A note on Nationality had nowhere
+  // to land because Nationality was not in the fixed list.
+  const skip = new Set(["Description", "Name", "Name (DisplayName)", "Name (LCNA)", "SN",
+                        "Image Link", "DBpedia URI"]);
+  const extra = [...new Set([...Object.keys(mine), ...Object.keys(theirs)])]
+    .filter(f => !LINES.includes(f) && !skip.has(f)).sort();
+  const order = LINES.concat(extra);
+  if (focus && focus !== "Description" && !order.includes(focus)) order.push(focus);
+  order.forEach(f => {
+    if (f === omit) return;
+    const v = mine[f], w = theirs[f];
+    // The attribute in question is always shown, with a dash when the
+    // record has nothing: a reviewer asked to add an affiliation could not
+    // tell whether the record already had one.
+    if (!v && !w && f !== focus) return;
+    const dt = el("dt", null, SHORT[f] || f);
+    const dd = el("dd", f === focus && side === "card" ? "hi" : null);
+    (lineEls[f] = lineEls[f] || []).push(dd);
+    dd.onmouseenter = () => lineEls[f].forEach(x => x.classList.add("hi"));
+    dd.onmouseleave = () => lineEls[f].forEach(x => x.classList.remove("hi"));
+    if (v) {
+      dd.textContent = v;
+      if (w && agree(v, w)) dd.append(el("span", "tick", " ✓"));
+    } else {
+      dd.append(el("span", "blank", "—"));
+    }
+    dl.append(dt, dd);
+  });
+  return dl;
+}
+
+function agree(a, b) {
+  const split = s => new Set(String(s).split("|").map(x => x.trim().toLowerCase()).filter(Boolean));
+  const A = split(a), B = split(b);
+  for (const x of A) if (B.has(x)) return true;
+  return false;
+}
+
+
+// ---- practice ---------------------------------------------------------------
+//
+// Three invented records, dealt before the real ones on a first visit, that
+// between them reach every screen: two candidates, two sources that disagree
+// on a year, an award with a badge, an addition to a description, a note; a
+// Chinese name whose English spelling is a guess, with the search; a rewrite
+// that deletes most of a description, with the warning. Nothing decided here
+// is saved or counted.
+let practising = false;
+let realLabels = null;
+const P_DESC_1 = "Engineer. Deputy chief executive of the Housing and Development Board from 2019.";
+const P_DESC_3 = "Community club at Sunrise Avenue, opened in 1985. It runs a library, a kindergarten and a hawker centre, and hosts the annual Sunrise Festival.";
+const PRACTICE_INDEX = [
+  ["practice-101", "Tan, Mei Ling (practice)", "PERSON", "Engineer", P_DESC_1],
+  ["practice-102", "Tan, Mei Lin (practice)", "PERSON", "Teacher", "Teacher at a primary school."],
+  ["practice-103", "Tan, Bee Leng (practice)", "PERSON", "Banker", "Banker. Died in 1980."],
+  ["practice-301", "Sunrise Community Club (practice)", "ORGANISATION", "Community club", P_DESC_3],
+];
+const PRACTICE = [
+  {
+    key: "practice:1", pids: ["practice-1"], i: 0, practice: true, subject: true,
+    entity: "Tan Mei Ling", entityEn: "", type: "PERSON", isFlag: false, isNew: false, flagWhy: "",
+    newsSays: "Tan Mei Ling, deputy chief executive of the Housing and Development Board since 2019, was appointed its chief executive.",
+    newsFields: [{ key: "Occupation", value: "Engineer" }, { key: "Affiliations(groupName)", value: "Housing and Development Board" }, { key: "Birth Year (yyyy)", value: "1971" }],
+    newsFrom: {},
+    sources: [
+      { pid: "practice-1", name: "Tan Mei Ling", says: "Appointed chief executive of HDB.", fields: [], quote: "Ms Tan Mei Ling, 55, will take over as chief executive of the Housing and Development Board on Oct 1.", article: "Tan Mei Ling to head Housing Board from October (practice)", link: "https://www.straitstimes.com/practice-1", articleId: -1, date: "2026-09-12" },
+      { pid: "practice-1b", name: "陈美玲", says: "Appointed chief executive of HDB.", quote: "Tan Mei Ling, 56, deputy chief executive since 2019, becomes chief executive on Oct 1.", original: "现年56岁的陈美玲自2019年起担任建屋局副总裁，将于10月1日出任总裁。", fields: [], article: "陈美玲受委建屋局总裁 (practice)", link: "https://www.zaobao.com/practice-2", articleId: -2, date: "2026-09-12" },
+    ],
+    options: [
+      { uid: "practice-101", name: "Tan, Mei Ling (practice)", similarity: 1, extra: [], delta: [{ field: "Occupation", state: "same" }],
+        fields: [{ key: "Occupation", value: "Engineer" }, { key: "Awards", value: "Public Service Medal (2015)" }, { key: "Nationality", value: "Singaporean" }, { key: "Description", value: P_DESC_1 }] },
+      { uid: "practice-102", name: "Tan, Mei Lin (practice)", similarity: 0.8, extra: [], delta: [],
+        fields: [{ key: "Occupation", value: "Teacher" }, { key: "Birth Year (yyyy)", value: "1985" }] },
+    ],
+    picked: "practice-101",
+    changes: [
+      { field: "Affiliations(groupName)", verb: "Add to", strategy: "APPEND", adding: "Singapore. Housing and Development Board", existing: [], result: "Singapore. Housing and Development Board",
+        from: "https://www.straitstimes.com/practice-1", supporters: ["https://www.straitstimes.com/practice-1", "https://www.zaobao.com/practice-2"], variants: [], conflict: false,
+        perValue: [{ value: "Singapore. Housing and Development Board", sources: ["https://www.straitstimes.com/practice-1", "https://www.zaobao.com/practice-2"] }],
+        inTTE: [{ name: "Singapore. Housing and Development Board", uid: "practice-201", as: "Singapore. Housing and Development Board", wrote: "Housing and Development Board" }] },
+      { field: "Awards", verb: "Add to", strategy: "APPEND", adding: "Public Administration Medal (Gold) (2026) | Long Service Medal (2026)", existing: ["Public Service Medal (2015)"], result: "Public Service Medal (2015) | Public Administration Medal (Gold) (2026) | Long Service Medal (2026)",
+        from: "https://www.straitstimes.com/practice-1", supporters: ["https://www.straitstimes.com/practice-1"], variants: [], conflict: false,
+        perValue: [{ value: "Public Administration Medal (Gold) (2026)", sources: ["https://www.straitstimes.com/practice-1"] }, { value: "Long Service Medal (2026)", sources: ["https://www.straitstimes.com/practice-1"] }],
+        inTTE: [{ name: "Public Administration Medal (Gold) (2026)", uid: null, nearest: "Public Administration Medal (Silver)", nearest_uid: "practice-x" },
+                { name: "Long Service Medal (2026)", uid: "practice-202", as: "Long Service Medal (2026)" }] },
+      { field: "Birth Year (yyyy)", verb: "Replace", strategy: "REPLACE", adding: "1971", existing: [], result: "1971",
+        from: "https://www.straitstimes.com/practice-1", supporters: ["https://www.straitstimes.com/practice-1", "https://www.zaobao.com/practice-2"], variants: ["1970"], conflict: true,
+        saidBy: [{ value: "1971", from: "https://www.straitstimes.com/practice-1" }, { value: "1970", from: "https://www.zaobao.com/practice-2" }] },
+      { field: "Description", verb: "Rewrite", strategy: "MERGE", adding: P_DESC_1 + " She was appointed chief executive in September 2026.", existing: [P_DESC_1], result: P_DESC_1 + " She was appointed chief executive in September 2026.",
+        from: "https://www.straitstimes.com/practice-1", supporters: ["https://www.straitstimes.com/practice-1"], variants: [], conflict: false,
+        diff: [{ op: "same", text: P_DESC_1 }, { op: "in", text: "She was appointed chief executive in September 2026." }],
+        adds: ["She was appointed chief executive in September 2026."], drops: [], subs: [], kept: 1.0 },
+    ],
+    coach: {
+      who: "Two documents. On the left, what the article says; on the right, the TTE record the pipeline believes it is. Ticks mark attributes that agree. Try the second candidate tab, then click it again to come back. When it is the same person, press SAME (Y).",
+      pencil: {
+        "Affiliations(groupName)": "One attribute at a time. The organisation is a TTE record, so the proposal already uses TTE's name for it, with what the article wrote beside it. ACCEPT (Y) adds it; NO CHANGE (N) leaves the record as it is.",
+        "Awards": "Two awards. One is in TTE; the other is not yet, and would need its own record before it can go on hers. The nearest name is a hint; if you judge it the same award, USE THIS NAME swaps it in. To take one award and not the other, LEAVE OUT the one you do not want and ACCEPT THE REST.",
+        "Birth Year (yyyy)": "The two sources disagree. Click a source number to see its sentence, then choose the wording you trust; the code never picks.",
+        "Description": "What is added is marked +. Try EDIT THE WORDING (E), change the sentence, and ACCEPT MY WORDING. Then leave a note; it goes with your decision.",
+      },
+    },
+  },
+  {
+    key: "practice:2", pids: ["practice-2"], i: 1, practice: true, subject: true, isNew: true,
+    entity: "陈美玲", entityEn: "Tan, Bee Leng", type: "PERSON", isFlag: false, flagWhy: "",
+    newsSays: "Tan Mei Ling appointed chief executive of the Housing and Development Board.",
+    newsFields: [{ key: "Occupation", value: "Engineer" }, { key: "Affiliations(groupName)", value: "Housing and Development Board" }],
+    newsFrom: {}, changes: [], picked: "",
+    sources: [{ pid: "practice-2", name: "陈美玲", says: "Appointed chief executive of HDB.", quote: "Tan Mei Ling, 56, deputy chief executive since 2019, becomes chief executive on Oct 1.", original: "现年56岁的陈美玲自2019年起担任建屋局副总裁，将于10月1日出任总裁。", fields: [], article: "陈美玲受委建屋局总裁 (practice)", link: "https://www.zaobao.com/practice-2", articleId: -2, date: "2026-09-12" }],
+    options: [{ uid: "practice-103", name: "Tan, Bee Leng (practice)", similarity: 0.9, romanised: true, npt: "陈美玲", extra: [], delta: [],
+                fields: [{ key: "Occupation", value: "Banker" }, { key: "Death Year (yyyy)", value: "1980" }] }],
+    coach: {
+      none: "The model found no record and its English spelling of 陈美玲 is a guess. The one name it found is a banker who died in 1980. Search by what she did instead: type Housing, choose Tan, Mei Ling (practice), then SAME.",
+      who: "Reached through the guessed spelling, and the record's own fields say a different person. NOT THIS RECORD (N).",
+    },
+  },
+  {
+    key: "practice:3", pids: ["practice-3"], i: 2, practice: true, subject: true,
+    entity: "Sunrise Community Club", entityEn: "", type: "ORGANISATION", isFlag: false, isNew: false, flagWhy: "",
+    newsSays: "Sunrise Community Club reopened after renovation.",
+    newsFields: [{ key: "Country", value: "Singapore" }], newsFrom: {},
+    sources: [{ pid: "practice-3", name: "Sunrise Community Club", says: "Reopened after renovation.", quote: "Sunrise Community Club reopened on Saturday after a year-long renovation.", fields: [], article: "Sunrise Community Club reopens after renovation (practice)", link: "https://www.channelnewsasia.com/practice-3", articleId: -3, date: "2026-09-13" }],
+    options: [{ uid: "practice-301", name: "Sunrise Community Club (practice)", similarity: 1, extra: [], delta: [],
+                fields: [{ key: "Country", value: "Singapore" }, { key: "Description", value: P_DESC_3 }] }],
+    picked: "practice-301",
+    changes: [
+      { field: "Description", verb: "Rewrite", strategy: "REPLACE", adding: "Community club at Sunrise Avenue. Renovated in 2026.", existing: [P_DESC_3], result: "Community club at Sunrise Avenue. Renovated in 2026.",
+        from: "https://www.channelnewsasia.com/practice-3", supporters: ["https://www.channelnewsasia.com/practice-3"], variants: [], conflict: false,
+        diff: [{ op: "same", text: "Community club at Sunrise Avenue" }, { op: "out", text: ", opened in 1985. It runs a library, a kindergarten and a hawker centre, and hosts the annual Sunrise Festival." }, { op: "in", text: ". Renovated in 2026." }],
+        adds: ["Renovated in 2026."], drops: [], subs: [{ was: ", opened in 1985. It runs a library, a kindergarten and a hawker centre, and hosts the annual Sunrise Festival.", now: ". Renovated in 2026." }], kept: 0.3, overEdit: true },
+    ],
+    coach: {
+      who: "Same name, same address: SAME (Y).",
+      pencil: { "Description": "This rewrite would delete most of what a cataloguer wrote, and the warning says how much survives. NO CHANGE (N) is the safe answer; a reviewer who wants only the new fact can EDIT THE WORDING and add one sentence instead." },
+    },
+  },
+];
+
+function startPractice() {
+  practising = true;
+  realLabels = labels; labels = {};
+  CARDS = PRACTICE;
+  PRACTICE_INDEX.forEach(r => { if (!INDEX.some(x => x[0] === r[0])) INDEX.push(r); });
+  NPT["practice-101"] = ["陈美玲"];
+  PRACTICE.forEach(c => { delete draft[c.key]; });
+  at = 0; render();
+}
+function endPractice() {
+  practising = false;
+  labels = realLabels || {}; realLabels = null;
+  CARDS = REAL; orderDeck();
+  for (let i = INDEX.length - 1; i >= 0; i--) if (String(INDEX[i][0]).startsWith("practice-")) INDEX.splice(i, 1);
+  delete NPT["practice-101"];
+  try { localStorage.setItem(PRACTICE_KEY, "1"); } catch (e) {}
+  at = firstUndecided(); render();
+}
+// A card whose sources the reviewer cannot read says so; the English on it
+// is the model's translation, and the reviewer decides from that.
+function languageNote(stage, c) {
+  if (c.practice) return;
+  const unread = cardLangs(c).filter(l => !langs.includes(l));
+  if (!unread.length || unread.length < cardLangs(c).length) return;
+  stage.append(el("p", "hint", `Source in ${unread.map(l => LANG_NAMES[l] || l).join(" and ")}; `
+    + "the English on the clipping is the model's translation."));
+}
+// The coaching line for a practice screen: what to look at, which stamp.
+function coach(stage, c, kind, field) {
+  if (!c.practice || !c.coach) return;
+  const text = kind === "pencil" ? (c.coach.pencil || {})[field] : c.coach[kind];
+  if (!text) return;
+  const box = el("div", "coach");
+  box.append(el("b", null, `Practice ${c.i + 1} of ${PRACTICE.length}`), text);
+  stage.append(box);
+}
+function practiceOver(stage) {
+  const d = el("div", "report");
+  d.append(el("h1", "ask", "Practice over"));
+  d.append(el("p", "hint", "Nothing you decided just now was kept. The real records start next, "
+    + "and every decision on them is saved. HOW THIS WORKS brings the practice back at any time."));
+  const row = el("div", "sheet-row");
+  const go = el("button", "stamp go");
+  go.append(el("span", "stamp-face", "To the real records"), el("kbd", null, "Y"));
+  go.onclick = endPractice;
+  KEYS = { y: endPractice };
+  row.append(go);
+  d.append(row);
+  stage.append(d);
+}
+
+// ---- chrome ----------------------------------------------------------------
+
+// [class, face, key, action]; anything after is ignored.
+// The stamp lands on the document for the instant before the next screen:
+// the mark is drawn, the action runs in the same tick, and the next render
+// replaces it. Confirmation that a press registered is the one thing the
+// animation was ever for; there is no wait on the action.
+// The next screen follows 160 ms later, the length of the animation; a
+// press during that moment is ignored rather than counted twice.
+let stamping = false;
+function impress(where, mark, cls, then) {
+  const paper = document.querySelector(where === "card" ? ".acard" : ".clip");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!paper || reduce) { then(); return; }
+  paper.append(el("div", "impression " + cls, mark));
+  thunk();
+  stamping = true;
+  setTimeout(() => { stamping = false; then(); }, 160);
+}
+let soundOn = false;
+try { soundOn = localStorage.getItem("tte-desk-sound") === "1"; } catch (e) {}
+let audio = null;
+function thunk() {
+  if (!soundOn) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audio = audio || new AC();
+    const t = audio.currentTime;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.12);
+    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + 0.18);
+  } catch (e) {}
+}
+
+// [class, face, key, action, paper it lands on, the mark it leaves, a line
+// under the face saying what happens next]. The stamps go in a bar held at
+// the foot of the window, so they are on screen whatever the documents'
+// length; the tray's one button joins them there.
+function stamps(stage, list) {
+  const bar = el("div", "actions");
+  const row = el("div", "stamps");
+  KEYS = {};
+  list.forEach(([cls, label, key, fn, where, mark, sub]) => {
+    const go = () => { if (stamping) return; if (where) impress(where, mark || label, cls, fn); else fn(); };
+    KEYS[key.toLowerCase()] = go;
+    const b = el("button", "stamp " + cls);
+    const top = el("span", "stamp-top");
+    top.append(el("span", "stamp-face", label), el("kbd", null, key));
+    b.append(top);
+    if (sub) b.append(el("span", "stamp-sub", sub));
+    b.onclick = go;
+    row.append(b);
+  });
+  bar.append(row);
+  stage.append(bar);
+}
+
+// Beside the stamps: one step back, a real button with a key, because
+// "← back" as small underlined text was missed.
+function tray(stage, c, st) {
+  const button = (label, key, fn) => {
+    const b = el("button", "tray-btn");
+    b.append(el("span", null, label));
+    if (key) b.append(el("kbd", null, key));
+    b.onclick = fn;
+    if (key) KEYS[key.toLowerCase()] = fn;
+    return b;
+  };
+  const stepBack = () => {
+    if (st.i > 0) { st.i -= 1; return render(); }
+    if (st.uid != null) { st.uid = null; st.i = 0; return render(); }
+    const rejected = Object.keys(st.no);
+    if (rejected.length) { delete st.no[rejected[rejected.length - 1]]; return render(); }
+    at = Math.max(at - 1, 0); render();
+  };
+  // Nothing to undo on a card's first screen when no earlier record is on
+  // the desk: the button says so instead of doing nothing. The team asked
+  // that records not be skipped, so the tray is undo and nothing else;
+  // any record is reopened from the sheet.
+  const nothing = st.i === 0 && st.uid == null && !Object.keys(st.no).length && at === 0;
+  const back = button("\u2190 Back one step", "Backspace", nothing ? () => {} : stepBack);
+  if (nothing) { back.disabled = true; back.title = "Nothing to undo yet"; }
+  const bar = stage.querySelector(".actions");
+  if (bar) bar.prepend(back); else stage.append(back);
+}
+
+// Where the reviewer is, above the question: the record, and the candidate
+// or change within it. A part given as [text] is set in bold.
+function kicker(stage, ...parts) {
+  const p = el("p", "kicker");
+  parts.filter(Boolean).forEach((x, i) => {
+    if (i) p.append(" \u00b7 ");
+    p.append(Array.isArray(x) ? el("b", null, x[0]) : x);
+  });
+  stage.append(p);
+}
+
+// One note per record, carried through its screens and saved with the
+// decision. Once written it folds to a line, so the next screen is not
+// dominated by a box already filled; "edit" opens it again, and "clear"
+// empties it.
+function noteLine(st, host) {
+  const nw = el("div", "notewrap");
+  if (st.noteOpen) {
+    const lab = el("div", "edit-label", "Note on this record, saved with your decision");
+    const ta = document.createElement("textarea");
+    ta.value = st.note;
+    ta.placeholder = "For the next librarian: how you checked, what you saw";
+    ta.oninput = () => { st.note = ta.value; };
+    const done = el("button", "quiet", "done");
+    done.onclick = () => { st.noteOpen = false; render(); };
+    nw.append(lab, ta, done);
+    setTimeout(() => ta.focus(), 0);
+  } else if (st.note) {
+    const line = el("div", "note-line");
+    line.append(el("span", "note-mark", "Note: "), el("span", null, st.note));
+    const edit = el("button", "quiet", "edit");
+    edit.onclick = () => { st.noteOpen = true; render(); };
+    const clear = el("button", "quiet", "clear");
+    clear.onclick = () => { st.note = ""; st.noteOpen = false; render(); };
+    line.append(" ", edit, " ", clear);
+    nw.append(line);
+  } else {
+    const add = el("button", "quiet", "+ leave a note on this record");
+    add.onclick = () => { st.noteOpen = true; render(); };
+    nw.append(add);
+  }
+  host.append(nw);
+}
+
+// ---- the drawer ------------------------------------------------------------
+
+// Every card that might be this entity, as tabs along the drawer's edge. The
+// one on the desk is raised; ones already set aside are struck through.
+function drawer(c, st, current, label) {
+  const d = el("div", "drawer");
+  d.append(el("span", "drawer-label", label || `${kind(c)} candidates`));
+  ordered(c).forEach(o => {
+    const up = !!current && o.uid === current.uid;
+    const tab = el("button", "tab" + (up ? " up" : "") + (st.no[o.uid] ? " out" : ""));
+    tab.textContent = o.name;
+    if (o.npt) tab.append(el("span", "npt", " \u00b7 NPT " + o.npt));
+    tab.title = up ? "Put this record back" : (st.no[o.uid] ? "Set aside" : "Look at this record");
+    tab.onclick = () => {
+      if (st.no[o.uid]) return;
+      // Clicking the raised tab puts the record back: on a "create?" card
+      // that returns to the question, otherwise to the model's own pick.
+      st.peek = up ? null : o.uid;
+      render();
+    };
+    d.append(tab);
+  });
+  const find = el("button", "tab find", st.finding ? "close search" : "search for other matches…");
+  find.onclick = () => { st.finding = !st.finding; st.query = ""; render(); };
+  d.append(find);
+  return d;
+}
+
+function drawerSearch(stage, c, st) {
+  if (!st.finding) return;
+  const wrap = el("div", "find");
+  const box = document.createElement("input");
+  box.type = "search";
+  box.placeholder = `Search every ${kind(c)} record in TTE by name, occupation or description`;
+  box.value = st.query || "";
+  const hits = el("div", "hits");
+  box.oninput = () => { st.query = box.value; renderHits(hits, c, st); };
+  wrap.append(box, hits);
+  stage.append(wrap);
+  renderHits(hits, c, st);
+  setTimeout(() => box.focus(), 0);
+}
+
+function renderHits(box, card, st) {
+  box.replaceChildren();
+  const q = (st.query || "").trim().toLowerCase();
+  if (q.length < 2) { box.append(el("div", "nohits", "Type at least two letters.")); return; }
+  const found = [];
+  // Name first, then the names it is also known by (NPTs), then the
+  // identity line (occupation, description), so a reviewer who knows the
+  // person chaired the NEA finds him whatever his name was rendered as.
+  // Within each, a word that starts with what was typed comes before a
+  // match inside a word: "Lee" listed Jubilee Church above every Lee.
+  const via = {};
+  const wordStart = new RegExp("(^|[^\\p{L}\\p{N}])" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u");
+  const starts = t => wordStart.test(String(t || "").toLowerCase());
+  const has = t => String(t || "").toLowerCase().includes(q);
+  const byNpt = test => row => {
+    const n = (NPT[row[0]] || []).find(test);
+    if (n) via[row[0]] = n;
+    return !!n;
+  };
+  const passes = [row => starts(row[1]), byNpt(starts), row => has(row[1]), byNpt(has),
+                  row => starts(row[3]) || starts(row[4]), row => has(row[3]) || has(row[4])];
+  for (const pass of passes) {
+    for (const row of INDEX) {
+      if (found.length === 25) break;
+      if (row[2] !== card.type || found.includes(row)) continue;
+      if (pass(row)) found.push(row);
+    }
+  }
+  if (!found.length) { box.append(el("div", "nohits", `No ${kind(card)} record by that name.`)); return; }
+  found.forEach(row => {
+    const b = el("button", "hit");
+    b.append(el("b", null, row[1]));
+    if (via[row[0]]) b.append(el("span", "npt", "NPT " + via[row[0]]));
+    if (row[3]) b.append(el("span", null, row[3]));
+    b.onclick = () => {
+      if (!card.options.some(o => o.uid === row[0])) {
+        // The index holds a name and an identity line; the rest of the record
+        // is fetched when it is shown (loadRecord).
+        const gist = row[4] || row[3];
+        card.options.push({ uid: row[0], name: row[1], npt: via[row[0]] || undefined,
+                            fields: gist ? [{ key: "Description", value: gist }] : [],
+                            similarity: null, extra: [], thin: true });
+      }
+      st.peek = row[0]; st.finding = false; st.query = ""; st.foundBySearch = true;
+      render();
+    };
+    box.append(b);
+  });
+}
+
+// ---- screens ---------------------------------------------------------------
+
+
+// What a decision came to, in the words the second reviewer asked for: how
+// many to create, how many to amend. A verdict alone does not say; "approve"
+// on a new entity is a record to create and on a matched one it is either
+// an amendment or a confirmation.
+const OUTCOMES = ["same", "amended", "to create", "not worth", "kept for review"];
+function outcome(l) {
+  if (!l) return "";
+  if (l.verdict === "unsure") return "kept for review";
+  // "Not this record" is never final: it moves to the next candidate, and
+  // the card ends at create, not worth or kept for review.
+  if (l.verdict === "reject") return "not worth";
+  if (l.chose === "new-entity") return "to create";
+  return (l.changes || []).length ? "amended" : "same";
+}
+function tally() {
+  const n = {};
+  decided().forEach(l => { const o = outcome(l); n[o] = (n[o] || 0) + 1; });
+  return OUTCOMES.filter(o => n[o]).map(o => `${n[o]} ${o}`);
+}
+
+let theme = "";
+try { theme = localStorage.getItem("tte-desk-theme") || ""; } catch (e) {}
+function applyTheme() {
+  if (document.documentElement) document.documentElement.setAttribute("data-theme", theme || "");
+}
+applyTheme();
+
+let onSheet = false;
+
+let showPrefs = false;
+// When each card first came onto the desk this session, for the time a
+// decision took: the number the team asked for against their own reading.
+let openedAt = {};
+
+function render() {
+  const stage = document.getElementById("stage");
+  stage.replaceChildren();
+  lineEls = {};
+  // The masthead's buttons and menu are for a signed-in desk only.
+  const out = !!loading || (ONLINE && !me) || !reviewer || showPrefs;
+  if (document.body) document.body.classList[out ? "add" : "remove"]("signed-out");
+  if (loading) { stage.append(el("p", "hint", loading)); return; }
+  if (ONLINE && !me) return authForm(stage);
+  if (!reviewer || showPrefs) return signIn(stage);
+  const done = decided().length;
+  const soundBtn = document.getElementById("sound");
+  if (soundBtn) {
+    soundBtn.textContent = soundOn ? "Sound: on" : "Sound: off";
+    soundBtn.onclick = () => { soundOn = !soundOn; try { localStorage.setItem("tte-desk-sound", soundOn ? "1" : "0"); } catch (e) {} render(); };
+  }
+  const themeBtn = document.getElementById("theme");
+  if (themeBtn) {
+    themeBtn.textContent = theme === "light" ? "Brown desk" : "Light desk";
+    themeBtn.onclick = () => { theme = theme === "light" ? "" : "light"; try { localStorage.setItem("tte-desk-theme", theme); } catch (e) {} applyTheme(); render(); };
+  }
+  const sheetBtn = document.getElementById("sheet");
+  if (sheetBtn) {
+    sheetBtn.textContent = onSheet ? "Back to the desk" : "Your sheet";
+    sheetBtn.onclick = () => { onSheet = !onSheet; onTeam = false; render(); };
+  }
+  const teamBtn = document.getElementById("team");
+  if (teamBtn) {
+    teamBtn.style.display = sb && me ? "" : "none";
+    teamBtn.textContent = onTeam ? "Back to the desk" : "The team";
+    teamBtn.onclick = () => { onTeam = !onTeam; onSheet = false; if (onTeam) refreshTeam(); render(); };
+  }
+  // Help lives here, away from the buttons that decide anything.
+  const helpBtn = document.getElementById("help");
+  if (helpBtn) {
+    helpBtn.textContent = "How this works";
+    helpBtn.onclick = () => showTutorial(true);
+    KEYS.h = () => showTutorial(true);
+  }
+  const found = decided().filter(l => l.foundBySearch).length;
+  document.getElementById("count").textContent = practising
+    ? `practice ${Math.min(at + 1, CARDS.length)} of ${CARDS.length}`
+    : `${done} of ${CARDS.length} records reviewed` + (found ? ` · ${found} found by search` : "")
+      + (others ? ` · ${others} decided by others` : "");
+  const outcomesLine = document.getElementById("outcomes");
+  if (outcomesLine) outcomesLine.textContent = practising ? "" : tally().join(" · ");
+  const whoBox = document.getElementById("who");
+  if (whoBox) whoBox.textContent = reviewer;
+  const meBox = document.getElementById("me");
+  if (meBox) {
+    meBox.replaceChildren();
+    const prefs = el("button", null, "Settings");
+    prefs.title = "Languages you read and what to work on";
+    prefs.onclick = () => { showPrefs = true; onSheet = false; render(); };
+    const swap = el("button", null, "Sign out");
+    swap.onclick = () => {
+      reviewer = ""; try { localStorage.removeItem(WHO_KEY); } catch (e) {}
+      // Signing out keeps the card on the desk: it is still this reviewer's
+      // and comes back first at the next sign-in.
+      if (sb) { Promise.resolve(sb.auth.signOut()).catch(() => {}); me = null; testing = false; labels = {}; claimed = {}; unsent = {}; REAL.length = 0; CARDS = REAL; }
+      render();
+    };
+    meBox.append(prefs, swap);
+  }
+  document.getElementById("bar").style.width = (done / CARDS.length * 100) + "%";
+  if (testing) stage.append(el("p", "decided-line", "Test account: look around freely. Nothing you do "
+    + "here is saved, and no card is held, so real reviewers never lose a record to it."));
+  if (onTeam && !practising && sb && me) return teamPage(stage);
+  if (onSheet && !practising) return sheetPage(stage);
+  if (bump) stage.append(el("p", "decided-line", bump));
+  if (at >= CARDS.length) return practising ? practiceOver(stage) : endOfShift(stage);
+
+  const c = CARDS[at];
+  const st = stateFor(c);
+  // Online, the card is held while it is on the desk; a refusal moves on.
+  holdCard(c);
+  if (claimed[c.key] === "asking") { stage.append(el("p", "hint", "One moment…")); return; }
+  if (claimed[c.key] === "retry") {
+    stage.append(el("p", "hint", "Can't reach the desk, so this record can't be checked out to you yet."));
+    const again = el("button", "stamp grey");
+    again.append(el("span", "stamp-face", "Try again"));
+    again.onclick = () => { delete claimed[c.key]; render(); };
+    stage.append(again);
+    return;
+  }
+  if (claimed[c.key] === false) { at = firstUndecided(); return at >= CARDS.length ? endOfShift(stage) : render(); }
+  holdNext();
+  // Back into a record already decided says so, and how to change it:
+  // going back used to land on its last screen with no word of the decision.
+  if (!practising && labels[c.pids[0]]) {
+    stage.append(el("p", "decided-line", `Decided: ${outcome(labels[c.pids[0]])} \u00b7 stamp again to change it`));
+  }
+  if (!openedAt[c.key]) openedAt[c.key] = Date.now();
+  // Every ten records, one line: a place to stop, and the number that
+  // matters. Not a sheet, nothing to dismiss.
+  if (!practising && done && done % 10 === 0 && !labels[c.pids[0]]) {
+    stage.append(el("p", "closure", `${done} reviewed · ${CARDS.length - done} to go`
+      + (found ? ` · ${found} record${found > 1 ? "s" : ""} found by search that retrieval missed` : "")));
+  }
+  if (st.uid == null) {
+    // An entity the model found no record for starts at "create one?", with
+    // the nearest names in the drawer for a reviewer who knows better.
+    if (c.isNew && !st.peek) return renderNone(stage, c, st);
+    const next = st.peek ? c.options.find(o => o.uid === st.peek)
+                         : ordered(c).find(o => !st.no[o.uid]);
+    return next ? renderWho(stage, c, st, next) : renderNone(stage, c, st);
+  }
+  if (st.uid === NEW) return renderNone(stage, c, st);
+  const rows = rowsFor(c, st);
+  // Coming back to a card that was already filed lands on its last note, not
+  // on the stamp: stamping is something a hand does, never something a
+  // re-render does. That loop was "back" showing FILED forever.
+  if (!rows.length) { st.uid = null; return render(); }
+  if (st.i >= rows.length) st.i = rows.length - 1;
+  return renderPencil(stage, c, st, rows[st.i], rows);
+}
+
+// The rest of what the article named, and what became of it, in one line.
+function footnote(stage, c) {
+  const also = c.also || [];
+  if (!also.length) return;
+  const p = el("p", "also");
+  p.append("Also in this article: ");
+  also.forEach((a, i) => {
+    if (i) p.append("; ");
+    p.append(el("b", null, a.name));
+    p.append(a.state === "card" ? " (its own card)"
+           : a.state === "not in TTE" ? " (not in TTE; only mentioned)"
+           : " (on record, nothing to add)");
+  });
+  p.append(".");
+  stage.append(p);
+}
+
+// 1. Is this the person on the card?
+// A record found by search arrives with the opening of its description only,
+// the index being what ships in the page. Its properties come when it is shown.
+function loadRecord(c, o) {
+  if (!sb || !o.thin || o.loading || o.failed) return;
+  o.loading = true;
+  const done = ok => {
+    o.loading = false;
+    if (ok) o.thin = false; else o.failed = true;
+    if (CARDS[at] === c) render();
+  };
+  Promise.resolve(sb.rpc("desk_record", { record_uid: o.uid })).then(({ data, error }) => {
+    if (!error && Array.isArray(data)) { if (data.length) o.fields = data; done(true); } else done(false);
+  }).catch(() => done(false));
+}
+
+function renderWho(stage, c, st, o) {
+  loadRecord(c, o);
+  const rows = (o.extra || []).concat(o.uid === c.picked ? c.changes : []);
+
+  const nth = ordered(c).indexOf(o);
+  kicker(stage, `Record ${at + 1} of ${CARDS.length}`,
+         c.options.length > 1 && [`candidate ${nth + 1} of ${c.options.length}`]);
+  stage.append(el("h1", "ask", `Is this TTE record the same ${kind(c)} as the one in the news?`));
+  coach(stage, c, "who");
+  languageNote(stage, c);
+  if (o.romanised || c.romanisedHint) {
+    stage.append(el("p", "hint amber", "This record was found through the model's English rendering "
+      + `of the name, "${c.entityEn}", which is a guess and can be wrong.`));
+  }
+  if (c.flagWhy) stage.append(el("p", "hint", c.flagWhy + "."));
+  const desk = el("div", "desk");
+  desk.append(clipping(c, o, clipFor(c, st), st), authorityCard(c, o));
+  stage.append(desk);
+  // No advice on which record is right: cataloguers asked for the evidence, not a nudge.
+  stage.append(drawer(c, st, o));
+  drawerSearch(stage, c, st);
+  noteLine(st, stage);
+
+  // Short faces; what each leads to is the line under it.
+  const then = rows.length
+    ? `then ${rows.length} change${rows.length > 1 ? "s" : ""}, one at a time`
+    : "the record is up to date";
+  const more = ordered(c).filter(x => x.uid !== o.uid && !st.no[x.uid]).length;
+  stamps(stage, [
+    ["go", "Same record", "Y", () => {
+      st.uid = o.uid; st.i = 0; st.peek = null; st.clipPinned = false;
+      rowsFor(c, st).forEach(ch => {
+        if (st.tick[keyOf(ch)] === undefined) st.tick[keyOf(ch)] = !ch.derived;
+      });
+      if (!rowsFor(c, st).length) save(c, "approve"); else render();
+    }, "card", "SAME", then],
+    ["grey", "Not this record", "N", () => { st.no[o.uid] = true; st.peek = null; render(); }, "card", "NOT THIS RECORD",
+     more ? `${more} more candidate${more > 1 ? "s" : ""}` : "then search, or create one"],
+    ["amber", "Keep for review", "K", () => save(c, "unsure"), "clip", "KEEP FOR REVIEW", "for the team to discuss"],
+  ]);
+  tray(stage, c, st);
+}
+
+// 2. No card in the drawer is this entity.
+function renderNone(stage, c, st) {
+  const fresh = c.isNew && !Object.keys(st.no).length;
+  kicker(stage, `Record ${at + 1} of ${CARDS.length}`);
+  stage.append(el("h1", "ask", fresh
+    ? `${c.entity} is not in TTE. Create a record?`
+    : `No record for ${c.entity}. Create one?`));
+  coach(stage, c, "none");
+  languageNote(stage, c);
+  if (fresh) {
+    stage.append(el("p", "hint", c.options.length
+      ? "The model matched none of the nearest names, listed below. If one of them is this "
+        + `${kind(c)}, choose it; otherwise decide whether it needs a record.`
+      : "No record in TTE came close to this name. The article's facts on the left are what a new record would hold."));
+  }
+  if (nonLatin(c.entity)) {
+    // The search was on a spelling the model invented. Lee Chuan Seng was
+    // "Lee, Choon Seng" to it, and TTE had no Chinese name for him.
+    stage.append(el("p", "hint amber", (c.entityEn
+      ? `The name was searched as "${c.entityEn}", which is the model's own spelling and may be wrong. `
+      : "TTE holds no record under this name, and the model gave no English form to search. ")
+      + "Search by occupation or description before creating a record, so a person already "
+      + "in TTE under another spelling does not get a second one."));
+    if (st.finding === undefined) st.finding = true;
+  }
+  const desk = el("div", "desk");
+  desk.append(clipping(c, null, clipFor(c, st), st));
+  // The record a "create" would make, from the article's facts, on a card
+  // with a dashed edge because it does not exist yet. An empty card here
+  // said "No TTE record" and left half the desk bare.
+  const draftCard = el("div", "acard draft");
+  draftCard.append(el("div", "panel-label", "If you create it"));
+  const top = el("div", "acard-top");
+  top.append(el("span", "acard-type", c.type), el("span", "acard-uid", "new record"));
+  draftCard.append(top, el("h2", "acard-name", c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity));
+  if ((c.newsFields || []).length) draftCard.append(lines(fieldMap(c.newsFields), {}, "card"));
+  draftCard.append(el("p", "draft-note", (fresh
+    ? "Not in TTE yet."
+    : (c.options.length ? "Every candidate was set aside." : "No record in TTE came close to this name."))
+    + " A new record would start from the article's facts, shown here; a cataloguer makes it in TTE."));
+  desk.append(draftCard);
+  stage.append(desk);
+
+  const why = el("div", "why");
+  REASONS.forEach(([id, label]) => {
+    const chip = el("button", "chip" + (st.why === id ? " on" : ""), label);
+    chip.onclick = () => { st.why = st.why === id ? "" : id; render(); };
+    why.append(chip);
+  });
+  if (c.options.length && !fresh) { stage.append(el("p", "hint", "Why none of them?")); stage.append(why); }
+  // The names the model saw and matched none of, said as such: listed
+  // under "candidates" they looked like suggestions.
+  stage.append(drawer(c, st, null, fresh
+    ? (c.options.length ? "Nearest in TTE, none matched by the model" : "Nothing close in TTE")
+    : null));
+  drawerSearch(stage, c, st);
+  noteLine(st, stage);
+
+  stamps(stage, [
+    ["go", "Create a new record", "Y", () => { st.uid = NEW; save(c, "approve"); }, "card", "NEW RECORD", "a cataloguer makes it in TTE"],
+    ["grey", "Not worth a record", "N", () => save(c, "reject"), "clip", "NO RECORD", "nothing is created"],
+    ["amber", "Keep for review", "K", () => save(c, "unsure"), "clip", "KEEP FOR REVIEW", "for the team to discuss"],
+  ]);
+  tray(stage, c, st);
+}
+
+// 3. One pencil note at a time, drawn on the card where it would go.
+function renderPencil(stage, c, st, ch, rows) {
+  const o = c.options.find(x => x.uid === st.uid);
+  const k = keyOf(ch);
+  // The editor is open only when asked for; a value left out sets the
+  // reviewer's wording without opening it.
+  const editing = !!(st.open || {})[k];
+  const reworded = (st.edits || {})[k] != null;
+
+  const cuts = changesText(ch);
+  kicker(stage, `Record ${at + 1} of ${CARDS.length}`, o ? o.name : "", [`change ${st.i + 1} of ${rows.length}`]);
+  stage.append(el("h1", "ask", ch.diff
+    ? (cuts ? "Rewrite the description like this?" : "Add this to the description?")
+    : (ch.strategy === "APPEND" ? `Add this to ${SHORT[ch.field] || ch.field}?`
+                                : `Set ${ASK_NAME[ch.field] || SHORT[ch.field] || ch.field} to this?`)));
+  coach(stage, c, "pencil", ch.field);
+  if (ch.derived) {
+    stage.append(el("p", "hint amber", "The article states this and the record lacks it. "
+      + "The model did not propose it; accept it only if you agree it belongs."));
+  }
+  if (ch.overEdit) {
+    stage.append(el("div", "warnbox", `This rewrite drops most of the current description. Only `
+      + `${Math.round(ch.kept * 100)}% of it survives.`));
+  }
+  if ((ch.held || []).length) {
+    const h = ch.held;
+    stage.append(el("p", "hint amber", `${h.length} more sentence${h.length > 1 ? "s" : ""} from other articles ${h.length > 1 ? "were" : "was"} held back to keep the description within 5 sentences: `
+      + h.map(x => `\u201c${x.length > 140 ? x.slice(0, 140) + "\u2026" : x}\u201d`).join(" ")));
+  }
+  if (ch.overLimit) {
+    stage.append(el("div", "warnbox", `This would make the description ${ch.sentences} sentences. The style guide allows 3 to 5. `
+      + `Shorten it with EDIT THE WORDING, or choose NO CHANGE.`));
+  }
+  // A second clipping is evidence, so it is said where the decision is made.
+  // When the clippings disagree, both wordings are offered and the code has
+  // no opinion; the reviewer picks.
+  const n = (ch.supporters || []).length;
+  if (ch.conflict) {
+    const box = el("div", "corrob conflict");
+    box.append(el("span", "cb-lead", `${n} sources disagree.`));
+    box.append(el("span", null, " Choose the wording you trust, or edit it:"));
+    const opts = el("div", "why");
+    const chosen = (st.edits || {})[k] != null ? st.edits[k] : ch.adding;
+    (ch.saidBy || [ch.adding].map(v => ({ value: v, from: "" }))).forEach(({ value, from }) => {
+      const chip = el("button", "chip" + (chosen === value ? " on" : ""));
+      chip.append(el("b", null, value));
+      chip.title = from ? `Use this wording, from source ${sourceIndex(c, from) + 1}: ${(c.sources[sourceIndex(c, from)] || {}).article || from}` : "Use this wording";
+      chip.onclick = () => { (st.edits || (st.edits = {}))[k] = value; (st.editText || (st.editText = {}))[k] = value; (st.open || (st.open = {}))[k] = true; render(); };
+      opts.append(chip);
+      if (from) { const refs = el("sup", "src-refs"); refs.append(sourceTab(c, st, from, clipFor(c, st, ch), true)); opts.append(refs); }
+    });
+    box.append(opts);
+    stage.append(box);
+  } else if (n > 1) {
+    const box = el("div", "corrob");
+    box.append(el("span", "cb-lead", `${n} sources say this.`));
+    if ((ch.variants || []).length) {
+      box.append(el("span", null, " Also worded: "));
+      ch.variants.forEach((v, i) => {
+        if (i) box.append(document.createTextNode(" \u00b7 "));
+        const b = el("button", "quiet", `\u201c${v}\u201d`);
+        b.title = "Use this wording instead";
+        b.onclick = () => { (st.edits || (st.edits = {}))[k] = editUnit(ch).compose(v); (st.editText || (st.editText = {}))[k] = v; (st.open || (st.open = {}))[k] = true; render(); };
+        box.append(b);
+      });
+    }
+    // Two sources saying nearly the same sentence are one sentence in two
+    // wordings, not two sentences: the card offers one and names the
+    // other, and a click swaps it in. Stacked, they put the same fact in
+    // the description twice.
+    (ch.alts || []).forEach(alt => {
+      const unit = editUnit(ch);
+      const drafts = st.editText || {};
+      const current = drafts[k] != null ? drafts[k] : unit.text;
+      const inUse = alt.wordings.find(w => current.includes(w)) || alt.wordings[0];
+      box.append(el("span", null, " Another source words it: "));
+      alt.wordings.filter(w => w !== inUse).forEach((w, i) => {
+        if (i) box.append(document.createTextNode(" \u00b7 "));
+        const b = el("button", "quiet", `\u201c${w}\u201d`);
+        b.title = "Use this wording instead";
+        b.onclick = () => {
+          const d = st.editText || (st.editText = {});
+          const cur = d[k] != null ? d[k] : unit.text;
+          d[k] = cur.includes(inUse) ? cur.replace(inUse, w) : (cur + " " + w).trim();
+          (st.edits || (st.edits = {}))[k] = unit.compose(d[k]);
+          (st.open || (st.open = {}))[k] = true;
+          render();
+        };
+        box.append(b);
+      });
+    });
+    stage.append(box);
+  }
+
+  const desk = el("div", "desk");
+  // The proposal on the left never changes while it is being edited: the
+  // reviewer edits the part being added, below, and sees what the field
+  // would then read. Swapping the proposal for the whole edited text made
+  // the addition impossible to find.
+  desk.append(clipping(c, o, clipFor(c, st, ch), st, ch));
+  desk.append(authorityCard(c, o, ch.field));
+  stage.append(desk);
+
+  if (editing) {
+    const unit = editUnit(ch);
+    const wrap = el("div", "editwrap");
+    wrap.append(el("div", "edit-label", unit.additive
+      ? (ch.diff ? "Your wording of the addition" : `Your wording of what is added to ${SHORT[ch.field] || ch.field}`)
+      : `Your wording of ${SHORT[ch.field] || ch.field}`));
+    const ta = document.createElement("textarea");
+    ta.className = "editor";
+    const drafts = st.editText || (st.editText = {});
+    if (drafts[k] == null) drafts[k] = unit.text;
+    ta.value = drafts[k];
+    const result = el("div", "result");
+    const show = () => { result.replaceChildren(el("span", "result-label", "Would read"), el("span", null, unit.compose(drafts[k]))); };
+    ta.oninput = () => { drafts[k] = ta.value; st.edits[k] = unit.compose(ta.value); show(); };
+    show();
+    wrap.append(ta, result);
+    stage.append(wrap);
+  }
+  noteLine(st, stage);
+
+  const answer = on => {
+    st.tick[k] = on; st.i += 1; st.clipPinned = false;
+    if (st.i >= rows.length) save(c, "approve"); else render();
+  };
+  const next = st.i + 1 < rows.length ? `then change ${st.i + 2} of ${rows.length}` : "and this record is done";
+  stamps(stage, [
+    ["go", editing ? "Accept my wording" : (reworded ? "Accept the rest" : "Accept"), "Y", () => answer(true), "clip", "ACCEPTED", next],
+    ["grey", "No change", "N", () => answer(false), "clip", "NO CHANGE", next],
+    ["amber", editing ? "Keep editing" : "Edit the wording", "E", () => {
+      if (!editing) {
+        const unit = editUnit(ch);
+        const drafts = st.editText || (st.editText = {});
+        if (drafts[k] == null) drafts[k] = unit.text;
+        (st.edits || (st.edits = {}))[k] = unit.compose(drafts[k]);
+        (st.open || (st.open = {}))[k] = true;
+      }
+      render();
+    }],
+  ]);
+  tray(stage, c, st);
+}
+
+// What a reviewer edits, and how the field's final value is put together
+// from it. An addition is edited on its own and joined to what the record
+// already holds; a replacement or a rewrite that removes text is edited whole.
+function editUnit(ch) {
+  const cuts = changesText(ch);
+  if (ch.strategy === "APPEND") {
+    const base = (ch.existing || []).join(" | ");
+    return { additive: true, text: ch.adding, compose: t => (base && t.trim() ? base + " | " + t.trim() : (t.trim() || base)) };
+  }
+  if (ch.diff && !cuts) {
+    const base = ch.diff.filter(d => d.op !== "in").map(d => d.text).join(" ").trim();
+    const added = (ch.adds && ch.adds.length ? ch.adds : ch.diff.filter(d => d.op === "in").map(d => d.text)).join(" ");
+    return { additive: true, text: added, compose: t => (base + " " + t.trim()).trim() };
+  }
+  return { additive: false, text: ch.result || ch.adding, compose: t => t };
+}
+
+// ---- sign-in, tutorial, end of shift ---------------------------------------
+
+// Online: the account is the name. Email and password, created for each
+// reviewer in the Supabase dashboard; nothing signs up from here.
+function authForm(stage) {
+  const box = el("div", "signin");
+  box.append(el("h1", "ask", "TTE review"));
+  box.append(el("p", "hint", "Sign in with the account you were given. Your name goes on every decision you make."));
+  const email = document.createElement("input");
+  email.type = "email"; email.placeholder = "Email"; email.autocomplete = "username";
+  const pass = document.createElement("input");
+  pass.type = "password"; pass.placeholder = "Password"; pass.autocomplete = "current-password";
+  const err = el("p", "hint amber", "");
+  const go = el("button", "stamp go");
+  go.append(el("span", "stamp-face", "Sign in"));
+  const start = async () => {
+    if (!sb) { err.textContent = "The page could not reach the database. Reload and try again."; return; }
+    if (!email.value.trim() || !pass.value) return;
+    err.textContent = "";
+    const { data, error } = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value });
+    if (error || !data || !data.user) { err.textContent = "That email and password were not accepted."; return; }
+    await signedIn(data.user);
+  };
+  go.onclick = start;
+  pass.onkeydown = e => { if (e.key === "Enter") start(); };
+  box.append(email, pass, err, go);
+  // What this is, for someone who arrived without the briefing; and a way
+  // in for someone without an account, which goes to whoever runs the desk.
+  const foot = el("p", "hint");
+  const what = el("a", null, "What this is and where the proposals come from");
+  what.href = "pipeline.html"; what.target = "_blank"; what.rel = "noopener noreferrer";
+  const ask = el("button", "quiet", "No account? Ask for one");
+  ask.onclick = () => { asking = !asking; render(); };
+  foot.append(what, " · ", ask);
+  box.append(foot);
+  if (asking) box.append(requestForm());
+  stage.append(box);
+  setTimeout(() => email.focus(), 0);
+}
+
+let asking = false, askedOk = false;
+function requestForm() {
+  const f = el("div", "request");
+  f.append(el("span", "edit-label", "Ask for an account"));
+  if (askedOk) {
+    f.append(el("p", "hint", "Sent. You will hear back by email once the account is made."));
+    return f;
+  }
+  const name = document.createElement("input"); name.placeholder = "Your name"; name.autocomplete = "name";
+  const email = document.createElement("input"); email.type = "email"; email.placeholder = "Your work email"; email.autocomplete = "email";
+  const why = document.createElement("textarea"); why.placeholder = "Anything the person making the account should know (optional)";
+  const err = el("p", "hint amber", "");
+  const send = el("button", "stamp amber");
+  send.append(el("span", "stamp-face", "Send the request"));
+  send.onclick = async () => {
+    if (!name.value.trim() || !/@/.test(email.value)) { err.textContent = "A name and an email address are needed."; return; }
+    if (!sb) { err.textContent = "The page could not reach the database."; return; }
+    const { error } = await sb.from("access_requests").insert({ name: name.value.trim(), email: email.value.trim(), message: why.value.trim() || null });
+    if (error) { err.textContent = "That did not go through. Try again in a moment."; return; }
+    askedOk = true; render();
+  };
+  f.append(name, email, why, err, send);
+  return f;
+}
+
+async function signedIn(user) {
+  me = user;
+  testing = !!((user.app_metadata || {}).test || (user.user_metadata || {}).test);
+  reviewer = whoAmI(user);
+  try { localStorage.setItem(WHO_KEY, reviewer); } catch (e) {}
+  try { await loadOnline(); } catch (e) { loading = ""; }
+  // The languages and groups are asked once per browser; after that,
+  // straight to the desk, with "settings" in the masthead to change them.
+  let asked = false;
+  try { asked = !!localStorage.getItem(LANG_KEY); } catch (e) {}
+  showPrefs = !asked;
+  if (asked && !(user.user_metadata || {}).langs) {
+    try { Promise.resolve(sb.auth.updateUser({ data: { langs, types } })).catch(() => {}); } catch (e) {}
+  }
+  orderDeck(); at = firstUndecided();
+  render();
+}
+
+function signIn(stage) {
+  const box = el("div", "signin");
+  box.append(el("h1", "ask", ONLINE ? "Before you start" : "TTE review"));
+  if (!ONLINE) {
+    box.append(el("p", "hint", "Enter your name. It goes on every decision you make, "
+      + "so several librarians can review the same set without overwriting one another."));
+  }
+  const input = document.createElement("input");
+  input.placeholder = "Your name";
+  input.autocomplete = "name";
+  if (ONLINE) input.value = reviewer;
+  const langBox = el("div", "langs");
+  langBox.append(el("span", "edit-label", "Languages you read"));
+  const picks = new Set(langs);
+  Object.entries(LANG_NAMES).forEach(([code, name]) => {
+    const lab = el("label", "lang");
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = picks.has(code);
+    cb.onchange = () => { if (cb.checked) picks.add(code); else picks.delete(code); };
+    lab.append(cb, " " + name);
+    langBox.append(lab);
+  });
+  langBox.append(el("p", "hint", "Nothing is hidden on this. Cards in your languages come first; a card "
+    + "whose sources you cannot read says so, and every card carries English."));
+  // Which groups of records to work on, with how many the deck holds of
+  // each. All of them unless some are unticked.
+  const typeBox = el("div", "langs types");
+  typeBox.append(el("span", "edit-label", "Work on"));
+  const counts = {};
+  REAL.forEach(c => { const g = groupOf(c); counts[g] = (counts[g] || 0) + 1; });
+  const present = GROUPS.filter(g => counts[g[0]]).map(g => g[0]);
+  const wants = new Set((types || present).filter(k => present.includes(k)));
+  GROUPS.filter(g => counts[g[0]]).forEach(([key, name]) => {
+    const lab = el("label", "lang");
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = wants.has(key);
+    cb.onchange = () => { if (cb.checked) wants.add(key); else wants.delete(key); };
+    lab.append(cb, ` ${name} (${counts[key]})`);
+    typeBox.append(lab);
+  });
+  if (Object.keys(counts).length) {
+    typeBox.append(el("p", "hint", "Untick a group to leave it for someone else; your sheet and both "
+      + "downloads still carry every decision you have made."));
+  }
+  const go = el("button", "stamp go");
+  go.append(el("span", "stamp-face", "Start"));
+  const start = () => {
+    if (!slug(input.value)) return;
+    reviewer = input.value.trim();
+    langs = picks.size ? [...picks] : ["en"];
+    const chosen = present.filter(k => wants.has(k));
+    types = chosen.length === present.length || !chosen.length ? null : chosen;
+    try {
+      localStorage.setItem(WHO_KEY, reviewer); localStorage.setItem(LANG_KEY, JSON.stringify(langs));
+      localStorage.setItem(TYPE_KEY, JSON.stringify(types));
+    } catch (e) {}
+    // Kept on the account too, so the daily email knows this reviewer's part of the pile.
+    if (sb && me) { try { Promise.resolve(sb.auth.updateUser({ data: { langs, types } })).catch(() => {}); } catch (e) {} }
+    showPrefs = false;
+    orderDeck(); at = firstUndecided();
+    render();
+    let seen = false;
+    try { seen = !!localStorage.getItem(TUTORIAL_KEY); } catch (e) {}
+    if (!seen) showTutorial(false);
+  };
+  go.onclick = start;
+  input.onkeydown = e => { if (e.key === "Enter") start(); };
+  if (ONLINE) box.append(langBox, typeBox, go); else box.append(input, langBox, typeBox, go);
+  stage.append(box);
+  setTimeout(() => input.focus(), 0);
+}
+
+// One sheet, then the practice records, which teach each screen where it
+// appears. Five sheets of prose came before any practice, and the
+// practice's coaching lines did the teaching anyway.
+const STEPS = [
+  ["How the desk works", [
+    "This desk reads the news (CNA, The Straits Times, Lianhe Zaobao) and proposes updates to "
+    + "TTE records. Your job is to approve or reject each proposal.",
+    "Each screen sets two things side by side. In the news: what an article said, with the "
+    + "sentence it came from. In TTE today: the record the pipeline thinks it is about.",
+    "First decide whether they are the same record. Then go through each proposed change, one at "
+    + "a time: accept it, make no change, or edit the wording.",
+    "Not sure? Keep for review sets it aside for the team, and Back one step undoes your last "
+    + "answer. Nothing here changes TTE: your sheet lists your decisions and downloads the "
+    + "approved changes for a cataloguer to make.",
+    "The keys Y, N, K and E do what the buttons say; Backspace goes back.",
+  ]],
+];
+
+function showTutorial(again) {
+  let step = 0;
+  const veil = el("div", "veil");
+  const sheet = el("div", "sheet");
+  veil.append(sheet);
+  const draw = () => {
+    sheet.replaceChildren();
+    if (STEPS.length > 1) sheet.append(el("div", "sheet-step", `${step + 1} of ${STEPS.length}`));
+    sheet.append(el("h2", null, STEPS[step][0]));
+    const body = STEPS[step][1];
+    if (Array.isArray(body)) {
+      const ul = el("ul");
+      body.forEach(t => ul.append(el("li", null, t)));
+      sheet.append(ul);
+    } else sheet.append(el("p", null, body));
+    const row = el("div", "sheet-row");
+    if (step > 0) { const b = el("button", "quiet", "← back"); b.onclick = () => { step--; draw(); }; row.append(b); }
+    row.append(el("span", "spacer"));
+    const skip = el("button", "quiet", again ? "close" : "skip to the real records");
+    skip.onclick = close;
+    row.append(skip);
+    const next = el("button", "stamp go");
+    const last = step === STEPS.length - 1;
+    next.append(el("span", "stamp-face", last ? "Try it" : "Next"));
+    if (last) next.append(el("span", "stamp-sub", "three practice records, nothing kept"));
+    next.onclick = () => { if (step === STEPS.length - 1) { close(); startPractice(); } else { step++; draw(); } };
+    row.append(next);
+    sheet.append(row);
+  };
+  const close = () => {
+    try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (e) {}
+    veil.remove();
+  };
+  veil.onclick = e => { if (e.target === veil) close(); };
+  draw();
+  document.body.appendChild(veil);
+}
+
+// The outcomes so far, as the end sheet and the reviewer's sheet both list
+// them: what there is to create and to amend, then the rest.
+function tallyList() {
+  const n = {};
+  let notes = 0, pencilled = 0, searched = 0;
+  decided().forEach(l => {
+    const o = outcome(l); n[o] = (n[o] || 0) + 1;
+    if (l.note) notes++;
+    pencilled += (l.changes || []).length;
+    if (l.foundBySearch) searched++;
+  });
+  const times = decided().map(l => l.seconds).filter(x => x != null).sort((a, b) => a - b);
+  const median = times.length ? times[Math.floor(times.length / 2)] : null;
+  const dl = el("dl", "tally");
+  [["records to create", n["to create"] || 0], ["records to amend", n.amended || 0],
+   ["attributes accepted", pencilled], ["same record, nothing to change", n.same || 0],
+   ["not worth a record", n["not worth"] || 0], ["kept for review", n["kept for review"] || 0],
+   ["notes left for the next librarian", notes],
+   ["records found by searching", searched],
+   ["median time per record", median == null ? "\u2014" : (median < 90 ? `${median} s` : `${Math.round(median / 60)} min`)]].forEach(([k, v]) => {
+    dl.append(el("dt", null, k), el("dd", null, String(v)));
+  });
+  return dl;
+}
+
+function downloadRow() {
+  const row = el("div", "sheet-row");
+  if (testing) {
+    row.append(el("p", "hint", "Test account: nothing is kept, so there is nothing to download."));
+    return row;
+  }
+  const dl = el("button", "stamp go");
+  dl.append(el("span", "stamp-face", "Download approved changes (CSV)"));
+  dl.onclick = downloadChanges;
+  const dl2 = el("button", "quiet", "download every decision (CSV)");
+  dl2.onclick = downloadCsv;
+  row.append(dl, dl2);
+  return row;
+}
+
+// The reviewer's sheet: every decision so far, one line each, to look back
+// over, filter, reopen, and download at any point, not only at the end.
+let sheetFilter = { outcome: "", type: "", text: "" };
+function sheetPage(stage) {
+  const d = el("div", "report ledger");
+  d.append(el("h1", "ask", "Your sheet"));
+  d.append(tallyList());
+
+  const f = el("div", "filters");
+  const sel = (name, options, cur, set) => {
+    const s = document.createElement("select");
+    s.className = "filter";
+    [["", name]].concat(options.map(o => [o, o])).forEach(([v, label]) => {
+      const opt = document.createElement("option"); opt.value = v; opt.textContent = label; if (v === cur) opt.selected = true; s.append(opt);
+    });
+    s.onchange = () => { set(s.value); render(); };
+    return s;
+  };
+  const types = [...new Set(REAL.map(c => kind(c)))].sort();
+  f.append(sel("every outcome", OUTCOMES, sheetFilter.outcome, v => { sheetFilter.outcome = v; }));
+  f.append(sel("every type", types, sheetFilter.type, v => { sheetFilter.type = v; }));
+  const box = document.createElement("input");
+  box.type = "search"; box.className = "filter"; box.placeholder = "name"; box.value = sheetFilter.text;
+  box.oninput = () => { sheetFilter.text = box.value; renderLedger(); };
+  f.append(box);
+  d.append(f);
+
+  const list = el("div", "ledger-rows");
+  const renderLedger = () => {
+    list.replaceChildren();
+    const q = sheetFilter.text.trim().toLowerCase();
+    const rows = CARDS.map((c, i) => ({ c, i, l: labels[c.pids[0]] })).filter(({ c, l }) => l
+      && (!sheetFilter.outcome || outcome(l) === sheetFilter.outcome)
+      && (!sheetFilter.type || kind(c) === sheetFilter.type)
+      && (!q || c.entity.toLowerCase().includes(q) || (l.record || "").toLowerCase().includes(q)));
+    if (!rows.length) { list.append(el("p", "hint", decided().length ? "Nothing matches." : "Nothing decided yet.")); return; }
+    rows.forEach(({ c, i, l }) => {
+      const b = el("button", "ledger-row");
+      const when = l.at ? new Date(l.at).toLocaleDateString("en-SG", { day: "numeric", month: "short" }) : "";
+      b.append(el("b", null, c.entity), el("span", "ledger-outcome", outcome(l)),
+               el("span", "ledger-record", l.record || (l.chose === "new-entity" ? "new record" : "")),
+               el("span", "ledger-when", when));
+      b.title = "Open this record again";
+      b.onclick = () => { onSheet = false; at = i; render(); };
+      const line = el("div", "ledger-line");
+      line.append(b);
+      // Approved changes are made in TTE by hand; this records that it is done.
+      if (sb && me && !testing && l.verdict === "approve") {
+        const t = el("button", "done-toggle" + (l.done ? " on" : ""), l.done ? "\u2713 done in TTE" : "mark done in TTE");
+        t.title = l.done ? "Made in TTE. Click to undo." : "Click once you have made this change in TTE.";
+        t.onclick = () => markDone(c, !l.done);
+        line.append(t);
+      }
+      list.append(line);
+    });
+  };
+  renderLedger();
+  d.append(list);
+  d.append(downloadRow());
+  if (sb && me && !testing) d.append(evaluationForms());
+  stage.append(d);
+}
+
+// The team page: everyone's progress and the pipeline's, as of opening it.
+// No one's individual numbers are shown; the evaluation collects those
+// separately, with the service role.
+async function refreshTeam() {
+  try {
+    allReviews = await pageAll("reviews", "pid,card_key,reviewer,decision", "pid");
+    allHolds = await pageAll("claims", "card_key,reviewer", "card_key");
+  } catch (e) { /* the figures from sign-in stand */ }
+  if (onTeam) render();
+}
+const STEP_NAMES = [["load", "TTE dump"], ["relevance", "relevance"], ["extraction", "extraction"], ["resolution", "matching"]];
+const STEP_MARK = { success: "\u2713", failure: "\u2717 failed", skipped: "skipped", cancelled: "stopped" };
+function teamPage(stage) {
+  const d = el("div", "report ledger");
+  d.append(el("h1", "ask", "The team's desk"));
+  const decided = {};
+  allReviews.forEach(r => { decided[r.card_key] = r; });
+  const held = new Set(allHolds.map(h => h.card_key));
+  const rows = GROUPS.map(([key, name]) => ({ key, name, cards: 0, decided: 0, kept: 0, held: 0, waiting: 0 }));
+  const waitingIn = {};
+  REAL.forEach(c => {
+    const g = rows.find(r => r.key === groupOf(c));
+    g.cards++;
+    const r = decided[c.key];
+    if (r) { g.decided++; if ((r.decision || {}).verdict === "unsure") g.kept++; }
+    else if (held.has(c.key)) g.held++;
+    else { g.waiting++; cardLangs(c).forEach(l => { waitingIn[l] = (waitingIn[l] || 0) + 1; }); }
+  });
+  const shown = rows.filter(r => r.cards);
+  const total = { name: "All", cards: 0, decided: 0, kept: 0, held: 0, waiting: 0 };
+  shown.forEach(r => ["cards", "decided", "kept", "held", "waiting"].forEach(k => { total[k] += r[k]; }));
+  const table = el("table", "team-table");
+  const head = el("tr");
+  ["", "cards", "decided", "kept for review", "on someone's desk", "waiting"].forEach(h => head.append(el("th", null, h)));
+  table.append(head);
+  shown.concat([total]).forEach(r => {
+    const tr = el("tr", r === total ? "total" : null);
+    [r.name, r.cards, r.decided, r.kept, r.held, r.waiting].forEach(v => tr.append(el("td", null, String(v))));
+    table.append(tr);
+  });
+  d.append(table);
+  const langs = Object.entries(waitingIn).map(([l, n]) => `${LANG_NAMES[l] || l} ${n}`).join(", ");
+  if (langs) d.append(el("p", "hint", `Waiting, by the language of their articles: ${langs}.`));
+
+  const weekAgo = Date.now() - 7 * 864e5;
+  const approved = new Set(), done = new Set();
+  allReviews.forEach(r => {
+    const l = r.decision || {};
+    if (l.verdict === "approve" && Date.parse(l.at || 0) >= weekAgo) {
+      approved.add(r.card_key);
+      if (l.done) done.add(r.card_key);
+    }
+  });
+  d.append(el("p", null, `This week: ${approved.size} record${approved.size === 1 ? "" : "s"} approved, `
+    + `${done.size} of them done in TTE.`));
+
+  const st = STATUS || {};
+  const pipe = el("dl", "tally");
+  const when = st.published ? new Date(st.published).toLocaleString("en-SG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "\u2014";
+  const steps = st.steps && Object.keys(st.steps).length
+    ? STEP_NAMES.filter(([k]) => st.steps[k]).map(([k, name]) => `${name} ${STEP_MARK[st.steps[k]] || st.steps[k]}`).join(" \u00b7 ")
+    : "\u2014";
+  [["cards last published", when], ["newest news in the deck", st.newest_news || "\u2014"],
+   ["TTE dump loaded", st.tte_dump || "\u2014"], ["that run's steps", steps]].forEach(([k, v]) => {
+    pipe.append(el("dt", null, k), el("dd", null, String(v)));
+  });
+  d.append(el("h2", null, "The pipeline"), pipe);
+  d.append(el("p", "hint", "No one's individual numbers are shown here."));
+  if (!testing) {
+    const dl = el("button", "quiet", "download the team's decisions (CSV)");
+    dl.onclick = () => download("team-decisions.csv", teamCsv());
+    d.append(dl);
+  }
+  stage.append(d);
+}
+function teamCsv() {
+  const byKey = {};
+  REAL.forEach(c => { byKey[c.key] = c; });
+  const lines = [["proposal_id", "entity", "verdict", "chose", "record", "reason", "note", "applied", "dropped",
+                  "reviewer", "at", "done_in_tte"].join(",")];
+  allReviews.forEach(r => {
+    const l = r.decision || {};
+    lines.push([r.pid, (byKey[r.card_key] || {}).entity || l.entity || "", l.verdict, l.chose, l.record || "",
+                l.reason || "", l.note || "", (l.changes || []).join("; "), (l.dropped || []).join("; "),
+                l.reviewer || "", l.at || "", l.done ? String(l.done).slice(0, 10) : ""].map(esc).join(","));
+  });
+  return lines.join("\n");
+}
+
+// Done in TTE: set once the change has been made in TTE itself. It lives in the
+// decision, so the weekly file's Status column and the team page both see it.
+async function markDone(c, on) {
+  if (!sb || !me || testing) return;
+  const when = on ? new Date().toISOString() : null;
+  c.pids.forEach(pid => { if (labels[pid]) labels[pid] = { ...labels[pid], done: when }; });
+  keep();
+  const rows = c.pids.filter(pid => labels[pid]).map(pid => ({ pid, card_key: c.key, reviewer: me.id,
+                                                              verdict: labels[pid].verdict, decision: labels[pid] }));
+  render();
+  try { await sb.from("reviews").upsert(rows, { onConflict: "pid" }); } catch (e) {}
+}
+
+// The evaluation's two logs (docs/evaluation.md). On the sheet page, where no
+// card is shown, so someone working by hand can use them without seeing the
+// app's proposals. Only the reviewer and the evaluation see what is entered.
+const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const mondayOf = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+function field(label, input) { const l = el("label", null, label); l.append(input); return l; }
+function inputOf(type, value) { const i = document.createElement("input"); i.type = type; i.value = value == null ? "" : value; return i; }
+function selectOf(options, value) {
+  const s = document.createElement("select");
+  options.forEach(([v, label]) => { const o = document.createElement("option"); o.value = v; o.textContent = label; if (v === value) o.selected = true; s.append(o); });
+  s.value = value;
+  return s;
+}
+const WAYS = [["manual", "Reading the news by hand"], ["app", "Using the desk"]];
+function evaluationForms() {
+  const box = el("div", "evaluation");
+  box.append(el("h2", null, "For the evaluation"));
+  box.append(el("p", "hint", "Only you and the evaluation see what you enter here."));
+
+  const week = el("form", "request");
+  week.append(el("b", null, "This week"));
+  const start = inputOf("date", isoDay(mondayOf(new Date())));
+  const way = selectOf(WAYS, "manual");
+  const minutes = inputOf("number"); minutes.min = "0"; minutes.placeholder = "minutes";
+  const changes = inputOf("number"); changes.min = "0"; changes.placeholder = "changes";
+  const r1 = el("div", "form-row"); r1.append(field("Week starting", start), field("How you worked", way));
+  const r2 = el("div", "form-row"); r2.append(field("Minutes spent", minutes), field("Changes identified", changes));
+  const weekSay = el("p", "hint", "");
+  const save = el("button", "stamp grey"); save.append(el("span", "stamp-face", "Save this week"));
+  week.append(r1, r2, save, weekSay);
+  week.onsubmit = async e => {
+    e.preventDefault();
+    if (minutes.value === "" || changes.value === "") { weekSay.textContent = "Fill in the minutes and the changes."; return; }
+    const { error } = await sb.from("weekly_log").upsert({ reviewer: me.id, week_start: isoDay(mondayOf(new Date(start.value))),
+      method: way.value, minutes: Number(minutes.value), changes: Number(changes.value) }, { onConflict: "reviewer,week_start,method" }) || {};
+    weekSay.textContent = error ? "Not saved: " + (error.message || "try again") : "Saved. Saving again for the same week replaces it.";
+  };
+
+  const log = el("form", "request");
+  log.append(el("b", null, "A change you found"));
+  const lway = selectOf(WAYS, "manual");
+  const link = inputOf("url"); link.placeholder = "https://...";
+  const entity = inputOf("text"); entity.placeholder = "as TTE names it, or the new name";
+  const uid = inputOf("text"); uid.placeholder = "if it is already in TTE";
+  const kindSel = selectOf([["amend", "Change to an existing record"], ["new", "A new record"]], "amend");
+  const fld = inputOf("text"); fld.placeholder = "e.g. Affiliations(groupName)";
+  const oldv = inputOf("text"); const newv = inputOf("text");
+  const day = inputOf("date", isoDay(new Date()));
+  const rows = [[field("How you found it", lway), field("Date", day)],
+                [field("Article", link)],
+                [field("TTE record", entity), field("TTE UID", uid)],
+                [field("Kind", kindSel), field("Attribute", fld)],
+                [field("Current value", oldv), field("New value", newv)]];
+  rows.forEach(r => { const row = el("div", "form-row"); r.forEach(x => row.append(x)); log.append(row); });
+  const logSay = el("p", "hint", "");
+  const add = el("button", "stamp grey"); add.append(el("span", "stamp-face", "Log this change"));
+  log.append(add, logSay);
+  log.onsubmit = async e => {
+    e.preventDefault();
+    if (!entity.value.trim()) { logSay.textContent = "Name the record first."; return; }
+    const { error } = await sb.from("change_log").insert({ reviewer: me.id, method: lway.value,
+      article_url: link.value.trim() || null, tte_entity: entity.value.trim(), tte_uid: uid.value.trim() || null,
+      kind: kindSel.value, field: fld.value.trim() || null, old_value: oldv.value.trim() || null,
+      new_value: newv.value.trim() || null, found_on: day.value || isoDay(new Date()) }) || {};
+    if (error) { logSay.textContent = "Not logged: " + (error.message || "try again"); return; }
+    logSay.textContent = `Logged: ${entity.value.trim()}.`;
+    [link, entity, uid, fld, oldv, newv].forEach(x => { x.value = ""; });
+  };
+  box.append(week, log);
+  return box;
+}
+
+function endOfShift(stage) {
+  const d = el("div", "report");
+  d.append(el("h1", "ask", "All done"));
+  const searched = decided().filter(l => l.foundBySearch).length;
+  d.append(tallyList());
+  if (searched) {
+    d.append(el("p", "hint", `${searched} record${searched > 1 ? "s were" : " was"} found by search `
+      + "that the candidates did not include. Those are the most useful thing you did today: "
+      + "each one is a case retrieval should have caught."));
+  }
+  const noted = NOTED;
+  if (noted.length) {
+    d.append(el("p", "hint", `${noted.length} entit${noted.length > 1 ? "ies were" : "y was"} read and not asked about: `
+      + "on record and up to date, or only mentioned in passing."));
+    const ul = el("ul", "noted");
+    noted.forEach(nt => {
+      const li = el("li");
+      li.append(el("b", null, nt.entity), nt.new ? " (not in TTE; mentioned only) " : " (up to date) ");
+      const a = el("a", null, nt.article); a.href = nt.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+      li.append("in ", a);
+      ul.append(li);
+    });
+    d.append(ul);
+  }
+  const row = downloadRow();
+  const again = el("button", "quiet", "clear everything and start over");
+  again.onclick = () => {
+    if (!confirm("Clear every decision and start again?")) return;
+    labels = {};
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    at = 0; render();
+  };
+  row.append(again);
+  d.append(row);
+  stage.append(d);
+}
+
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if (t && (t.isContentEditable || t.tagName === "INPUT"
+            || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+  if (e.metaKey || e.ctrlKey || at >= CARDS.length) return;
+  if (document.querySelector(".veil")) return;
+  const k = e.key.toLowerCase();
+  const alias = { arrowleft: "backspace" };
+  const fn = KEYS[k] || KEYS[alias[k]];
+  if (fn) { e.preventDefault(); fn(); }
+});
+
+// The masthead menu closes once something in it is chosen, or on a click elsewhere.
+const menu = document.getElementById("menu");
+if (menu) {
+  menu.addEventListener("click", e => { if (e.target.tagName === "BUTTON") menu.removeAttribute("open"); });
+  document.addEventListener("click", e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute("open"); });
+}
+
+if (ONLINE && sb) {
+  loading = "Signing in…"; render();
+  Promise.resolve(sb.auth.getSession()).then(({ data }) => {
+    loading = "";
+    if (data && data.session && data.session.user) return signedIn(data.session.user);
+    render();
+  }).catch(() => { loading = ""; render(); });
+} else {
+  if (reviewer) { orderDeck(); at = firstUndecided(); }
+  render();
+}
+</script>

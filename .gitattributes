@@ -1,0 +1,14 @@
+# The working tree is WSL (LF) but these files were committed with CRLF, so
+# every checkout showed ~400k lines as modified. Normalise once, then hold.
+
+*.py    text eol=lf
+*.sql   text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Authority exports and scraped data: never convert, never diff. They are
+# large, machine-generated, and line-ending churn on them is pure noise.
+data/** -text -diff

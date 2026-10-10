@@ -1,0 +1,52 @@
+[
+ [
+  "replace",
+  "the three outlets this project follows publish a median of 60 articles a day",
+  "the Singapore feeds of the three outlets this project follows carry a median of 60 articles a day"
+ ],
+ [
+  "insert",
+  "The evaluation has not yet run.",
+  "Across these cases the failures were mostly a missing step between the model and the reviewer rather than a failure of either, and a pilot of a second model as a checker is reported in section 6. "
+ ],
+ [
+  "append",
+  "Most of the following failures became visible only",
+  " Read together, most of them are a missing step between the model and the reviewer rather than a failure of either: each was fixed by adding a step in code or on the screen."
+ ],
+ [
+  "paragraph",
+  "Updating a description requires different guidance",
+  "A merged note is not a sum of articles. A record for a heavily covered person collects proposals from many articles, and the first design merged every article's new sentences into one description note: one prime minister's carried thirteen, from 83 proposals, where the style guide allows three to five in total. Editing is told to keep every existing fact, so the guide's length limit is off when editing and descriptions only grow: in the stored rewrites 12 in 100 records were already over five sentences and 25 in 100 were after the rewrite. In a pilot of 48 cards, the 29 records built from two or more articles took 76 per cent of one reviewer's 55 minutes. A merged note now carries only the new sentences that fit under the limit, best supported first, and shows the rest as held back, not dropped; on those cards this cuts the sentences to read from 90 to 36. The cap is tested in code but has not yet run on a live deck."
+ ],
+ [
+  "append",
+  "In a rough check of the changes the pipeline could",
+  " This check was done once, by hand, and has not been reproduced, so the figures are indicative."
+ ],
+ [
+  "paragraph",
+  "Buçinca, Malaya and Gajos (2021) found that interf",
+  "First checks with a person. Two passes with one reviewer, who is not a cataloguer, are a pilot, not a measurement. A first pass over 160 cards, at a median of three seconds each, found nothing wrong at a glance, which shows what a glance can see, not that nothing was wrong. A slower pass over 48 cards exposed the merged-note problem above, and showed that the reviewer's nine decisions on new records followed three rules nobody had written down: the entity must be Singapore-centric (the Tokyo Paralympic Games were not), a brand whose parent organisation is already a record is the domain team's call (a newspaper title), and an article about a regulatory penalty on one person should not have passed relevance. A notability question built from the cataloguing guidance matched those decisions no better than chance; three gates built from the reasons agreed with eight of nine, but they were designed after reading the reasons, so that is not a test. Cataloguers should settle these rules."
+ ],
+ [
+  "paragraph",
+  "First checks with a person. Two passes with one re",
+  "A second model as a checker (pilot). Where a step is a decision rather than writing, a decision model that answers typed questions and writes no text (jev-1.13.0, TypeSafe) was run beside Gemini on the stored decisions, sending only English summaries, translated quotes and public record fields. All figures are agreement with Gemini unless they say people. Asked which of a person's candidate records is the match, or none, with no cut-off tuned, it chose the same record as Gemini for 99.5 per cent of Gemini's matches (2,765 of 2,778); the 26 entities where they disagree are not yet adjudicated. As a relevance filter on headlines, with no training, it scored F1 0.66 against 0.75 for a fine-tuned small model, and 0.23 against 0.22 on 69 hard cases a person judged. Checking each change against the article's own quote, it found the quote supported 71 per cent of 1,700 changes and contradicted 1 per cent, including years written as 2025 for 2026 articles. It writes nothing, and it agreed only weakly with Gemini on which descriptions, affiliations and titles to record. The provider's terms state no retention period."
+ ],
+ [
+  "paragraph",
+  "A second model as a checker (pilot). Where a step ",
+  "Replaying the flow with no person. With the decision model deciding everything it can, and Gemini's stored text reused, policy decided the result, not matching: a notability question discarded about 35 in 100 entities that Gemini's pipeline would have sent on, and three gates in its place created 24 in 100; a relevance cut-off chosen for best F1 dropped 30 in 100 entities, while the cut-off that keeps 95 per cent of relevant articles dropped 6. These are policy choices that need cataloguers' labels. The experiment does not show that a person can be removed; it shows where the person is deciding what nobody has written down."
+ ],
+ [
+  "append",
+  "The following design principles are expected to tr",
+  " The failure cases in section 4 also serve as a test suite: a more capable system, such as an agent that searches and verifies for itself, can be run against them before it replaces any step."
+ ],
+ [
+  "append",
+  "Our aim was not to delegate decisions to AI but to",
+  " A pilot of a second model suggests that identity and evidence checking can be automated much further than the judgements that have no written rule, such as what belongs in a description or what deserves a record; until those are written down and tested against cataloguers' decisions, the person stays in the loop."
+ ]
+]

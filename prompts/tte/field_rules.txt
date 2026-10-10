@@ -1,0 +1,690 @@
+TTE FIELD RULES
+
+Compiled from 'KOS Guidelines for Name Construction in TTE', ver 5.1, 10 Sep 2026.
+Field names are given exactly as they are stored in TTE, which differs from the
+guidelines' own spelling in one place (Affiliations(groupName), no space).
+Fields the pipeline cannot populate from a news article (URIs, images, sources,
+coordinates, cataloguing-internal names) are omitted.
+
+======================================================================
+PERSON   (guidelines section 3.4, 'People')
+======================================================================
+
+Name   [mandatory field]
+  - Create the preferred name based on the following criteria and in
+    accordance with RDA standards (refer RDA section 9.0): a) Use the name
+    by which the person is most commonly known in the local context, even
+    if this differs from the LCNA established name. Exclude the birth and
+    death date from the preferred name – these are to be placed under the
+    attributes Birth Year and Death Year. b) The name is mentioned in at
+    least two sources. c) An abbreviation or symbol is not to be
+    established as a preferred name unless the name is commonly used.
+  - Name with alias: If a person is more commonly known by an alias or
+    nickname, establish this as the preferred name. If it cannot be
+    determined if the alias is better known ( i.e., unable to find
+    biographical information), then establish the birth name as the
+    preferred name and the alias as a non-preferred name.
+  - If a nickname forms part of the name and appears in brackets, include
+    it in the preferred name. [This is most often found in NAS names of
+    WWII POWs.]
+  - For women, the married name and maiden name needs to be separated into
+    PT and NPT. The more commonly used name shall be the PT. If it cannot
+    be determined which is more commonly used, treat the maiden name as
+    the PT .
+
+Qualifier   [mandatory if applicable]
+  - A qualifier must be added in the following conditions (Refer to RDA
+    section 9.19.1.2 - 9.19.1.7 for details): a) The name does not convey
+    the idea of a person. A qualifier is added to indicate the profession
+    or occupation of the person. This also applies to a name that does not
+    include a surname or consists only of initials. Examples: Name: Big
+    Hand Qualifier: Musician Name: Soon Qualifier: Musician b) More than
+    one person with the exact same name, with no Title to differentiate
+    them. A qualifier must be added to distinguish one from the other. Use
+    the following qualifiers in order of preference: i) fuller form of the
+    name ii) occupation iii ) birth and/or death year iv) any other
+    differentiator.
+
+Title
+  - Includes titles of royalty, nobility, religious rank, honour, or
+    office . (Refer to RDA section 9.4 and 9.19.1.7 for details.)
+  - Excludes: a) terms of address that simply indicate gender or marital
+    status . The exception is when “Mrs” is used for a woman who is known
+    only through her husband’s name. However, if a woman is using only her
+    husband’s surname in place of her own, do not include “Mrs” as a title
+    (see 3.4.1.4 above). Omit the fullstop in Mrs. b) titles for
+    professions, military ranks and designations unless it is always used,
+    or it is needed for disambiguation. When abbreviations for titles are
+    used, omit the fullstop if both the first and last letter of the word
+    are present, as in Dr or Lt, but include the fullstop otherwise, as in
+    Prof.
+  - Where a title is included, use the form given in Appendix 2 at the end
+    of this file.
+
+Description   [mandatory field]
+  - The description for a person should be concise and limited to 3 to 5
+    complete sentences. It should include the following information (in
+    order of priority) wherever possible: a) Highlight the person's main
+    occupation or what the person is most well known for. If a person is
+    holding more than one position, highlight only the most significant
+    and most recent one or two positions. Avoid merely listing
+    designations like in a resume. b) Focus on the person being described.
+    Do not dwell on his/her relatives and connections with other people.
+  - Information in the description must be based on authoritative sources.
+  - If the name of the person is derived from bibliographic records in
+    GT.Net and information on the person is lacking, state the role of the
+    person in relation to the bibliographic record, and the type of work,
+    such as fiction, a collection of poetry, research paper or song. Add a
+    note under the field “Note” in the following format - “Name derived
+    from bib record UUID”, followed by the UUID of the bib record.
+  - Description is not required for non -preferred names. Any description
+    placed under non - preferred names should be transferred to the
+    preferred names.
+  - Refer to the style guide for descriptions in section 7.
+
+Birth Year (yyyy)   [mandatory if available]
+  - Enter the year only (yyyy). The month and day go into their respective
+    fields . Leave blank if the birth year is unavailable or in doubt.
+
+Birth Month (mm)
+  - Enter the month only (mm). The year and day go into their respective
+    fields. Leave blank if the birth month is unavailable or in doubt.
+    Enter the month only if the year has been filled in.
+
+Birth Day (dd)
+  - Enter the day only (dd). The year and month go into their respective
+    fields. Leave blank if the birth day is unavailable or in doubt. Enter
+    a day only if the year and month have been filled in.
+
+Death Year (yyyy)   [mandatory if available]
+  - Enter the year only (yyyy). The month and day go into their respective
+    fields. Leave blank if the death year is unavailable or in doubt.
+
+Death Month (mm)
+  - Enter the month only (mm). The year and day go into their respective
+    fields. Leave blank if the death month is unavailable or in doubt.
+    Enter the month only if the year has been filled in.
+
+Death Day (dd)
+  - Enter the day only (dd). The year and month go into their respective
+    fields. Leave blank if the death day is unavailable or in doubt .
+    Enter the day only if the year and month have been filled in.
+
+Spouse
+  - Refers to the person with a marital or civil union relationship to the
+    person described. Enter the preferred name (PT) of the person, as
+    found in TTE, LCNA or VIAF, in that order of preference. If the name
+    is not found in any of these sources, enter it as you would in PT
+    form.
+  - If there is more than one spouse in different periods in time, include
+    all names in chronological order, separated by a delimiter ( | ).
+    Indicate the period of marriage in brackets, preceding the date with
+    "m.": "Name (m. YYYY-YYYY)" once both the start and end are known,
+    "Name (m. YYYY)" while the marriage is current. If the dates of an
+    earlier marriage are unknown, write "(div.)" or "(deceased)" after that
+    spouse's name instead of a date.
+    Example 1: Spouse: Woon, Alice (m. 1942-1986) | Phua, Swee Liang (m.
+    1991)
+    Example 2: Spouse: Lam, May Yee (deceased) | Khoo, Shellen
+  - If a name record has been created for the spouse, relate it using RT.
+
+Child
+  - Refers to the person who is a natural or legal offspring of the person
+    described. Enter the preferred name (PT) of the person, as found in
+    TTE, LCNA or VIAF, in that order of preference. If the name is not
+    found in any of these sources, enter it as you would in PT form.
+  - If there is more than one child, include all names and separate them
+    with a delimiter ( | ).
+  - If a name record has been created for the child, relate it using RT.
+
+Parent
+  - Refers to the person who is a natural or legal parent of the person
+    described. Enter the preferred name (PT) of the person, as found in
+    TTE, LCNA or VIAF, in that order of preference. If the name is not
+    found in any of these sources, enter it as you would in PT form.
+  - If more than one name is entered, separate the names with a delimiter
+    ( | ).
+  - If a name record has been created for the parent, relate it using RT.
+
+Nationality
+  - Refers to the nationality of the person described. Use the demonym
+    instead of the country, i.e., use “Singaporean” and not “Singapore”.
+  - Nationality may or may not be equivalent to birth place and death
+    place.
+  - Leave blank if in doubt.
+
+Place of Birth   [mandatory if available]
+  - Enter here the place of birth of the person, in the format: City or
+    Town, Country
+  - If the city or town is not known, then just the country will do.
+  - Use Getty Thesaurus of Geographic Names (TGN) at
+    http://www.getty.edu/research/tools/vocabularies/tgn/ for the place
+    names. Choose the English preferred name (indicated with ‘English-P’)
+    if the name is in more than one language.
+
+Occupation   [mandatory if known]
+  - This is the durable engagement the person described has in an activity
+    or responsibility.
+  - Use only the terms listed in the Occupations Thesaurus. If the term
+    needed is not found, submit the term to the Chief Editor for
+    consideration.
+  - Exclude designations (e.g., Minister for Defence, CEO). These can go
+    into the description if necessary.
+  - If more than one occupation is entered, separate the occupations with
+    a delimiter ( | ).
+
+Active Years
+  - The year range during which the person was active in his most
+    prominent occupation.
+
+Achievements
+  - Refers to the person’s key achievements. List up to 3 most significant
+    achievements associated with the person, described in 3 to 5 full
+    sentences.
+  - Achievements may include: a) Recognition as the first or top in
+    Singapore or the world in certain areas. b) Places, organisations
+    and/or awards named in honour of the person.
+  - Achievements are NOT: a) A duplication of the description b) A list of
+    the person’s designations or portfolio c) Awards the person has
+    received, as these should go in the Awards field d) The person’s
+    relationship with another well-known person e) Illegal acts committed
+    by the person
+  - Leave blank if the person has no significant achievements yet, or if
+    not much information is known.
+
+Education
+  - Refers to the educational institution at which the person described
+    received his/her education. Enter the preferred name (PT) of the
+    educational institution, as found in TTE, LCNA or VIAF, in that order
+    of preference. If the name is not found in any of these sources, enter
+    it as you would in PT form.
+  - If more than one institution is entered, separate the names with a
+    delimiter ( | ).
+
+Awards
+  - Refers to the award(s) received by the person. Enter the name of the
+    award, followed by the year awarded in brackets, if available.
+  - If more than one award is entered, separate the awards with a
+    delimiter ( | ).
+
+Affiliations(groupName)   [mandatory if available]
+  - Refers to the key organisation(s) with which the person described is
+    affiliated or is most often associated with. Enter the preferred name
+    (PT) of the organisation, as found in TTE, LCNA or VIAF, in that order
+    of preference. If the name is not found in any of these sources, enter
+    it as you would in PT form.
+  - Exclude the educational institutions which the person attended, as
+    these would be placed in the Education field.
+  - If more than one organisation is entered, separate the names with a
+    delimiter ( | ).
+
+
+======================================================================
+ORGANISATION   (guidelines section 3.3, 'Organisations')
+======================================================================
+
+Name   [mandatory field]
+  - Create the preferred name based on the following criteria and in
+    accordance with RDA standards (refer RDA section 11.0): a) Use the
+    officially established name. This means the official name that the
+    organisation wishes to be known as, as stated in the official website
+    and documents.
+  - If the officially established name contradicts with names derived from
+    alternate sources, verify whether it is a typo error on the part of
+    the creating agency. Alert and clarify with the creating agency if
+    necessary.
+  - When an organisation is renamed, create a new entry for the new name
+    and link them with a predecessor-successor relationship.
+  - When organisations are merged or split, use RT. The merging
+    organisations should have a RT link with the merged organisation, but
+    not with each other. Similarly, when an organisation is split, it
+    should have RT links to the split organisations, but the spl it
+    organisations should not be related to each other.
+
+Qualifier   [mandatory if applicable]
+  - A qualifier must be added in the following conditions (Refer to RDA
+    section 11.13.1.2 - 11.13.1.8 for details): a) When the name does not
+    convey the idea of an organisation , or is a transliteration, a
+    qualifier is added to indicate the nature of the organisation.
+  - However, note the following: a) Administrative information such as
+    "expunged" and "defunct" is not considered to be a qualifier.
+
+Description   [mandatory field]
+  - The description for organisation names should be concise and limited
+    to 3 to 5 complete sentences. It should include the following
+    information (in order of priority) wherever possible: a) The nature of
+    the organisation (commercial company, government agency, etc.). b) The
+    main roles and functions of the organisation. c) Specify any changes
+    in role and function, changes in name and the year the changes took
+    place.
+  - Information in the description should be based on authoritative
+    sources.
+  - If the name of the entity is derived from bibliographic records in
+    GT.Net and information on the entity is lacking, state the role of the
+    entity in relation to the bibliographic record. Add a note under the
+    field “Note” in the following format - “Name derived from bib record
+    UUID”, followed by the UUID of the bib record.
+  - Descriptions are not required for non -preferred names. Any
+    description placed under non - preferred names should be transferred
+    to the preferred name.
+  - Refer to the style guide for descriptions in section 7.
+
+Street Address   [mandatory if available]
+  - Enter the street address of the organisation. The format of the
+    address should be: <street number> <street name>, <#unit-number>
+    <building name>. Spell the street name in full and do not use
+    abbreviations such as Rd, St, Dr. A former address may be placed under
+    description if it is important.
+  - Leave blank if the address is unknown or the organisation no longer
+    exists.
+
+Country   [mandatory field]
+  - Enter Singapore, even if the organisation no longer exists. Only names
+    of Singapore organisations should be created in TTE.
+
+Postal Code   [mandatory if available]
+  - Enter the postal code of the organisation.
+  - Leave blank if the organisation no longer exists.
+
+Founder   [mandatory if available]
+  - Enter the name(s) of the founder of the organisation. Enter the
+    preferred name (PT) of the person, as found in TTE, LCNA or VIAF, in
+    that order of preference. If the name is not found in any of these
+    sources, enter it as you would in PT form. Use a delimiter ( | ) to
+    separate names if there is more than one name.
+
+Year Started (yyyy)   [mandatory if available]
+  - Refers to any of the following: a) Year of establishment of the
+    organisation.
+  - Enter the year (yyyy) only. The month and day go into their respective
+    fields. Leave blank if the precise year started is not available.
+
+Month Started (mm)
+  - Refers to any of the following: a) Month of establishment of the
+    organisation. b) Month of name change. This should be highlighted in
+    the description. c) Month of merger between two or more organisations.
+    This should be highlighted in the description.
+  - Enter the month (mm) only. The year and day go into their respective
+    fields. Leave blank if the precise month started is not available. The
+    month should be entered only if the year has been filled in.
+
+Day Started (dd)
+  - Refers to any of the following: a) Day of establishment of the
+    organisation. b) Day of name change. This should be highlighted in the
+    description. c) Day of merger between two or more organisations. This
+    should be highlighted in the description.
+  - Enter the day (dd) only. The month and year go into their respective
+    fields. Leave blank if the precise day started is not available. The
+    day should be entered only if the year and month have been filled in.
+
+Year Ended (yyyy)   [mandatory if available]
+  - Refers to any of the following: a) The year in which the organisation
+    ended. See example at 3.3.11.1 a. b) Year of name change of the
+    organisation. This should be highlighted in the description and a
+    Predecessor-Successor relationship added between the preceding and
+    succeeding names. See example at 3.3.11.1 b. c) Year of merger or
+    split between organisations. This should be highlighted in the
+    description and Related Terms (RT) added between the organisations.
+  - Enter the year (yyyy) only. The month and day go into their respective
+    fields. Leave blank if the precise year ended is not available.
+
+Month Ended (mm)
+  - Refers to any of the following: a) The month in which the organisation
+    ended. b) Month of name change. This should be highlighted in the
+    description. c) Month of merger between two or more organisations.
+    This should be highlighted in the description.
+  - Enter the month (mm) only. The year and day go into their respective
+    fields. Leave blank if the precise month ended is not available. The
+    month should be entered only if year has been filled in.
+
+Day Ended (dd)
+  - Refers to any of the following: a) The day on which the organisation
+    ended. b) Day of name change. This should be highlighted in the
+    description. c) Day of merger or split between organisations. This
+    should be highlighted in the description.
+  - Enter the day (dd) only. The month and year go into their respective
+    fields. Leave blank if the precise day ended is not available. The day
+    should be entered only if the year and month have been filled in.
+
+Parent Organisation   [mandatory if available]
+  - The parent organisation is the organisation that controls the
+    described entity. Enter the preferred name of the parent organisation.
+    Information on past parent organisation(s) may be included in the
+    description, if important.
+  - Add a Broader Term (BT) relationship to the parent organisation for
+    current entities, but not if the described entity no longer exists .
+    If the described entity has been succeeded by another, remove the BT
+    relationship such that the parent organisation only has its current
+    NTs.
+
+Group Members
+  - This is mainly applicable for members of small organisations such as
+    musical groups and art collectives. Enter the preferred name (PT) of
+    the person, as found in TTE, LCNA or VIAF, in that order of
+    preference. If the name is not found in any of these sources, enter it
+    as you would in PT form. Use a delimiter ( | ) to separate the names.
+
+Awards
+  - Refers to the awards received by the organisation.
+  - Enter name of the award, followed by the year awarded in brackets if
+    available. If more than one award is entered, separate the awards with
+    a delimiter ( | ).
+
+
+======================================================================
+FACILITY   (guidelines section 3.1, 'GeoBuildings')
+======================================================================
+
+Name   [mandatory field]
+  - Create the preferred name based on the following criteria and in
+    accordance with RDA (refer to RDA section 16.2): a) Use the officially
+    established name of the building. A search for the address in OneMap
+    should yield the building name. Take care not to accord an
+    organisation’s name to a building just because the organisation
+    occupies the building. Building names in Singapore are approved by the
+    Street and Building Names Board (SBNB). The SBNB provides a search
+    service for approved street and building names at Search for Approved
+    Names and Addresses - Property Name and Address e-Service
+    (propertynaa.gov.sg) which also provides the Chinese translation of
+    the name. Note however, that it does not include buildings that no
+    longer exist. b) The building name should be mentioned in at least two
+    sources. OneMap is a reliable source. c) Avoid mere transliteration or
+    Romanisation of a non -English name ( such as the use of hanyu
+    pinyin), unless that form of name has been officially recognised, or
+    where an official translation is absent.
+  - If the officially established name contradicts with names derived from
+    alternate sources, verify if it is a typo error on the part of the
+    creating agency. Alert and clarify with the creating agency if
+    necessary.
+  - When a building is renamed, change the preferred name to the new name,
+    and establish the old name as a non-preferred name.
+
+Qualifier
+  - If there are buildings sharing the same name in different parts of
+    Singapore, a qualifier specifying the location is required to
+    disambiguate between the entities.
+  - If the building name is generic or common, and is likely to exist in
+    other countries, qualify it with “Singapore”.
+  - If the building name does not convey the idea of a building, include a
+    qualifier such as “Mall”. For Chinese temples, if the name is in
+    Chinese and does not include the word “Temple”, insert “Temple” as a
+    qualifier.
+  - If the building name is also the name of an organisation, qualify the
+    building name with “Place”. Also note para 2.2 to avoid creating a
+    building name that is the same as an organisation name unless the
+    building has historical significance. It is unnecessary to use the
+    “Place” qualifier if there is no organisation of the same name.
+  - However, do note the following: a) Administrative information such as
+    "expunged" and "defunct" should not be used as a qualifier.
+
+Description   [mandatory field]
+  - The description for building names should be concise and limited to 3
+    to 5 complete sentences. It should focus on the building and not the
+    occupants . It should include the following information (in order of
+    priority) wherever possible: a) Functions of the building past and
+    present. Specify that it is a n office building, shopping mall, etc.
+    b) The year it was revamped, repurposed or demolished, or the year the
+    building name was changed (if applicable). c) Former and current
+    tenants and/or owners of the building, if significant. d) If
+    significant and pertinent, the name of the builder or designer of the
+    building, and details on the architecture style, design, etc. of the
+    building may be included.
+  - Information in the description must be based on authoritative sources.
+  - If the name of the entity is derived from bibliographic records in
+    GT.Net and information on the entity is lacking, state the role of the
+    entity in relation to the bibliographic record. Add a note under the
+    field “Note” in the following format - “Name derived from bib record
+    UUID”, followed by the UUID of the bib record.
+  - Descriptions are not required for non -preferred names. Any
+    description placed under non - preferred names should be transferred
+    to the preferred name.
+  - Refer to the style guide for descriptions in section 7.
+
+Street Address   [mandatory if available]
+  - Enter the street address of the building. The format should be street
+    number followed by street name. Spell the street name in full and do
+    not use abbreviations such as Rd, St, Dr. There should not be any unit
+    number as the entity should not be a subset of the whole building. The
+    exception is for libraries, museums and mosques, as some are housed
+    within buildings.
+  - Leave blank if the building no longer exists and the address is
+    unknown.
+
+Country   [mandatory field]
+  - Enter Singapore. Only buildings in Singapore should be created in TTE.
+    Do not leave blank.
+
+Postal Code   [mandatory if available]
+  - Enter the postal code of the building. The postal code can be found on
+    OneMap using the building name or street address.
+  - Leave blank if the building no longer exists.
+
+Feature Type   [mandatory if applicable]
+  - This is included for readability of the feature code. It refers to the
+    geographical feature listed in GeoNames
+    (http://www.geonames.org/export/codes.html).
+  - Input the feature type exactly as it appears in GeoNames, in lower
+    case and using the American spelling. However, always adopt the
+    singular form when GeoNames includes the plural form in brackets as an
+    option. For example: for feature code BLDG, the feature type is given
+    as “building(s)”; always input “building”. The exception is when the
+    plural form functions as the singular, as in barracks and waterworks.
+
+Year Completed (yyyy)   [mandatory if available]
+  - Enter the year only (yyyy). The month and day go into their respective
+    fields. Leave blank if the year of completion of the building is
+    unavailable or in doubt.
+
+Month Completed (mm)   [mandatory if available]
+  - Enter the month only (mm). Leave blank if the month of completion of
+    the building is unavailable or in doubt. Valid only if year has been
+    entered.
+
+Day Completed (dd)   [mandatory if available]
+  - Enter the day only (dd). Leave blank if the day of completion of the
+    building is unavailable or in doubt. Valid only if year and month have
+    been filled in.
+
+
+======================================================================
+LOCATION   (guidelines section 3.2, 'Geographics')
+======================================================================
+
+Name   [mandatory field]
+  - Create the preferred name based on the following criteria and in
+    accordance with RDA (refer to RDA section 16.2): a) Use the officially
+    established name. Street names in Singapore are approved by the Street
+    and Building Names Board (SBNB). The SBNB provides a search service
+    for approved street and building names at Search for Approved Names
+    and Addresses - Property Name and Address e-Service
+    (propertynaa.gov.sg) which also provides the Chinese translation of
+    the name. It does not cover streets and estates that no longer exist.
+    Spell the street name in full and do not use abbreviations such as Rd,
+    St, Dr. b) The name should be mentioned in at least two sources.
+    OneMap is a reliable source. c) Avoid mere transliteration or
+    Romanisation of a non -English name ( such as the use of hanyu
+    pinyin), unless that form of name has been officially recognised, or
+    where an official translation is absent.
+  - If the officially established name contradicts with names derived from
+    alternate sources, verify if it is a typo error on the part of the
+    creating agency. Alert and clarify with the creating agency if
+    necessary.
+  - When a place is renamed, change the preferred name to the new name and
+    establish the old name as a non-preferred name.
+
+Qualifier
+  - If there are places sharing the same name in different parts of
+    Singapore, a qualifier specifying the location is required to
+    disambiguate between the entities.
+  - However, do note the following: a) Administrative information such as
+    "expunged" and "defunct" is not considered to be a qualifier.
+  - c. d) A name which includes hierarchical relationship and non
+    -preferred names should not be established as a qualifier. They should
+    be established as separate records. See example at
+
+Description   [mandatory field]
+  - The description for place names should be concise and limited to 3 to
+    5 complete sentences. It should include the following information (in
+    order of priority) wherever possible: a) Specify the nature of the
+    geographical entity, such as a historical site, a hill or a park. b)
+    The location of the entity. c) The year in which the place or road
+    name first appeared or was named , and the year it was demolished or
+    renamed (if applicable). d) Avoid long explanatory notes on the
+    origins of the place names. e) If historically significant, the name
+    of the builder or designer of bridges or roads , details on the
+    architecture style, design, etc. of the bridges or roads may be
+    included.
+  - Information in the description must be based on authoritative sources.
+  - If the name of the entity is derived from bibliographic records in
+    GT.Net and information on the entity is lacking, state the role of the
+    entity in relation to the bibliographic record. Add a note under the
+    field “Note” in the following format - “Name derived from bib record
+    UUID”, followed by the UUID of the bib record.
+  - Scope notes are not required for non -preferred names. Any
+    descriptions placed under non - preferred names should be transferred
+    to the description field of the preferred name.
+  - Refer to the style guide for descriptions in section 7.
+
+Country   [mandatory field]
+  - Enter “Singapore”. Only Singapore place names are be created in TTE.
+
+Feature Type   [mandatory if applicable]
+  - This is included for readability of the feature code. It refers to the
+    geographical feature listed in GeoNames
+    (http://www.geonames.org/export/codes.html).
+  - Input the feature type exactly as it appears in GeoNames, in lower
+    case and using the American spelling. However, always adopt the
+    singular form when GeoNames includes the plural form in brackets as an
+    option. For example: for feature code RSV, the feature type is given
+    as “reservoir(s)”; always input “reservoir”.
+
+
+======================================================================
+EVENT   (guidelines section 3.5, 'Historical Events')
+======================================================================
+
+Name   [mandatory field]
+  - As the rules for identifying and naming of events in RDA are not yet
+    available, the name has been created according to the Library of
+    Congress Subject Headings Manual format of “[name of event], [name of
+    jurisdiction or locality], [date or date span]”, where date is the
+    year. The name of jurisdiction may be omitted if it is already in the
+    name of the event. (Refer to Library of Congress Subject Headings
+    Manual, H1596, p 3-4.)
+  - Establish any other names the event is known by as non-preferred
+    terms.
+
+Category   [mandatory field]
+  - Enter a subject from SingHeritage Events.
+  - If there is more than one subject, separate them with a delimiter ( |
+    ).
+
+Topic   [mandatory field]
+  - Enter a Library of Congress Subject Heading, including the appropriate
+    subdivisions.
+  - If there is more than one subject, separate them with a delimiter ( |
+    ).
+
+Description   [mandatory field]
+  - Describe the event concisely in 3 to 5 complete sentences. Begin with
+    the Category from 3.5.2. above. Include the following: a) The nature
+    of the event, what caused it and its consequences b) The exact dates
+    when the event occurred , if available, especially if it took place
+    within a year.
+
+Locality
+  - Enter the exact place, area or district where the event took place.
+    Enter the preferred name (PT) of the place, as found in TTE. If the
+    name is not found, enter it as you would in PT form.
+  - Enter the year only (yyyy).
+
+Year Ended   [mandatory field]
+  - Enter the year only (yyyy). 3.5.9 DBpedia URI
+  - Verify the event (including non-preferred names) against existing
+    DBpedia records. This can be done by first finding the entity in
+    Wikipedia. C onstruct the URI using http://dbpedia.org/resource/ as
+    prefix followed by the suffix from the URL of the Wikipedia article of
+    the entity. Always verify that the DBpedia record exists.
+  - Leave blank if no DBpedia record exists.
+
+Wikipedia URI
+  - Find the event in Wikipedia. If found, copy the URL of the Wikipedia
+    article and paste it here.
+  - Leave blank if there is no Wikipedia article.
+
+
+======================================================================
+AWARD, PROGRAMME, LEGAL_ACT   (guidelines section 3.6, thesaurus terms)
+======================================================================
+
+These three are thesaurus terms rather than full vocabulary records, so the
+guidelines define only Term and SN for them. The fields below are the ones
+these records actually carry in TTE.
+
+AWARD
+  - SN   the scope note: what the award is, who confers it, what it is for.
+  - Awarding Entity   the organisation that confers it.
+  - Year First Awarded   the year only (yyyy).
+
+PROGRAMME
+  - Description   what the programme is and who runs it.
+
+LEGAL_ACT
+  - SN   the scope note: what the act covers.
+
+EVENT
+  - SN   the scope note describing the event.
+  - Organiser   the organisation running it.
+  - Year, Month, Day   the date it occurred, as separate numeric fields.
+  - Year Started, Year End   for events spanning more than one year.
+  - Category, Topic, Locality, Description   as for Historical Events above.
+
+
+======================================================================
+STYLE GUIDE FOR DESCRIPTIONS   (guidelines section 7)
+======================================================================
+
+Every Description field above points here.
+
+  - Paraphrase; never copy wording from the source.
+  - Pay attention to grammar and spelling. Use British spelling.
+  - Spell out single-digit numbers (one, two, three); use numerals from 10
+    (10, 11, 12).
+  - Avoid unspecific words that date the text: "current", "former", "then",
+    "now".
+  - Stay objective. No subjective phrasing ("attractive enclave",
+    "disgusting place") and no ranking claims ("best in Asia", "largest in
+    the world").
+  - Exclude quantitative information that may change over time (e.g. "the
+    company has 100 employees").
+  - Avoid listing the positions a person has held, like a resume.
+  - Focus on the entity being described.
+
+
+======================================================================
+APPENDIX 2: ABBREVIATIONS USED IN TTE
+======================================================================
+
+Use these forms for consistency. By convention (British English usage), an
+abbreviation omits the full stop when the first and last letter of the word
+are both present.
+
+  Associate Professor -> Assoc. Prof.
+  Doctor               -> Dr
+  Father                -> Fr
+  Hajah                 -> Hjh
+  Haji                  -> Hj.
+  Junior                -> Jr
+  Lieutenant            -> Lt
+  Professor             -> Prof.
+  Reverend              -> Rev.
+  Reverend Father       -> Rev. Fr
+  Sister                -> Sr
+  Venerable             -> Ven.
+  Bin                   -> bin (lower case)
+  Binte                 -> bte (lower case)
+  Saint                 -> St (never for "street" -- spell street names out)
+  Company               -> Co.
+  Corporation           -> Corp.
+  Limited               -> Ltd
+  Private Limited       -> Pte Ltd

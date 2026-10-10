@@ -1,0 +1,40 @@
+name: Job 1 - Relevance Scoring
+
+# Run by hand; the nightly schedule is in nightly.yml.
+on:
+  workflow_dispatch:
+
+# The job's work queue is "articles where relevant IS NULL". Two overlapping
+# runs would score the same articles twice and burn the daily request budget,
+# so nothing in the pipeline runs alongside anything else.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # The secrets live in this GitHub Environment, not at repo level. Without
+    # this line secrets.* resolve to empty strings and the run fails on auth.
+    environment: automated-tte-enrichment
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Exactly what uv.lock pins, and a failure if pyproject.toml has
+      # drifted from it. One source of truth for local and CI alike.
+      - run: uv sync --frozen --no-dev
+
+      - name: Score article relevance
+        run: uv run python -m src.job1_relevance
+        env:
+          PYTHONUNBUFFERED: "1"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

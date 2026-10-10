@@ -1,0 +1,39 @@
+name: Publish - The review deck
+
+# Run by hand; the nightly schedule is in nightly.yml.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Secrets live in this GitHub Environment, not at repo level.
+    environment: automated-tte-enrichment
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen --no-dev
+
+      # The deck to the `deck` table and the search index to the `desk`
+      # bucket, with the service role. The page that reads them is built
+      # and served separately (`python -m src.export --site`); it changes
+      # only when the template does.
+      - name: Publish the deck
+        run: uv run python -m src.export --publish
+        env:
+          PYTHONUNBUFFERED: "1"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # the home screen's line of the day
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

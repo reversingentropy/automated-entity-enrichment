@@ -1,0 +1,102 @@
+name: Nightly - relevance, extraction, resolution, publish
+
+on:
+  schedule:
+    # 16:00 UTC = midnight Singapore. GitHub often starts scheduled runs
+    # hours late, so the four jobs run here one after another rather than on
+    # four clocks: separately, a late Job 2 and an on-time Job 3 overlapped,
+    # and a night's entities waited a day to be resolved.
+    - cron: '0 16 * * *'
+    # 04:00 UTC = noon Singapore. Second run of the day, same chain.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+# Shared with the single-job workflows, so a manual run waits for the night's.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    environment: automated-tte-enrichment
+    env:
+      # Print each line as it happens. Buffered, a step stopped at its time
+      # limit loses everything it printed: Job 3's log was empty after an hour.
+      PYTHONUNBUFFERED: "1"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen --no-dev
+
+      # Each step works its own queue, so a failure upstream does not stop the
+      # rest: Job 3 still clears earlier nights' entities, and the deck still
+      # publishes. The run is marked failed all the same.
+      # Replaces the Supabase Edge Function rss-ingest-v5: same feeds (from
+      # `rss_feeds`), same target (`article`), but a feed that fails to fetch
+      # no longer stops the ones after it. Runs on both schedules below, so
+      # the noon run also sees whatever a feed has published since midnight.
+      - name: Job 0 - RSS ingestion
+        id: ingest
+        timeout-minutes: 10
+        run: uv run python -m src.job0_ingest
+
+      # New TTE exports the team has uploaded to the tte-imports bucket are
+      # loaded first, so tonight's matching uses them; only the matches they
+      # may change are requeued. A night with nothing new downloads nothing.
+      - name: Load new TTE exports
+        id: load
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: uv run python -m src.load_tte --new-only --requeue-stale
+
+      - name: Job 1 - relevance
+        id: relevance
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: uv run python -m src.job1_relevance
+
+      - name: Job 2 - extraction
+        id: extraction
+        if: ${{ !cancelled() }}
+        timeout-minutes: 60
+        run: uv run python -m src.job2_extraction
+
+      - name: Job 3 - resolution
+        id: resolution
+        if: ${{ !cancelled() }}
+        timeout-minutes: 60
+        run: uv run python -m src.job3_resolution
+
+      - name: Publish the review deck
+        id: publish
+        if: ${{ !cancelled() }}
+        timeout-minutes: 20
+        run: uv run python -m src.export --publish
+        env:
+          # How each earlier step went, for the team page and the daily email.
+          PIPELINE_STEPS: "ingest=${{ steps.ingest.outcome }},load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }}"
+
+      # Once a day, after the midnight run: an email to each reviewer with
+      # something to act on, and silence for everyone else. Mail settings are
+      # environment secrets; without them the emails are printed in the log.
+      - name: Email reviewers
+        if: ${{ !cancelled() && github.event.schedule == '0 16 * * *' }}
+        timeout-minutes: 10
+        run: uv run python -m src.export --notify
+        env:
+          PIPELINE_STEPS: "ingest=${{ steps.ingest.outcome }},load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},publish=${{ steps.publish.outcome }}"
+          MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
+          MAIL_PORT: ${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}

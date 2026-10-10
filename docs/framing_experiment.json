@@ -1,0 +1,27 @@
+{
+ "n": 104,
+ "relevant": 44,
+ "A_name_relevant": {
+  "kept": 73,
+  "tp": 41,
+  "fp": 32,
+  "fn": 3,
+  "tn": 28
+ },
+ "B_name_irrelevant": {
+  "kept": 90,
+  "tp": 42,
+  "fp": 48,
+  "fn": 2,
+  "tn": 12
+ },
+ "lost_by_A": [
+  "Asia Pacific Screen Awards 2026 nominees include Yeo Yann Yann, The Violinist and other Singaporean co-productions",
+  "Sim Hui Ting to be appointed Commissioner of Charities from April 2027",
+  "New NCSS chair calls for stronger partnerships to tackle Singapore&#039;s growing social challenges"
+ ],
+ "lost_by_B": [
+  "Asia Pacific Screen Awards 2026 nominees include Yeo Yann Yann, The Violinist and other Singaporean co-productions",
+  "Sim Hui Ting to be appointed Commissioner of Charities from April 2027"
+ ]
+}

@@ -1,0 +1,562 @@
+<title>From Headline to Authority Record</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Teal is the news, indigo is the authority file, ochre is a person. */
+  :root {
+    --ground:#F6F7F9; --surface:#FFFFFF; --sunken:#EDEFF3;
+    --ink:#151920; --ink-soft:#48525F; --ink-faint:#6D7883;
+    --rule:#D9DFE6; --rule-soft:#E8ECF1;
+    --news:#0E6B72; --news-bg:#E4F0F1; --news-edge:#9FC9CC;
+    --tte:#535880;  --tte-bg:#EBECF4;  --tte-edge:#B4B8D2;
+    --human:#8E5C0E; --human-bg:#F6EEDD; --human-edge:#D8B979;
+    --alarm:#973629; --alarm-bg:#F7E7E4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0E1217; --surface:#161B22; --sunken:#1D242C;
+      --ink:#E9EDF2; --ink-soft:#AFB9C5; --ink-faint:#808C99;
+      --rule:#293039; --rule-soft:#222932;
+      --news:#63C9D1; --news-bg:#0F2B2D; --news-edge:#1F4C50;
+      --tte:#A9AEDA;  --tte-bg:#20222E;  --tte-edge:#3B3F58;
+      --human:#DFA94F; --human-bg:#2A2010; --human-edge:#5A4520;
+      --alarm:#E28C80; --alarm-bg:#2C1917;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0E1217; --surface:#161B22; --sunken:#1D242C;
+    --ink:#E9EDF2; --ink-soft:#AFB9C5; --ink-faint:#808C99;
+    --rule:#293039; --rule-soft:#222932;
+    --news:#63C9D1; --news-bg:#0F2B2D; --news-edge:#1F4C50;
+    --tte:#A9AEDA;  --tte-bg:#20222E;  --tte-edge:#3B3F58;
+    --human:#DFA94F; --human-bg:#2A2010; --human-edge:#5A4520;
+    --alarm:#E28C80; --alarm-bg:#2C1917;
+  }
+
+  body{background:var(--ground);color:var(--ink);
+       font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+       font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .page{max-width:54rem;margin:0 auto;padding:2.75rem 1.5rem 5rem}
+  h1,h2,h3{text-wrap:balance;margin:0}
+  p{margin:0}
+  .mono{font-family:"IBM Plex Mono",monospace}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--ink-faint)}
+
+  header{display:flex;flex-direction:column;gap:.9rem;
+         padding-bottom:1.75rem;border-bottom:1px solid var(--rule)}
+  h1{font-family:Newsreader,Georgia,serif;font-weight:500;
+     font-size:clamp(2rem,5.5vw,3.1rem);line-height:1.08;letter-spacing:-.015em}
+  .stand{font-size:1.05rem;color:var(--ink-soft);max-width:40rem}
+  .facts{display:flex;flex-wrap:wrap;gap:.3rem 2.2rem;padding-top:.3rem}
+  .fact{display:flex;flex-direction:column}
+  .fact b{font-family:Newsreader,Georgia,serif;font-size:1.45rem;font-weight:500;
+          font-variant-numeric:tabular-nums;line-height:1.2}
+  .fact span{font-size:.76rem;color:var(--ink-faint)}
+
+  section{padding-top:2.5rem;display:flex;flex-direction:column;gap:.9rem}
+  h2{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:1.6rem;line-height:1.2}
+  section > p{max-width:40rem;color:var(--ink-soft);font-size:.95rem}
+
+  /* the funnel */
+  .funnel{width:100%;border-collapse:collapse;font-size:.9rem}
+  .funnel th{text-align:left;font-weight:500;font-size:.66rem;letter-spacing:.1em;
+             text-transform:uppercase;color:var(--ink-faint);
+             padding:0 .8rem .45rem 0;border-bottom:1px solid var(--rule)}
+  .funnel td{padding:.45rem .8rem;border-bottom:1px solid var(--rule-soft);
+             vertical-align:baseline}
+  .funnel td:first-child{font-family:"IBM Plex Mono",monospace;font-size:.78rem;
+                         color:var(--ink-faint);white-space:nowrap;padding-left:0}
+  .funnel .n{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;
+             white-space:nowrap}
+  .funnel .note{color:var(--ink-soft);font-size:.86rem}
+
+  /* one stage: who runs it, what it is told, what goes in, what comes out */
+  .stages{display:flex;flex-direction:column;gap:1.1rem}
+  .stage{border:1px solid var(--rule-soft);border-radius:8px;background:var(--surface);
+         overflow:hidden}
+  .stage.ai{border-left:3px solid var(--news-edge)}
+  .stage.sql{border-left:3px solid var(--tte-edge)}
+  .stage.man{border-left:3px solid var(--human-edge)}
+  .bar{display:flex;flex-wrap:wrap;align-items:baseline;gap:.55rem;
+       padding:.65rem .9rem;background:var(--sunken)}
+  .bar .num{font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:600;
+            padding:.1rem .4rem;border-radius:3px;background:var(--ink);color:var(--surface)}
+  .bar .nm{font-weight:600;font-size:.98rem}
+  .bar .by{font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--ink-faint);
+           margin-left:auto}
+  .said{padding:.6rem .9rem;border-bottom:1px solid var(--rule-soft);
+        display:flex;flex-direction:column;gap:.25rem}
+  .said .src{font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--news)}
+  .said q{font-size:.88rem;color:var(--ink-soft);line-height:1.5;quotes:none}
+  .flow{display:grid;gap:1px;background:var(--rule-soft)}
+  @media (min-width:46rem){.flow{grid-template-columns:1fr 1fr}}
+  .cell{background:var(--surface);padding:.7rem .9rem;display:flex;
+        flex-direction:column;gap:.35rem;min-width:0}
+  .cell .lbl{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.11em;
+             text-transform:uppercase;color:var(--ink-faint)}
+  .cell.out .lbl{color:var(--news)}
+  .stage.sql .cell.out .lbl{color:var(--tte)}
+  .stage.man .cell.out .lbl{color:var(--human)}
+  pre{margin:0;font-family:"IBM Plex Mono",monospace;font-size:.76rem;line-height:1.55;
+      white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+  .cell p{font-size:.86rem;line-height:1.5}
+  .dim{color:var(--ink-faint)}
+  .hit{background:var(--news-bg);color:var(--news);border-radius:2px;padding:0 .15rem;
+       font-weight:600}
+  .gone{background:var(--alarm-bg);color:var(--alarm);border-radius:2px;padding:0 .15rem;
+        text-decoration:line-through}
+  .why{font-size:.84rem;color:var(--ink-faint);padding:.5rem .9rem;
+       border-top:1px solid var(--rule-soft);line-height:1.5}
+
+  /* how a prompt is assembled */
+  .build{display:flex;flex-direction:column;gap:.9rem}
+  .mix{border:1px solid var(--rule-soft);border-radius:8px;background:var(--surface);
+       overflow:hidden}
+  .mix.off{border-style:dashed;background:transparent}
+  .mixbar{display:flex;flex-wrap:wrap;align-items:baseline;gap:.55rem;
+          padding:.55rem .9rem;background:var(--sunken)}
+  .mix.off .mixbar{background:transparent;border-bottom:1px dashed var(--rule-soft)}
+  .mixbar .nm{font-weight:600;font-size:.95rem}
+  .mixbar .tot{font-family:"IBM Plex Mono",monospace;font-size:.78rem;
+               font-variant-numeric:tabular-nums;color:var(--ink-faint);margin-left:auto}
+  .parts{width:100%;border-collapse:collapse;font-size:.83rem}
+  .parts td{padding:.35rem .9rem;border-bottom:1px solid var(--rule-soft);
+            vertical-align:baseline}
+  .parts tr:last-child td{border-bottom:none}
+  .parts .f{font-family:"IBM Plex Mono",monospace;color:var(--ink)}
+  .parts .t{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+            text-align:right;white-space:nowrap;color:var(--ink-faint);width:5rem}
+  .parts .r{color:var(--ink-soft)}
+  .plus{color:var(--news);font-weight:600}
+  .mix.off .plus{color:var(--alarm)}
+
+  .never{display:grid;gap:.5rem}
+  @media (min-width:46rem){.never{grid-template-columns:1fr 1fr}}
+  .never div{padding:.7rem .85rem;border-radius:6px;background:var(--surface);
+             border:1px solid var(--rule-soft);font-size:.9rem;line-height:1.5}
+  .never b{color:var(--human);display:block}
+
+  .risks{display:flex;flex-direction:column;gap:.5rem}
+  .risk{display:flex;gap:.8rem;align-items:baseline;padding:.7rem .85rem;
+        border-radius:6px;background:var(--surface);border:1px solid var(--rule-soft);
+        font-size:.9rem;line-height:1.5}
+  .risk.worst{border-color:var(--alarm);background:var(--alarm-bg)}
+  .risk b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+          font-size:1.05rem;flex:none;min-width:4.2rem}
+  .risk.worst b{color:var(--alarm)}
+
+  footer{margin-top:3rem;padding-top:1.25rem;border-top:1px solid var(--rule);
+         font-size:.83rem;color:var(--ink-faint);display:flex;flex-direction:column;gap:.35rem}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.86em;background:var(--sunken);
+       padding:.1em .35em;border-radius:3px}
+  .scroll{overflow-x:auto}
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">National Library Board &middot; Thesaurus and Taxonomy Editor</p>
+  <h1>From headline to authority&nbsp;record</h1>
+  <p class="stand">TTE, NLB's Thesaurus and Taxonomy Editor, holds about 1.8 million
+    records. 52,437 of them name the people, organisations, places, events, awards,
+    programmes and laws that the news reports on, each with a description a cataloguer
+    wrote. Keeping them current with the news is routine work that the volume has
+    outgrown. This reads the news twice a day, and has read the archive back to 2015 once, and
+    proposes the changes; a person decides every one. Traced below through one real
+    article. Figures as of 28 September 2026.</p>
+  <div class="facts">
+    <div class="fact"><b>298,790</b><span>articles read</span></div>
+    <div class="fact"><b>48,696</b><span>entities found in them</span></div>
+    <div class="fact"><b>52,437</b><span>TTE records they are matched against</span></div>
+    <div class="fact"><b>0</b><span>applied without a person</span></div>
+  </div>
+</header>
+
+<section>
+  <h2>The funnel</h2>
+  <p>Each stage is cheap enough to run on everything reaching it, because the stage
+    before threw most of the work away. The expensive judgement happens last and least
+    often.</p>
+  <div class="scroll">
+  <p>Two funnels share one design. The <b>archive</b> is the outlets' own archives from
+    January 2015 (The Straits Times, Lianhe Zaobao, CNA), run once through an internal
+    model. The <b>live</b> pipeline has read the feeds twice a day since 3 August 2026.</p>
+  <table class="funnel">
+    <thead><tr><th>stage</th><th class="n">archive</th><th class="n">live</th>
+      <th class="n">total</th><th>cost</th></tr></thead>
+    <tbody>
+      <tr><td>collected</td><td class="n">295,279</td><td class="n">3,511</td>
+          <td class="n">298,790</td><td class="note">free</td></tr>
+      <tr><td>1 &middot; relevance</td><td class="n">27,941</td><td class="n">149</td>
+          <td class="n">28,090</td>
+          <td class="note">titles and summaries only, up to 1,000 per AI call</td></tr>
+      <tr><td>2 &middot; extraction</td><td class="n">48,387</td><td class="n">309</td>
+          <td class="n">48,696</td>
+          <td class="note">entities, from 12,447 and 149 articles; 1 AI call per article</td></tr>
+      <tr><td>3 &middot; retrieval</td><td class="n" colspan="3">up to 5 TTE records each</td>
+          <td class="note">SQL, no AI</td></tr>
+      <tr><td>4 &middot; resolution</td><td class="n">9,779</td><td class="n">65</td>
+          <td class="n">9,844</td><td class="note">matched to a record, with a change to propose</td></tr>
+      <tr><td></td><td class="n">22,125</td><td class="n">206</td>
+          <td class="n">22,331</td><td class="note">new, not in TTE</td></tr>
+      <tr><td></td><td class="n">16,483</td><td class="n">38</td>
+          <td class="n">16,521</td><td class="note">matched with nothing to add, unsure, under another name, or unreadable</td></tr>
+      <tr><td>5 &middot; review</td><td class="n">spreadsheet</td><td class="n">170 cards</td>
+          <td class="n"></td><td class="note">a person decides each one</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>One article, stage by stage</h2>
+  <p>Article 2197, published 31 August 2026. Every panel below is what the system
+    actually held, not an illustration of it.</p>
+
+  <div class="stages">
+
+    <div class="stage">
+      <div class="bar"><span class="num">0</span><span class="nm">Collected</span>
+        <span class="by">rss, hourly</span></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in</span>
+          <p class="dim">Singapore news feeds</p></div>
+        <div class="cell out"><span class="lbl">out &middot; one row, undecided</span>
+<pre>id       2197
+title    Social service veteran Gerard Ee
+         steps down as chairperson of
+         Agency for Integrated Care
+relevant <span class="dim">null</span></pre></div>
+      </div>
+      <p class="why"><code>relevant</code> being empty is what marks it as work still
+        to do. Nothing is scheduled; the column is the queue.</p>
+    </div>
+
+    <div class="stage ai">
+      <div class="bar"><span class="num">1</span><span class="nm">Relevance</span>
+        <span class="by">gemini &middot; midnight and noon &middot; 1 call</span></div>
+      <div class="said"><span class="src">prompts/relevance.txt</span>
+        <q>Given a Singapore news headline, decide whether this article likely contains
+          information that would require updating a record. A knowledge base update is
+          needed when a specific named Singapore entity has undergone a concrete,
+          current, or immediate change... NOT when: commentary, opinion, a person
+          merely quoted, future plans that have not taken effect.</q></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in &middot; titles and summaries, up to 1,000</span>
+<pre>[{"id": 2196, "title": "..."},
+ {"id": 2197, "title": "Social service
+   veteran Gerard Ee steps down..."},
+ ... 998 more]</pre></div>
+        <div class="cell out"><span class="lbl">out &middot; only the ones that passed</span>
+<pre>{"results": [
+  {"id": 2197,
+   "reason": "Gerard Ee stepped down and
+     Anita Fam was appointed as
+     chairperson of the Agency for
+     Integrated Care."}]}</pre></div>
+      </div>
+      <p class="why">Headlines only, so a thousand articles cost one request. Anything
+        omitted from <code>results</code> is set to <code>relevant = false</code> and
+        never read again. <strong>3,362 of the live pipeline's articles have gone that way, and 267,328 of the archive's.</strong></p>
+    </div>
+
+    <div class="stage ai">
+      <div class="bar"><span class="num">2</span><span class="nm">Extraction</span>
+        <span class="by">gemini flash-lite &middot; after relevance &middot; 1 call per article</span></div>
+      <div class="said"><span class="src">prompts/extraction.txt</span>
+        <q>Identify EVERY Singapore entity whose knowledge base record should be
+          updated. Include an entity ONLY if the article contains at least one new fact
+          that maps to one or more allowed fields for that entity type. Copy one
+          sentence verbatim as evidence.</q></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in &middot; the page, fetched in full</span>
+<pre>3,817 characters of article text
+
+"Gerard Ee, 77, is stepping down as
+chairperson of the Agency for
+Integrated Care (AIC), with social
+service veteran Anita Fam taking
+over the helm from Sept 1..."</pre></div>
+        <div class="cell out"><span class="lbl">out &middot; 2 entities, 1 shown</span>
+<pre>entity_name  Gerard Ee
+entity_type  PERSON
+Title        Dr
+Occupation   Accountant
+evidence     "Gerard Ee, 77, is stepping
+             down as chairperson of the
+             Agency for Integrated Care"</pre></div>
+      </div>
+      <p class="why">Field names are TTE's own, so a value lands where a cataloguer
+        expects it. Every fact is anchored to a sentence that can be checked, which is
+        what makes the next stages auditable rather than trusted.</p>
+    </div>
+
+    <div class="stage sql">
+      <div class="bar"><span class="num">3</span><span class="nm">Retrieval</span>
+        <span class="by">postgres pg_trgm &middot; no AI</span></div>
+      <div class="said"><span class="src">sql/03_match_entities.sql</span>
+        <q>similarity(name, 'Gerard Ee') over all 52,437 records, best five returned</q></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in</span>
+<pre>"Gerard Ee", PERSON</pre></div>
+        <div class="cell out"><span class="lbl">out &middot; candidates, best first</span>
+<pre><span class="hit">1.00  Ee, Gerard          18567994</span>
+0.41  Clarke, Gerard      18578404
+      <span class="dim">dropped: too far below the best
+      to be a competing answer</span></pre></div>
+      </div>
+      <p class="why">Deliberately generous. Its job is to get the right record into the
+        shortlist, not to be right; the next stage is the precision filter. Names alone
+        never settle identity, and two unrelated Chinese names share about a third of
+        their characters.</p>
+    </div>
+
+    <div class="stage ai">
+      <div class="bar"><span class="num">4</span><span class="nm">Resolution</span>
+        <span class="by">gemini flash &middot; after extraction &middot; 1 call per article</span></div>
+      <div class="said"><span class="src">prompts/resolution.txt</span>
+        <q>Decide whether the entity is one of the candidates. A name match is not an
+          identity match. Then, for a match, reproduce the existing passage and make
+          the smallest edit that carries the new fact. If the article adds no fact the
+          record lacks, return the match with no updates.</q></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in &middot; both sides at once</span>
+<pre>the extracted entity above
+        +
+Ee, Gerard  18567994
+  Occupation   Accountant | Auditor |
+               Member of Parliament
+  Affiliations Ernst &amp; Young | NCSS |
+               ISCA
+  Description  "A practicing accountant
+               for almost 30 years..."</pre></div>
+        <div class="cell out"><span class="lbl">out &middot; a proposal, not a change</span>
+<pre>action      MATCH_AND_UPDATE
+matched     18567994
+confidence  high
+
+APPEND  Affiliations(groupName)
+        Agency for Integrated Care
+
+MERGE   Description
+        <span class="dim">99% of the existing text kept</span></pre></div>
+      </div>
+      <p class="why">The description edit in full, as the reviewer sees it:
+        &ldquo;...President of the National Council of Social Services, 2002-2006,
+        <span class="gone">and</span> Chairman of the Charity Council from
+        <span class="gone">2015.</span> <span class="hit">2015, and Chairman of the
+        Agency for Integrated Care from 2018 to 2026.</span> He is the son of the late
+        Ee Peng Liang...&rdquo;</p>
+    </div>
+
+    <div class="stage man">
+      <div class="bar"><span class="num">5</span><span class="nm">Review</span>
+        <span class="by">a person &middot; online, one card at a time</span></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in &middot; one screen, one question</span>
+<pre>Is this the same person?
+
+THE ARTICLE      THE TTE RECORD
+Gerard Ee        Ee, Gerard
+Accountant       Accountant | Auditor
+                 similarity 1.00
+
+[Same. 2 attributes to edit]  [Not this record]  [Keep for review]</pre></div>
+        <div class="cell out"><span class="lbl">out &middot; then one attribute at a time</span>
+<pre>Add this to Affiliations?
+
+ADD TO AFFILIATIONS
+<span class="hit">Agency for Integrated Care</span>  in TTE
+Added to the 3 already on the record.
+
+[Accept]  [No change]  [Edit the wording]</pre></div>
+      </div>
+      <p class="why">Cards come in article order, the article's subject first. An
+        entity the article only mentions, or one whose record is already up to date,
+        is not a card. The article's side states what changes and which source said
+        it; the record's side is shown as it is. An award or organisation named is
+        marked in TTE or not in TTE yet, since it must be a record before it can go
+        on one. A card is checked out to one reviewer when it is dealt and stays theirs
+        until they stamp it, so no record is ever worked twice; each stamp is saved as
+        it is made.</p>
+    </div>
+
+    <div class="stage man">
+      <div class="bar"><span class="num">6</span><span class="nm">Into the catalogue</span>
+        <span class="by">a cataloguer &middot; by hand</span></div>
+      <div class="flow">
+        <div class="cell"><span class="lbl">in</span>
+          <p>The week's approved changes, as one Excel file: UID, descriptor,
+            attribute, current and suggested value, article, reviewer.</p></div>
+        <div class="cell out"><span class="lbl">out</span>
+          <p>Each reviewer applies their own in TTE and marks them Done.</p></div>
+      </div>
+      <p class="why">The pipeline's copy of the authority file is read-only and always
+        will be. Each new TTE dump replaces it, record by record, so anything written
+        back would be overwritten; the change has to be made in TTE, where it
+        belongs, and arrives with the next dump.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>What each prompt is made of</h2>
+  <p>Nothing above is a single file. The task instructions and the cataloguing rules
+    are separate, and assembled at call time, so extraction and resolution cannot
+    drift apart about what a field means or what belongs in it. The rules themselves
+    are compiled from NLB's own cataloguing guidelines and the Occupations Thesaurus.
+    The three jobs are stages 1, 2 and 4 above; stage 3 is SQL and needs no prompt.</p>
+
+  <div class="build">
+
+    <div class="mix">
+      <div class="mixbar"><span class="nm">Job 1 &middot; Relevance</span>
+        <span class="tot">460 tokens</span></div>
+      <table class="parts"><tbody>
+        <tr><td class="f">relevance.txt</td><td class="t">460</td>
+            <td class="r">the whole prompt, nothing injected</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="mix">
+      <div class="mixbar"><span class="nm">Job 2 &middot; Extraction</span>
+        <span class="tot">2,476 tokens</span></div>
+      <table class="parts"><tbody>
+        <tr><td class="f">extraction.txt</td><td class="t">1,780</td>
+            <td class="r">the task: which entities, which facts, the evidence rule</td></tr>
+        <tr><td class="f"><span class="plus">+</span> tte/fields_brief.txt</td>
+            <td class="t">703</td>
+            <td class="r">at <code>{field_rules}</code>: the allowed fields per entity
+              type, under TTE's exact names</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="mix">
+      <div class="mixbar"><span class="nm">Job 3 &middot; Resolution</span>
+        <span class="tot">3,976 tokens</span></div>
+      <table class="parts"><tbody>
+        <tr><td class="f">resolution.txt</td><td class="t">2,442</td>
+            <td class="r">the task: identity first, then the merge strategies</td></tr>
+        <tr><td class="f"><span class="plus">+</span> tte/fields_brief.txt</td>
+            <td class="t">703</td><td class="r">at <code>{field_rules}</code>, the same
+              file Job 2 gets</td></tr>
+        <tr><td class="f"><span class="plus">+</span> tte/description_style.txt</td>
+            <td class="t">589</td>
+            <td class="r">at <code>{description_style}</code>: how to write one, and
+              separately how to edit one that already exists</td></tr>
+        <tr><td class="f"><span class="plus">+</span> tte/notability.txt</td>
+            <td class="t">262</td>
+            <td class="r">at <code>{notability}</code>: whether an entity warrants a
+              record at all</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="mix off">
+      <div class="mixbar"><span class="nm">Deliberately not sent</span>
+        <span class="tot">9,863 tokens withheld</span></div>
+      <table class="parts"><tbody>
+        <tr><td class="f"><span class="plus">&minus;</span> tte/occupations.txt</td>
+            <td class="t">973</td>
+            <td class="r">277 terms from the Occupations Thesaurus. Checked in code
+              instead, so <span class="mono">Chairperson</span> cannot get through as
+              an occupation whatever the model returns.</td></tr>
+        <tr><td class="f"><span class="plus">&minus;</span> tte/vocabularies.txt</td>
+            <td class="t">579</td>
+            <td class="r">six controlled lists (Nationality, Title, Feature Type and
+              others), checked the same way</td></tr>
+        <tr><td class="f"><span class="plus">&minus;</span> tte/field_rules.txt</td>
+            <td class="t">8,311</td>
+            <td class="r">all 113 field definitions, compiled from the guidelines as a
+              reference for people, not for the model</td></tr>
+      </tbody></table>
+    </div>
+
+  </div>
+
+  <p>The last block is the load-bearing one. A longer prompt is not a better one:
+    injecting all 34,000 characters of cataloguing guidance made the model skim it,
+    use short field names anyway, and find one entity in an article where it had
+    previously found five. Code rejects a bad value more reliably than a prompt asks
+    for a good one, so the closed lists are enforced after the answer comes back and
+    never spent on instructions.</p>
+
+  <p>What the brief actually looks like, in the prompt:</p>
+  <div class="mix"><table class="parts"><tbody><tr><td colspan="3">
+<pre>ALLOWED FIELDS, by entity type. Omit any you have no value for.
+
+PERSON        Name · Title · Description · Occupation · Nationality ·
+              Place of Birth · Birth Year (yyyy) · Birth Month (mm) ·
+              Birth Day (dd) · Death Year (yyyy) · ... ·
+              Awards · Affiliations(groupName) · Spouse · Child · Parent
+ORGANISATION  Name · Description · Country · Street Address · Postal Code ·
+              Founder · Year Started (yyyy) · ... · Group Members · Awards</pre>
+  </td></tr></tbody></table></div>
+  <p>The suffixes are the point. TTE stores <code>Birth Year (yyyy)</code> and
+    <code>Affiliations(groupName)</code>, with no space before the bracket in the
+    second. A value filed under <code>Birth Year</code> or
+    <code>Affiliations (groupName)</code> creates a new field rather than extending
+    the one that exists, which is silent and worthless. Every hand-written field list
+    this replaced got some of them wrong.</p>
+</section>
+
+<section>
+  <h2>What it never does</h2>
+  <div class="never">
+    <div><b>Never edits the catalogue.</b> Not one proposal has changed a record.
+      Every path out ends at a person.</div>
+    <div><b>Never invents a record id.</b> A match must name a record the database
+      offered; anything else is discarded before it is stored.</div>
+    <div><b>Never invents a field.</b> Field names are corrected against TTE's schema
+      in code, and occupations against the official thesaurus.</div>
+    <div><b>Never marks work done before it is.</b> Each queue is a column written only
+      after the result is stored, so a crash leaves the work queued.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Where it can still go wrong</h2>
+  <div class="risks">
+    <div class="risk worst"><b>270,690</b>
+      <span>Articles set aside on one unreviewed judgement each, permanently out of the
+        queue: 90.6% of everything collected (3,362 live, 267,328 archive). If the first filter is even
+        slightly wrong, everything downstream enriches the wrong remainder and nothing
+        would ever say so. Where a second model disputed a rejection, a person found
+        the filter right 62 times in 69; the rest have never been read.</span></div>
+    <div class="risk"><b>0 / 170</b>
+      <span>Cards decided on the online desk so far; the field test starts in October.
+        In the first trial round, on the offline desk, identity was confirmed 14 of 14, one by
+        search after the model romanised a Chinese name wrongly, and 13 of 16 field
+        changes were accepted. Everything else about output quality is inference.</span></div>
+    <div class="risk"><b>3,057</b>
+      <span>Entities the model believes are in TTE under another name, and names it:
+        &ldquo;DBS Foundation&rdquo; for 星展银行基金会, &ldquo;Health City
+        Novena&rdquo; for 诺维娜健康城. Nothing searches again with that name yet.</span></div>
+    <div class="risk"><b>15,494</b>
+      <span>Relevant archive articles that have not been through extraction: 12,447 of
+        27,941 have.</span></div>
+    <div class="risk"><b>1 to 4</b>
+      <span>Entities the same article yields on repeated extraction runs. Comparing two
+        versions of that prompt needs many runs of each, and no such test exists.</span></div>
+    <div class="risk"><b>6 / 22</b>
+      <span>Description rewrites that would delete more than 30% of the existing text.
+        One cut a 636-character description to 405, dropping a Navy career and ten
+        years as Deputy Prime Minister. The review screen now warns before showing
+        the wording.</span></div>
+  </div>
+</section>
+
+<footer>
+  <p>The pipeline runs at midnight and noon Singapore time, one step after another: any
+    new TTE dump uploaded is loaded first, then relevance, extraction and resolution,
+    then the desk's cards are published.</p>
+  <p>The field rules and vocabularies are compiled from the NLB cataloguing
+    guidelines (KOS Guidelines for Name Construction in TTE, v5.1) and the
+    Occupations Scope Notes thesaurus. This page is for NLB readers.</p>
+  <p>Figures as of 28 September 2026, from <code>docs/numbers.md</code>
+    (<code>python -m src.export --numbers</code>). Reviewers work online: sign in, and the
+    desk deals one card at a time. The same desk also comes as a file that opens from
+    disk with no account.</p>
+</footer>
+
+</div>

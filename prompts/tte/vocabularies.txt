@@ -1,0 +1,43 @@
+CONTROLLED VOCABULARIES
+
+Derived from the authority file: terms already in use on two or more
+records. Use one of these exactly, or omit the field. Do not invent a term.
+
+PERSON.Nationality  (28 terms)
+  American, Australian, Bangladeshi, Belgian, British, Bruneian, Burmese, Cambodian
+  Canadian, Chinese, Danish, Dutch, Filipino, French, German, Hungarian, Indian
+  Indonesian, Japanese, Laotian, Malaysian, New Zealander, Scottish, Singaporean
+  Swiss, Taiwanese, Thai, Vietnamese
+
+PERSON.Title  (27 terms)
+  Brigadier, Brother, Chef, Dato, Datuk, Dr, Dr., Father, Haji, Hajjah, I, King
+  Lady, Lieutenant-General, Mrs, Prof., Professor, Reverend, Saya, Sir, Sister
+  Sultan, Syed, Tan Sri, Temenggong, U, Venerable
+
+FACILITY.Feature Type  (55 terms)
+  administrative facility, airbase, airport, apartment building, barracks, beacon
+  border post, building, church, clinic, college, community center, convent
+  courthouse, facility, facility center, factory, ferry, grave, historical site
+  hospital, hotel, house, library, lighthouse, mall, marina, market, military base
+  monastery, monument, mosque, museum, naval base, office building, palace, pier
+  police post, port, power station, prison, railroad station, religious center
+  resort, restaurant, satellite station, school, sewage treatment plant, shrine
+  stadium, store, temple, theater, university, waterworks
+
+LOCATION.Feature Type  (56 terms)
+  administrative division, amusement park, area, bay, beach, bridge
+  business center, canal, canalized stream, cape, causeway, cemetery, channel, dam
+  dock, docking basin, dockyard, facility, field, fort, garden, harbor, hill
+  historical populated place, historical region, historical site
+  housing development, industrial area, island, jetty, lake, land-tied island
+  locality, mall, market, military base, monument, nature reserve, park, pier
+  populated area, populated place, port, promenade, promontory, quarry, quay
+  reservoir, section of populated place, strait, stream, street, traffic circle
+  wetland, wharf, zoo
+
+ORGANISATION.Country  (7 terms)
+  Indonesia, Japan, Malaya, Malaysia, Singapore, United Kingdom, United States
+
+EVENT.Category  (9 terms)
+  Accidents, Civil disorders, Economic events, Epidemics and outbreaks
+  National campaigns, Political events, Singapore's first, Treaties, Wars

@@ -1,0 +1,22 @@
+# Secrets and local environment
+.env
+.venv/
+
+# Python and test caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data, never code: the authority exports, the collected archives, the
+# internal model's answers, built review packages. The cataloguing
+# guidelines under data/ are marked NLB internal.
+data/
+
+# Scratch files at the root
+/*.zip
+/*.csv
+/*.ipynb
+/*.pkl
+
+# The online desk build, written by Cloudflare (or locally with --site dist)
+/dist/

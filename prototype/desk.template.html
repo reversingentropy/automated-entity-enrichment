@@ -1,0 +1,1529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Review desk: every current card, new design</title>
+<style>
+  :root{
+    --bg:#F4F1EA; --ink:#1C2333; --ink2:#47506A; --ink3:#66708A; --line:#DDD8CB;
+    --accent:#2F5BEA; --accent-bg:#E8EEFF;
+    --paper:#FFFFFF; --news:#F3EFE5; --news-ink:#1F1B16; --news-soft:#5A5248; --rule:#E6E1D4;
+    --tick:#2E7A4A; --cross:#B3322B; --add:#1F6B3F; --add-bg:#E3F2E6; --del:#9A3B32; --del-bg:#F8E1DE;
+    --go:#1F7A46; --no:#C2352D; --grey:#4F5864; --amber:#7A4E06; --amber-bg:#FBE8C8; --amber-line:#C98A1B;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  button,select,input,textarea{font:inherit}
+  button{cursor:pointer}
+  button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* not part of the design: moving between the cards of the prototype */
+  .proto{position:sticky;top:0;z-index:30;background:#15110e;color:#cfc6b8;font-size:.8rem;padding:.45rem 1rem;display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+  .proto b{color:#fff;margin-right:.2rem}
+  .proto button,.proto select{background:#2b2420;color:#eee;border:1px solid #5a4e44;border-radius:4px;padding:.2rem .6rem;font-size:.78rem;max-width:18rem}
+  .proto button.on{background:#e9e1d4;color:#15110e}
+  .proto .sp{flex:1}
+
+
+  .mast{display:flex;justify-content:space-between;align-items:center;gap:.4rem 1rem;flex-wrap:wrap;padding:1rem 0 .7rem}
+  .mast b{font-size:1.15rem;letter-spacing:-.01em}
+  .mast .what{color:var(--ink3);font-size:.92rem;margin-left:.4rem}
+  .mast .right{display:flex;align-items:center;gap:.8rem;color:var(--ink3);font-size:.9rem}
+  .helpbtn{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.25rem .8rem;font-size:.85rem;font-weight:600}
+  .progress{height:6px;background:#E4DFD2;border-radius:999px;overflow:hidden;margin-bottom:.4rem}
+  .progress i{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .3s}
+
+  .steps{list-style:none;display:flex;gap:.5rem 1rem;align-items:center;margin:1.2rem 0 .3rem;padding:0;flex-wrap:wrap}
+  .steps li{display:flex;align-items:center;gap:.5rem;color:var(--ink3);font-size:.95rem}
+  .steps .n{width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid currentColor;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+  .steps li.now{color:var(--ink);font-size:1.3rem;font-weight:750}
+  .steps li.now .n{width:2.2rem;height:2.2rem;background:var(--accent);color:#fff;border-color:var(--accent);font-size:1rem}
+  .steps li.done{color:var(--ink2)}
+  .steps li.done .n{background:var(--tick);border-color:var(--tick);color:#fff}
+  .steps .bar{width:2rem;height:2px;background:var(--line)}
+  .segs{display:inline-flex;gap:.25rem;margin-left:.4rem}
+  .segs i{width:1.5rem;height:.5rem;border-radius:3px;background:#D9D4C7}
+  .segs i.on{background:var(--accent)} .segs i.done{background:var(--tick)}
+  .dots{display:inline-flex;gap:.3rem;vertical-align:middle;margin:0 .3rem}
+  .dots i{width:.6rem;height:.6rem;border-radius:50%;background:#D9D4C7}
+  .dots i.on{background:var(--accent)}
+
+  h1{font-size:1.55rem;line-height:1.25;margin:.5rem 0 1rem;font-weight:750;letter-spacing:-.015em;overflow-wrap:anywhere}
+  .flag{margin:-.4rem 0 .9rem;padding:.5rem .8rem;border-left:4px solid var(--amber-line);background:var(--amber-bg);color:#4a3205;border-radius:0 8px 8px 0;font-size:.92rem}
+
+  .focus{background:var(--paper);color:var(--ink);border-radius:16px;overflow:hidden;border:1px solid var(--rule);box-shadow:0 1px 2px rgba(20,25,40,.05),0 10px 30px rgba(20,25,40,.09)}
+  .side{padding:1.05rem 1.3rem}
+  .side.news{background:var(--news);color:var(--news-ink)}
+  .label{display:flex;justify-content:space-between;gap:.2rem .6rem;flex-wrap:wrap;font-size:.74rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;color:var(--ink2)}
+  .side.news .label{color:var(--news-ink)}
+  .label .src{font-weight:500;letter-spacing:.02em;text-transform:none;color:var(--news-soft);font-size:.82rem}
+  .side.tte .label .src,.draftbox .label .src{color:var(--ink3)}
+  .label a,.hl a{color:inherit}
+  .label .src a{color:var(--accent);background:#fff;border:1.5px solid var(--accent);border-radius:999px;padding:.02rem .6rem;text-decoration:none;font-weight:650;font-size:.8rem}
+  .hl{font-size:.82rem;color:var(--news-soft);margin:-.1rem 0 .45rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hl mark{font-size:inherit}
+  blockquote{margin:0;font:1.2rem/1.45 Newsreader,Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
+  .tr{margin:.45rem 0 0;font:.98rem/1.45 Newsreader,Georgia,serif;color:var(--news-soft);overflow-wrap:anywhere}
+  mark{background:#FBDD6A;color:inherit;padding:0 .12em;border-radius:3px}
+  mark.v{background:#BFE3C8;box-shadow:0 0 0 1px #2E7A4A inset}
+  .pills{display:inline-flex;gap:.25rem;margin-left:.3rem;vertical-align:middle}
+  .pills button{border:1.5px solid #BDB6A4;background:#fff;color:var(--news-ink);border-radius:999px;width:1.6rem;height:1.6rem;font-size:.78rem;font-weight:700;padding:0}
+  .pills button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .pills button.lg{width:auto;min-width:1.6rem;padding:0 .45rem}
+  .pills button small{font-size:.66rem;font-weight:700;margin-left:.2rem;opacity:.75}
+  .join{display:flex;align-items:center;gap:.7rem;padding:.4rem 1.3rem;background:var(--paper);color:var(--ink3);font-size:.78rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;border-top:1px solid var(--rule)}
+  .join::before,.join::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .side.tte{padding-top:.7rem}
+  .name{margin:.1rem 0 .1rem;font-size:1.55rem;line-height:1.2;overflow-wrap:anywhere;letter-spacing:-.01em}
+  .ident{margin:0 0 .75rem;color:var(--ink2);font-size:.98rem;overflow-wrap:anywhere}
+  .npt{margin:-.4rem 0 .7rem;color:var(--ink3);font-size:.86rem}
+  .checks{list-style:none;margin:0 0 .5rem;padding:0;display:grid;gap:.4rem}
+  .checks li{display:grid;grid-template-columns:5.8rem 1fr;gap:.6rem;align-items:baseline;font-size:.96rem;padding:.4rem .7rem;border-radius:8px;background:#F7F5EF;overflow-wrap:anywhere}
+  .checks b{font-weight:700;white-space:nowrap}
+  .checks .ok b{color:var(--tick)} .checks .bad b{color:var(--cross)} .checks .none b,.checks .part b{color:var(--ink3)}
+  .checks .ok{border-left:4px solid var(--tick)} .checks .bad{border-left:4px solid var(--cross)}
+  .checks .none{border-left:4px solid var(--line)} .checks .part{border-left:4px solid var(--amber-line)}
+  .checks small{display:block;color:var(--ink3);font-size:.82rem}
+  .more{background:none;border:none;color:var(--accent);text-decoration:underline;padding:.2rem 0;font-size:.88rem;margin-right:1rem}
+  .full{margin:.5rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--rule);font-size:.9rem;display:grid;gap:.35rem}
+  .full div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem;overflow-wrap:anywhere}
+  .full .k{color:var(--ink3);font-weight:600}
+  .cands{margin:.9rem 0 0;color:var(--ink2);font-size:.9rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+  .cands button{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.2rem .75rem;font-size:.86rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cands button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tt{display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 .3rem;margin-left:.4rem;opacity:.8;vertical-align:middle}
+  .frow{display:flex;gap:.5rem} .frow input{flex:1} .frow select{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:.4rem .6rem;font-size:.9rem;color:var(--ink)}
+  .ctype{font:inherit;font-size:.78rem;font-weight:650;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:.15rem .4rem;color:var(--ink);text-transform:none;letter-spacing:0}
+  .cands button.newrec{border-style:dashed;color:var(--ink2)}
+
+  .ba{padding:1rem 1.3rem 1.2rem;display:grid;gap:.75rem}
+  .ba .row{display:grid;gap:.3rem}
+  .tag{font-size:.74rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .was{color:var(--ink2);font-size:1rem;overflow-wrap:anywhere}
+  .was em{font-style:normal;opacity:.75}
+  .was s{text-decoration-color:var(--del);text-decoration-thickness:2px}
+  .arrow{display:flex;align-items:center;gap:.6rem;color:var(--ink2);font-size:.8rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+  .arrow .ln{flex:1;height:1px;background:var(--rule)}
+  .editbtn{background:#fff;color:var(--ink);border:1.5px solid var(--ink3);border-radius:8px;padding:.25rem .8rem;font-size:.86rem;font-weight:650;letter-spacing:0;text-transform:none}
+  .editbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .vrows{display:grid;gap:.45rem}
+  .vrow{display:flex;justify-content:space-between;align-items:center;gap:.4rem .8rem;flex-wrap:wrap;padding:.55rem .75rem;border-radius:10px;border:1.5px solid var(--add);background:var(--add-bg);color:var(--add)}
+  .vrow.new{border-color:var(--amber-line);background:var(--amber-bg);color:var(--amber)}
+  .vrow.out{opacity:.5} .vrow.out .vmain b{text-decoration:line-through}
+  .vmain{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:1rem;overflow-wrap:anywhere}
+  .vmain b{font-weight:650}
+  .plus{font-weight:800}
+  .vtags{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .vtags small{font-weight:750;font-size:.66rem;letter-spacing:.06em;border:1px solid currentColor;border-radius:4px;padding:.05rem .3rem;opacity:.9;text-transform:uppercase}
+  .vrow .x{background:none;border:none;color:inherit;font-size:1.15rem;line-height:1;padding:0 .2rem;opacity:.7}
+  .ref{border:1px solid currentColor;background:transparent;color:inherit;border-radius:50%;width:1.25rem;height:1.25rem;font-size:.68rem;font-weight:700;opacity:.85;padding:0}
+  .cin{font:inherit;font-weight:600;color:var(--ink);background:#fff;border:1.5px solid currentColor;border-radius:6px;padding:.25rem .5rem;flex:1;min-width:8rem}
+  .addchip{justify-self:start;background:none;border:1.5px dashed var(--ink3);color:var(--ink2);border-radius:999px;padding:.3rem .9rem;font-size:.92rem}
+  .desc{font-size:1.02rem;line-height:1.6;overflow-wrap:anywhere}
+  .desc .add{background:var(--add-bg);color:var(--add);border-radius:4px;padding:.05rem .2rem;font-weight:600}
+  .desc del{background:var(--del-bg);color:var(--del);border-radius:4px;padding:.05rem .2rem;text-decoration-thickness:2px}
+  .desc .fade{color:var(--ink2)} .desc .gap{color:var(--ink3);font-weight:700}
+  .dta{width:100%;font:1rem/1.55 inherit;font-family:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--ink3);border-radius:10px;padding:.6rem .7rem;min-height:9rem}
+  .final{font-size:1.02rem;line-height:1.65;overflow-wrap:anywhere;padding:.55rem .75rem;border-radius:10px;background:#F7F5EF;border:1px solid var(--rule)}
+  .final .old{color:var(--ink2)}
+  .final .newv{background:var(--add-bg);color:var(--add);border-radius:5px;padding:.05rem .35rem;font-weight:650}
+  .final .newv.nt{background:var(--amber-bg);color:var(--amber)}
+  .seg2{display:inline-flex;background:#E9E5D9;border-radius:8px;padding:.15rem}
+  .seg2 button{border:none;background:none;border-radius:6px;padding:.22rem .7rem;font-size:.84rem;font-weight:650;color:var(--ink2);letter-spacing:0;text-transform:none}
+  .seg2 button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,25,40,.18)}
+  .alts{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--ink2)}
+  .alts button,.pick{background:#fff;border:1.5px solid var(--ink3);color:var(--ink);border-radius:8px;padding:.3rem .65rem;font-size:.88rem;text-align:left}
+  .picks{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
+  .pick.on{background:var(--ink);color:#fff}
+  .warn{padding:.55rem .8rem;border-left:4px solid var(--cross);background:var(--del-bg);color:#5a1f1a;border-radius:0 8px 8px 0;font-size:.92rem}
+  .note{padding:.55rem .8rem;border-left:4px solid var(--amber-line);background:var(--amber-bg);color:#4a3205;border-radius:0 8px 8px 0;font-size:.92rem}
+  .side.news.small{padding:.85rem 1.3rem}
+  .side.news.small blockquote{font-size:1.08rem}
+  .find{margin:.6rem 0 0;display:grid;gap:.4rem}
+  .find input{padding:.55rem .8rem;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--ink);width:100%}
+  .hits{display:grid;gap:.3rem;max-height:18rem;overflow:auto}
+  .hit{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;text-align:left;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.45rem .75rem}
+  .hit small,.hit .npt2{color:var(--ink3);font-size:.8rem}
+  .nohits{color:var(--ink3);font-size:.9rem}
+  .draftbox{padding:1rem 1.3rem}
+  .draftbox .orig{color:var(--ink2);font-size:.95rem;margin:0 0 .6rem}
+  .focus .draftbox{background:repeating-linear-gradient(135deg,#fff,#fff 10px,#FAF8F2 10px,#FAF8F2 20px)}
+
+  .actions{position:sticky;bottom:0;margin:1.1rem 0 0;padding:.9rem 0;background:linear-gradient(rgba(244,241,234,0),var(--bg) 30%);display:grid;gap:.55rem}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .stamp{border:2px solid;border-radius:12px;padding:.8rem .95rem;text-align:left;display:grid;gap:.12rem;min-height:4.2rem;align-content:center;box-shadow:0 2px 6px rgba(20,25,40,.12);transition:transform .08s}
+  .stamp:active{transform:translateY(1px)}
+  .stamp b{font-size:1.1rem;font-weight:750;letter-spacing:-.005em}
+  .stamp span{font-size:.86rem;line-height:1.3;opacity:.92}
+  .stamp.go{background:var(--go);border-color:var(--go);color:#fff}
+  .stamp.red{background:var(--no);border-color:var(--no);color:#fff}
+  .stamp.grey{background:#fff;border-color:#B8BFC9;color:var(--grey)}
+  .quiet{justify-self:start;background:none;border:none;color:var(--ink2);text-decoration:underline;padding:.2rem 0;font-size:.92rem}
+  .qrow{display:flex;gap:1.2rem;flex-wrap:wrap}
+  .done-card{background:var(--paper);color:var(--ink);border-radius:16px;padding:1.6rem 1.4rem;display:grid;gap:.7rem;border:1px solid var(--rule);box-shadow:0 10px 30px rgba(20,25,40,.09);justify-items:start}
+  .done-card h2{margin:0;font-size:1.4rem} .done-card p{margin:0;color:var(--ink2)}
+  .bigtick{width:3.2rem;height:3.2rem;border-radius:50%;background:var(--tick);color:#fff;display:grid;place-items:center;font-size:1.7rem;font-weight:800;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+  .bigtick.keep{background:var(--amber-line)}
+  @keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  /* first open: what this is, in one picture */
+  .veil{position:fixed;inset:0;background:rgba(20,25,40,.55);display:grid;place-items:center;z-index:50;padding:1rem;overflow:auto}
+  .welcome{background:#fff;color:var(--ink);border-radius:20px;max-width:50rem;width:100%;padding:1.7rem 1.7rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .welcome h2{margin:0 0 .2rem;font-size:1.6rem;line-height:1.2;letter-spacing:-.015em}
+  .welcome .sub{margin:0;color:var(--ink2)}
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1.4rem 0 1.1rem;counter-reset:f}
+  .fstep{border:1.5px solid var(--rule);border-radius:14px;padding:.9rem .9rem 1rem;background:#FAF8F3;position:relative;display:grid;gap:.35rem;align-content:start}
+  .fstep:not(:last-child)::after{content:"\2192";position:absolute;right:-.95rem;top:2.2rem;color:var(--ink3);font-size:1.1rem;z-index:1}
+  .fstep svg{width:2.4rem;height:2.4rem;color:var(--ink2)}
+  .fstep b{font-size:1rem}
+  .fstep span{font-size:.86rem;color:var(--ink2);line-height:1.35}
+  .fstep.you{background:var(--accent-bg);border-color:var(--accent)}
+  .fstep.you svg{color:var(--accent)}
+  .fstep.you em{position:absolute;top:-.7rem;left:.8rem;background:var(--accent);color:#fff;font-style:normal;font-size:.7rem;font-weight:750;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:.12rem .6rem}
+  .welcome .foot{margin:0 0 1.1rem;color:var(--ink3);font-size:.86rem}
+  .welcome .go{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:.8rem 1.6rem;font-size:1.05rem;font-weight:700}
+  @media (max-width:42rem){
+    .flow{grid-template-columns:1fr}
+    .fstep:not(:last-child)::after{content:"\2193";right:auto;left:1.2rem;top:auto;bottom:-1.15rem}
+  }
+  .mast .right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .work{display:flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--ink3)}
+  .work select{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:.27rem .7rem;font-size:.88rem;color:var(--ink);font-weight:650}
+  .navbtn{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .85rem;font-size:.86rem;font-weight:650}
+  .navbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .menu{position:relative}
+  .menu summary{list-style:none;cursor:pointer;background:var(--paper);border:1.5px solid var(--line);border-radius:999px;width:2.1rem;height:2.1rem;display:grid;place-items:center;font-size:1.1rem;line-height:1}
+  .menu summary::-webkit-details-marker{display:none}
+  .menu-panel{position:absolute;right:0;top:calc(100% + .35rem);z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(20,25,40,.18);padding:.3rem;min-width:11rem;display:grid}
+  .menu-panel button{background:none;border:none;text-align:left;padding:.5rem .7rem;border-radius:8px;font-size:.92rem;color:var(--ink)}
+  .menu-panel button:hover{background:#F3F0E8}
+  .progline{display:flex;justify-content:flex-end;color:var(--ink3);font-size:.85rem;margin:-.05rem 0 0}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin:.8rem 0}
+  .tile{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:.9rem 1rem;box-shadow:0 1px 2px rgba(20,25,40,.05);display:grid;gap:.1rem}
+  .tile b{font-size:1.9rem;line-height:1.1;letter-spacing:-.02em}
+  .tile span{color:var(--ink2);font-size:.86rem}
+  .minor{color:var(--ink3);font-size:.9rem;margin:.3rem 0 1rem}
+  .h2{font-size:1.15rem;margin:1.4rem 0 .5rem}
+  .filters{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 .7rem}
+  .filters select,.filters input{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:.4rem .7rem;font-size:.9rem;color:var(--ink)}
+  .filters input{flex:1;min-width:10rem}
+  .focus.sheet{padding:.3rem 0}
+  .srow{display:grid;grid-template-columns:minmax(0,1.6fr) auto minmax(0,1.2fr) auto auto;gap:.4rem .9rem;align-items:center;padding:.65rem 1.2rem;border-top:1px solid var(--rule)}
+  .srow:first-child{border-top:none}
+  .sname{display:grid} .sname small{color:var(--ink3);text-transform:capitalize}
+  .srec,.swhen{color:var(--ink2);font-size:.92rem;overflow-wrap:anywhere}
+  .pill{font-size:.76rem;font-weight:700;border-radius:999px;padding:.12rem .6rem;white-space:nowrap}
+  .pill.approved{background:#DCEBDD;color:#1F6B3F} .pill.created{background:#E8EEFF;color:#2F5BEA} .pill.uptodate{background:#EEEAE0;color:#47506A}
+  .pill.discard,.pill.noworth{background:#F8E1DE;color:#9A3B32} .pill.keep{background:#FBE8C8;color:#7A4E06}
+  .donebtn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:.2rem .6rem;font-size:.82rem;font-weight:600;color:var(--ink)}
+  .donebtn.on{background:var(--tick);border-color:var(--tick);color:#fff}
+  .empty{padding:1.2rem;color:var(--ink3);margin:0}
+  .downs{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin-top:1rem}
+  .downs .stamp{min-height:0;padding:.7rem 1.1rem}
+  .grp{padding:.85rem 1.3rem;border-top:1px solid var(--rule);display:grid;gap:.45rem}
+  .grp:first-child{border-top:none}
+  .grp .top{display:flex;justify-content:space-between;gap:1rem;font-weight:700}
+  .grp .top span{color:var(--ink3);font-weight:500}
+  .stack{display:flex;height:.7rem;border-radius:999px;overflow:hidden;background:#E4DFD2}
+  .stack i{display:block;height:100%} .stack .d{background:var(--tick)} .stack .k{background:var(--amber-line)} .stack .h{background:var(--accent)}
+  .legend{display:flex;gap:1rem;flex-wrap:wrap;color:var(--ink2);font-size:.84rem}
+  .legend .sw{display:inline-block;width:.6rem;height:.6rem;border-radius:50%;margin-right:.3rem}
+  .pipe{padding:1rem 1.3rem;display:grid;gap:.6rem}
+  .pipe .line{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  .pipe .k{color:var(--ink3)}
+  .stp{display:flex;gap:.5rem;flex-wrap:wrap}
+  .st{font-size:.85rem;font-weight:650;border-radius:999px;padding:.15rem .7rem}
+  .st.ok{background:#DCEBDD;color:#1F6B3F} .st.bad{background:#F8E1DE;color:#9A3B32}
+  .heldrow{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.6rem 1.3rem;border-top:1px solid var(--rule)}
+  .heldrow:first-of-type{border-top:none}
+  .langs{display:grid;gap:.5rem;margin:1rem 0}
+  .lang{display:flex;align-items:center;gap:.7rem;border:1.5px solid var(--rule);border-radius:12px;padding:.7rem .9rem;font-size:1.05rem;font-weight:650;background:#FAF8F3;cursor:pointer}
+  .lang input{width:1.2rem;height:1.2rem;accent-color:var(--accent)}
+  .lang small{margin-left:auto;color:var(--ink3);font-weight:500}
+  .welcome.small{max-width:30rem}
+  @media (max-width:42rem){.tiles{grid-template-columns:1fr 1fr}.srow{grid-template-columns:1fr auto}.srow .srec,.srow .swhen{grid-column:1/-1}}
+  [hidden]{display:none !important}
+  .appwrap{container-type:inline-size;max-width:72rem;margin:0 auto}
+  .appwrap.phone{max-width:24.5rem}
+  .app{display:grid;grid-template-columns:3.6rem minmax(0,1fr);gap:0 1.4rem;padding:0 1rem 7rem 0}
+  .rail{position:sticky;top:2.6rem;align-self:start;height:calc(100vh - 2.6rem);z-index:25}
+  .panel{position:absolute;left:0;top:0;bottom:0;width:3.6rem;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;gap:1.1rem;padding:1rem .55rem;transition:width .18s ease,box-shadow .18s ease,background .18s}
+  .rail:hover .panel,.panel:focus-within,.panel.open{width:14.5rem;background:#fff;box-shadow:6px 0 40px rgba(20,25,40,.16)}
+  .burger{width:2.5rem;height:2.5rem;border:none;background:none;border-radius:10px;display:grid;place-items:center;color:var(--ink2);flex:none}
+  .burger:hover{background:#EAE6DB} .burger svg{width:1.4rem;height:1.4rem}
+  .brand{display:grid;gap:.15rem;white-space:nowrap;padding:0 .5rem;opacity:0;transition:opacity .12s}
+  .brand b{font-size:1.15rem;letter-spacing:-.01em} .brand span{color:var(--ink3);font-size:.84rem}
+  .panel nav{display:grid;gap:.3rem}
+  .navi{display:flex;align-items:center;gap:.8rem;background:none;border:none;border-radius:12px;padding:.6rem .65rem;font-size:1rem;font-weight:650;color:var(--ink2);text-align:left;white-space:nowrap}
+  .navi svg{width:1.3rem;height:1.3rem;flex:none}
+  .workrow{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .langpill{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:.27rem .8rem;font-size:.86rem;font-weight:650;color:var(--ink2)}
+  .langpill:hover{border-color:var(--ink3);color:var(--ink)}
+  .navi:hover{background:#EAE6DB}
+  .navi.on{background:var(--ink);color:#fff}
+  .navi span,.navi em,.sidefoot span{opacity:0;transition:opacity .12s}
+  .navi em{margin-left:auto;font-style:normal;font-size:.78rem;background:var(--accent);color:#fff;border-radius:999px;padding:.05rem .5rem}
+  .navi.on em{background:#fff;color:var(--ink)}
+  .rail:hover .panel :is(.brand,.navi span,.navi em,.sidefoot span),.panel:focus-within :is(.brand,.navi span,.navi em,.sidefoot span),.panel.open :is(.brand,.navi span,.navi em,.sidefoot span){opacity:1}
+  .sidefoot{margin-top:auto;display:grid;gap:.1rem}
+  .sidefoot button{display:flex;align-items:center;gap:.8rem;background:none;border:none;text-align:left;color:var(--ink3);padding:.5rem .65rem;font-size:.92rem;border-radius:10px;white-space:nowrap}
+  .sidefoot button svg{width:1.3rem;height:1.3rem;flex:none}
+  .sidefoot button:hover{background:#EAE6DB;color:var(--ink)}
+  .main{min-width:0;max-width:46rem;width:100%}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:.6rem 1rem;flex-wrap:wrap;padding:1.2rem 0 .6rem}
+  .topbar #count{color:var(--ink3);font-size:.88rem}
+  .actions{margin:1.1rem 0 0;padding:.9rem 0}
+  .phead{display:flex;justify-content:space-between;align-items:center;gap:.6rem 1rem;flex-wrap:wrap;margin:1.2rem 0 .5rem}
+  .phead h1{margin:0}
+  .seg{display:inline-flex;background:#E9E5D9;border-radius:999px;padding:.2rem}
+  .seg button{border:none;background:none;border-radius:999px;padding:.38rem 1rem;font-weight:650;color:var(--ink2)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,25,40,.18)}
+  .sample{margin:.2rem 0 .9rem;padding:.5rem .8rem;border-left:4px solid var(--accent);background:var(--accent-bg);color:#1c2f78;border-radius:0 8px 8px 0;font-size:.9rem}
+  .an{padding:1.1rem 1.3rem;display:grid;gap:.85rem}
+  .an+.an{border-top:1px solid var(--rule)}
+  .an h3{margin:0;font-size:1.05rem}
+  .an .hint{margin:0;color:var(--ink3);font-size:.88rem}
+  .brow{display:grid;grid-template-columns:5.2rem minmax(0,1fr) 6rem;gap:.7rem;align-items:center}
+  .brow .lab{font-weight:650;font-size:.92rem}
+  .brow .val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:.95rem}
+  .track{height:1.15rem;background:#E9E5D9;border-radius:999px;overflow:hidden;display:flex}
+  .track i{display:block;height:100%;font-style:normal;font-size:.7rem;color:#fff;text-align:center;line-height:1.15rem;overflow:hidden;white-space:nowrap}
+  .track .you{background:var(--accent)} .track .team{background:#9AA3B5}
+  .o-approved{background:var(--go)} .o-created{background:var(--accent)} .o-uptodate{background:#9AA3B5} .o-discard{background:#D9534A} .o-noworth{background:#E9A29C} .o-keep{background:var(--amber-line)}
+  .leg{display:flex;flex-wrap:wrap;gap:.35rem 1rem;font-size:.84rem;color:var(--ink2)}
+  .leg i{display:inline-block;width:.7rem;height:.7rem;border-radius:3px;margin-right:.35rem}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:.5rem;height:9.5rem;align-items:end}
+  .day{display:grid;grid-template-rows:1fr auto;justify-items:center;height:100%;gap:.3rem}
+  .cols{display:flex;gap:.2rem;align-items:end;height:100%}
+  .cols i{width:.95rem;border-radius:4px 4px 0 0;display:block;min-height:2px}
+  .day small{color:var(--ink3);font-size:.76rem}
+  .dlcard{padding:1.1rem 1.3rem;display:grid;gap:.5rem}
+  .dlcard+.dlcard{border-top:1px solid var(--rule)}
+  .dlcard h3{margin:0;font-size:1.05rem} .dlcard p{margin:0;color:var(--ink2);font-size:.92rem}
+  .dlbtns{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.3rem}
+  .dlbtns button{border:1.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:10px;padding:.55rem 1rem;font-weight:650}
+  .dlbtns button.p{background:var(--ink);color:#fff}
+  .dlbtns button:disabled{opacity:.4;cursor:not-allowed}
+  .proto button.on{background:#e9e1d4;color:#15110e}
+  @container (max-width:52rem){
+    .app{grid-template-columns:1fr;padding:0 1rem 7rem}
+    .rail{position:static;height:auto}
+    .panel,.rail:hover .panel{position:static;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;background:transparent;box-shadow:none;padding:.6rem 0;overflow:visible;gap:.4rem .8rem;transition:none}
+    .brand{opacity:1} .brand span{display:none}
+    .panel nav{display:none;order:3;width:100%}
+    .panel.open nav{display:grid;background:#fff;border:1px solid var(--line);border-radius:14px;padding:.4rem;box-shadow:0 10px 30px rgba(20,25,40,.12)}
+    .navi span,.navi em,.sidefoot span{opacity:1}
+    .sidefoot{display:none;margin:0}
+    .panel.open .sidefoot{display:grid;order:4;width:100%}
+  }
+  /* density: a card and its buttons should fit a laptop screen */
+  body{font-size:15px}
+  .main{margin:0 auto}
+  .topbar{padding:.6rem 0 .4rem}
+  .progress{height:5px}
+  h1{font-size:1.3rem;margin:.3rem 0 .65rem}
+  .steps{margin:.55rem 0 .1rem}
+  .steps li.now{font-size:1.1rem} .steps li.now .n{width:1.9rem;height:1.9rem;font-size:.9rem}
+  .steps .n{width:1.4rem;height:1.4rem;font-size:.72rem}
+  .side{padding:.75rem 1.1rem}
+  .side.news.small{padding:.65rem 1.1rem}
+  .label{margin-bottom:.25rem}
+  .hl{margin-bottom:.3rem}
+  blockquote{font-size:1.08rem;line-height:1.4}
+  .side.news.small blockquote{font-size:1.02rem}
+  .join{padding:.25rem 1.1rem}
+  .side.tte{padding-top:.55rem}
+  .name{font-size:1.3rem}
+  .ident{margin-bottom:.45rem;font-size:.92rem}
+  .checks{gap:.25rem;margin-bottom:.3rem}
+  .checks li{padding:.25rem .6rem;font-size:.92rem}
+  .cands{margin-top:.6rem}
+  .ba{padding:.75rem 1.1rem .9rem;gap:.5rem}
+  .final{padding:.4rem .65rem;font-size:.98rem;line-height:1.55}
+  .vrow{padding:.4rem .65rem}
+  .vrows{gap:.35rem}
+  .draftbox{padding:.75rem 1.1rem}
+  .actions{margin-top:.6rem;padding:.55rem 0 .45rem;gap:.3rem}
+  .pair{gap:.6rem}
+  .stamp{padding:.5rem .85rem;min-height:3rem;border-radius:10px}
+  .stamp b{font-size:1rem} .stamp span{font-size:.8rem}
+  .quiet{font-size:.85rem;padding:.1rem 0}
+  .qrow{gap:1rem}
+  /* the values being added sit side by side, not one to a line */
+  .vrows{display:flex;flex-wrap:wrap;gap:.35rem}
+  .vrow{flex:0 1 auto;gap:.3rem .6rem;padding:.3rem .6rem}
+  .vrow .cin{min-width:11rem}
+  .noproto .proto{display:none}
+  .noproto .rail{top:0;height:100vh}
+  @container (max-width:52rem){.noproto .rail{height:auto}}   /* the reviewers' build, on a phone: the menu is a top bar */
+  #selftest{white-space:pre-wrap;font:12px/1.4 monospace;background:#000;color:#9f9;padding:.6rem;margin:0}
+  @media (max-width:30rem){.pair{grid-template-columns:1fr}}
+  .appwrap.phone .pair{grid-template-columns:1fr}
+  .appwrap.phone .checks li{grid-template-columns:1fr;gap:.1rem}
+  .appwrap.phone .full div{grid-template-columns:1fr;gap:0}
+  .notice{margin:0 0 .8rem;padding:.55rem .8rem;border-radius:8px;background:#FBF1DC;border:1px solid var(--amber-line);font-size:.9rem;line-height:1.45}
+  .notice.test{background:#EEF2F7;border-color:#C9D3E2}
+  .signin .fld{display:block;text-align:left;font-size:.85rem;font-weight:600;margin:.6rem 0}
+  .signin .fld input{display:block;width:100%;box-sizing:border-box;margin-top:.25rem;padding:.55rem .6rem;border:1.5px solid #BDB6A4;border-radius:8px;font:inherit}
+  .signin .err{color:#B3261E;font-size:.88rem;margin:.4rem 0}
+  .sw{width:.8rem;height:.8rem;border-radius:3px;display:inline-block}
+  /* home A: minimal */
+  .hm{max-width:34rem;margin:0 auto;padding:3.2rem 0 1rem;text-align:center}
+  .hm .hello{margin:0;font-size:2rem;line-height:1.2;font-weight:750;letter-spacing:-.02em;color:var(--ink)}
+  .hm .dayline{margin:.55rem auto 0;max-width:28rem;color:var(--ink2);font-size:1.02rem;font-style:italic}
+  .hm .warnnote{margin:.8rem auto 0;display:inline-block;padding:.3rem .8rem;border-radius:999px;background:var(--amber-bg);color:var(--amber);font-size:.86rem;font-weight:600}
+  .hm .hmnum{margin-top:2.4rem}
+  .hmnum{font-size:6.5rem;font-weight:700;line-height:.95;letter-spacing:-.045em;color:var(--ink)}
+  .hmlab{margin:.5rem 0 .2rem;font-size:1.2rem;font-weight:650}
+  .hmsub{margin:0 0 1.8rem;color:var(--ink3);font-size:.95rem}
+  .cta{display:flex;align-items:center;justify-content:space-between;gap:1rem;width:100%;max-width:24rem;margin:0 auto;padding:1rem 1.3rem;border:0;border-radius:14px;background:var(--ink);color:#fff;text-align:left;box-shadow:0 10px 26px rgba(28,35,51,.22);transition:transform .12s ease,box-shadow .12s ease}
+  .cta:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(28,35,51,.28)}
+  .cta span{display:grid;gap:.1rem} .cta b{font-size:1.12rem} .cta small{color:#C6CCDA;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:17rem}
+  .cta i{font-style:normal;font-size:1.4rem}
+  .chips{display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 0}
+  .chips button{border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:999px;padding:.35rem .85rem;font-size:.88rem}
+  .chips button:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)} .chips b{color:var(--ink);margin-left:.2rem}
+  .teamline{margin:3rem auto 0;max-width:24rem}
+  .tl2{display:flex;gap:2px;height:6px}
+  .tl2 i{display:block;min-width:3px} .tl2 i:first-child{border-radius:3px 0 0 3px} .tl2 i:last-child{border-radius:0 3px 3px 0} .tl2 i:only-child{border-radius:3px}
+  .teamline p{margin:.6rem 0 0;display:flex;justify-content:center;flex-wrap:wrap;gap:.2rem .9rem;font-size:.82rem;color:var(--ink3)}
+  .teamline p span{display:inline-flex;align-items:center;gap:.35rem} .teamline .of{color:var(--ink3)}
+  .hm > .minor{margin-top:2.4rem;font-size:.84rem}
+  :is(.tl2,.teamline) .you{background:var(--accent)} :is(.tl2,.teamline) .them{background:#7A859B} :is(.tl2,.teamline) .wait{background:#E4DFD2}
+  :is(.tl2,.teamline) .held{background:repeating-linear-gradient(135deg,#7A859B 0 2px,#fff 2px 5px);box-shadow:inset 0 0 0 1px #7A859B}
+  [data-tip]{position:relative}
+  [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font:600 .78rem/1.3 system-ui,sans-serif;padding:.3rem .55rem;border-radius:6px;white-space:nowrap;z-index:5;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="proto">
+  <b>Prototype</b>
+  <button data-act="prev">&#9664;</button>
+  <select id="jump" aria-label="Jump to a card"></select>
+  <button data-act="next">Next &#9654;</button>
+  <select id="filter" aria-label="Show">
+    <option value="all">All cards</option>
+    <option value="who">Same-record questions</option>
+    <option value="new">Create-a-record questions</option>
+    <option value="chg">Cards with changes</option>
+    <option value="flag">Flagged cards</option>
+  </select>
+  <span class="sp"></span>
+  <span id="pos"></span>
+  <button id="samplebtn" class="on" data-act="sample">Sample team data</button>
+  <button id="phone" data-act="phone">Phone width</button>
+</div>
+<div class="appwrap" id="wrap"><div class="app">
+  <aside class="rail"><div class="panel" id="panel">
+    <button class="burger" data-act="rail" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="brand"><b>TTE Review Desk</b><span>Check what the AI found in the news</span></div>
+    <nav aria-label="Pages">
+      <button class="navi on" data-nav="home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/></svg><span>Home</span></button>
+      <button class="navi" data-nav="review" title="Review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Review</span><em id="waitbadge"></em></button>
+      <button class="navi" data-nav="results" title="Results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span>Results</span></button>
+      <button class="navi" data-nav="analytics" title="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Analytics</span></button>
+      <button class="navi" data-nav="downloads" title="Downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><span>Downloads</span></button>
+    </nav>
+    <div class="sidefoot"><button data-act="signout" id="signout" hidden title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></svg><span>Sign out</span></button><button data-act="settings" title="Languages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><span>Languages</span></button><button data-act="help" title="How this works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></svg><span>How this works</span></button></div>
+  </div></aside>
+  <main class="main">
+    <div class="topbar" id="topbar"><span class="workrow"><label class="work">Working on <select id="group" aria-label="Working on"></select></label><button class="langpill" id="langpill" data-act="settings" title="Change the languages you read"></button></span><span id="count"></span></div>
+    <div class="progress" id="progwrap" aria-hidden="true"><i id="prog"></i></div>
+    <div id="stage"></div>
+  </main>
+</div></div>
+<pre id="selftest" hidden></pre>
+
+<script>
+// The site build (`python -m src.export --site`) sets window.__ONLINE__: the reviewer signs in, the deck comes from the
+// `deck` table, each decision goes to `reviews` as it is made, and a record is one reviewer's while they hold it (`claims`).
+// Without it the page is the standalone prototype, with its cards built in.
+const ONLINE = window.__ONLINE__ || null;
+const REVIEW = /*__REVIEW__*/false || !!ONLINE;   // a build for reviewers: no prototype toolbar (add #proto to the address to bring it back)
+const CARDS = /*__CARDS__*/[];
+const IDX = /*__INDEX__*/{ index: [], npt: {} };
+const INDEX = IDX.index, NPT = IDX.npt;
+
+// ---- small helpers ---------------------------------------------------------
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const CJK = /[㐀-鿿]/;
+const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"]];
+const outletOf = link => (OUTLET.find(([k]) => (link || "").includes(k)) || [0, "News"])[1];
+const dayOf = d => { const t = new Date(d); return isNaN(t) ? (d || "") : t.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+const kind = c => c.type.toLowerCase().replace(/_/g, " ");
+const fieldMap = pairs => { const m = {}; (pairs || []).forEach(f => { if (f.key) m[f.key] = f.value; }); return m; };
+const splitVals = v => String(v || "").split(" | ").map(x => x.trim()).filter(Boolean);
+const head = (t, n) => { if (t.length <= n) return t; const s = t.slice(0, n); const i = s.lastIndexOf(" "); return (i > n * 0.6 ? s.slice(0, i) : s); };
+const tail = (t, n) => { if (t.length <= n) return t; const s = t.slice(-n); const i = s.indexOf(" "); return (i >= 0 && i < n * 0.4 ? s.slice(i + 1) : s); };
+const gist = (t, n) => { t = String(t || "").replace(/\s+/g, " ").trim(); return t.length <= n ? t : head(t, n) + "…"; };
+const ordered = c => { const base = c.options.filter(o => o.uid === c.picked).concat(c.options.filter(o => o.uid !== c.picked), crossOpts(c)); const st = S[c.key]; return st && st.extra ? base.concat(st.extra) : base; };
+// The model reads an entity as one type and the record may be filed as another (Snow City: an organisation to the
+// model, a building in TTE), so the retriever never looked there. A same-name record of any other type is offered.
+let _names = null, _cross = new WeakMap();
+function crossOpts(c) {
+  if (_cross.has(c)) return _cross.get(c);
+  if (!_names) { _names = new Map(); const add = (n, r) => { const k = normVal(n); if (!_names.has(k)) _names.set(k, []); _names.get(k).push(r); }; INDEX.forEach(r => { add(r[1], r); (NPT[r[0]] || []).forEach(n => add(n, r)); }); }
+  const have = new Set(c.options.map(o => o.uid)), out = [];
+  [c.entity, c.entityEn].filter(Boolean).forEach(n => (_names.get(normVal(n)) || []).forEach(r => {
+    if (r[2] !== c.type && !have.has(r[0]) && !out.some(o => o.uid === r[0]))
+      out.push({ uid: r[0], name: r[1], rtype: r[2], fields: r[4] ? [{ key: "Description", value: r[4] }] : [], extra: [], thin: true, ident: r[3], cross: true });
+  }));
+  _cross.set(c, out); return out;
+}
+const typeTag = (c, o) => o && o.rtype && o.rtype !== c.type ? `<span class="tt">${esc(kind({ type: o.rtype }))}</span>` : "";
+const findSource = (c, link) => c.sources.find(s => s.link === link) || c.sources[0] || {};
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// ---- comparing the news with a record ------------------------------------------
+const NOISE = new Set(["dr", "mr", "mrs", "ms", "prof", "professor", "dato", "datuk", "encik", "haji", "puan", "bin", "binte", "the"]);
+const normName = s => String(s || "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+function cmpName(a, b) {
+  const x = normName(a), y = normName(b);
+  if (!x || !y) return "diff";
+  if (CJK.test(x) || CJK.test(y)) {
+    const p = x.replace(/ /g, ""), q = y.replace(/ /g, "");
+    if (p === q) return "same";
+    return (p.length >= 2 && q.includes(p)) || (q.length >= 2 && p.includes(q)) ? "part" : "diff";
+  }
+  const A = new Set(x.split(" ").filter(w => !NOISE.has(w))), B = new Set(y.split(" ").filter(w => !NOISE.has(w)));
+  if (!A.size || !B.size) return "diff";
+  const inter = [...A].filter(w => B.has(w)).length;
+  if (inter === A.size && inter === B.size) return "same";
+  if (inter === Math.min(A.size, B.size) && inter >= 2) return "part";
+  return inter / new Set([...A, ...B]).size >= 0.5 ? "part" : "diff";
+}
+const RANK = { diff: 0, part: 1, same: 2 };
+function nameVerdict(c, o) {
+  const news = [...new Set([c.entity, c.entityEn, ...c.sources.map(s => s.name)].filter(Boolean))];
+  const rec = [...new Set([o.name, o.npt].filter(Boolean))];
+  let best = { k: "diff", a: news[0] || "", b: rec[0] || "" };
+  news.forEach(a => rec.forEach(b => { const k = cmpName(a, b); if (RANK[k] > RANK[best.k]) best = { k, a, b }; }));
+  return best;
+}
+const normVal = s => String(s).toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim().replace(/^singapore /, "");
+const sameVal = (a, b) => {
+  const x = normVal(a), y = normVal(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [s, l] = x.length < y.length ? [x, y] : [y, x];
+  return s.split(" ").length >= 2 && (" " + l + " ").includes(" " + s + " ");
+};
+const YEARS = new Set(["Birth Year (yyyy)", "Death Year (yyyy)", "Year Started (yyyy)", "Year Ended (yyyy)"]);
+const SINGLE = new Set(["Nationality", "Country"]);
+const FACTS = [["Birth Year (yyyy)", "Born"], ["Death Year (yyyy)", "Died"], ["Year Started (yyyy)", "Started"], ["Year Ended (yyyy)", "Ended"],
+               ["Nationality", "Nationality"], ["Occupation", "Role"], ["Title", "Title"], ["Affiliations(groupName)", "Affiliation"],
+               ["Awards", "Awards"], ["Parent Organisation", "Parent"], ["Street Address", "Address"], ["Country", "Country"], ["Feature Type", "Kind"]];
+const yearOf = v => (String(v).match(/\b(1[0-9]{3}|20[0-9]{2})\b/) || [])[1];
+
+// What decides "same record?": the name, then at most three facts both sides give.
+function checks(c, o) {
+  const rows = [];
+  const nv = nameVerdict(c, o), otherType = o.rtype && o.rtype !== c.type;
+  const romanised = !!o.romanised;
+  if (nv.k === "same") rows.push({ k: "ok", label: "✓ Name", text: esc(nv.a) + (normName(nv.a) === normName(nv.b) && nv.a === nv.b ? "" : " &nbsp;=&nbsp; " + esc(nv.b)) });
+  else if (nv.k === "part") rows.push({ k: "part", label: "~ Name", text: esc(nv.a) + " &nbsp;≈&nbsp; " + esc(nv.b) });
+  else rows.push({ k: "bad", label: "✗ Name", text: esc(nv.a) + " &nbsp;≠&nbsp; " + esc(nv.b) });
+  if (romanised) rows[0].sub = "Found through the model’s English spelling of the name, which is a guess.";
+  if (otherType) rows.push({ k: "part", label: "~ Type", text: `read as ${esc(kind(c))} in the news; this record is a ${esc(kind({ type: o.rtype }))}` });
+  const rec = fieldMap(o.fields), news = fieldMap(c.newsFields);
+  const found = [];
+  FACTS.forEach(([key, label]) => {
+    const r = splitVals(rec[key]), n = splitVals(news[key]);
+    if (!r.length || !n.length) return;
+    if (YEARS.has(key)) {
+      const ry = yearOf(r[0]), ny = yearOf(n[0]);
+      if (!ry || !ny) return;
+      found.push(ry === ny ? { w: 3, k: "ok", label: "✓ " + label, text: esc(ry) }
+                           : { w: 5, k: "bad", label: "✗ " + label, text: "article " + esc(ny) + " &nbsp;≠&nbsp; TTE " + esc(ry) });
+      return;
+    }
+    const shared = n.filter(x => r.some(y => sameVal(x, y)));
+    if (shared.length) found.push({ w: 2, k: "ok", label: "✓ " + label, text: esc(shared.slice(0, 2).join(", ")) + (shared.length > 2 ? " +" + (shared.length - 2) : "") + " in both" });
+    else if (SINGLE.has(key)) found.push({ w: 4, k: "bad", label: "✗ " + label, text: "article " + esc(n[0]) + " &nbsp;≠&nbsp; TTE " + esc(r[0]) });
+    else found.push({ w: 1, k: "none", label: "– " + label, text: "article: " + esc(gist(n.join(", "), 50)) + "<small>TTE: " + esc(gist(r.join(", "), 50)) + "</small>" });
+  });
+  found.sort((a, b) => b.w - a.w);
+  const hard = found.filter(f => f.w >= 2).slice(0, 3);
+  rows.push(...hard);
+  if (hard.length < 2) rows.push(...found.filter(f => f.w < 2).slice(0, 2 - hard.length));
+  if (rows.length === 1) rows.push({ k: "none", label: "– Facts", text: "nothing else to compare" });
+  return rows;
+}
+function identLine(c, o) {
+  const f = fieldMap(o.fields), bits = [];
+  const role = splitVals(f["Occupation"])[0] || f["Title"] || f["Feature Type"];
+  if (role) bits.push(role);
+  if (f["Birth Year (yyyy)"]) bits.push("born " + f["Birth Year (yyyy)"]);
+  if (f["Death Year (yyyy)"]) bits.push("died " + f["Death Year (yyyy)"]);
+  const a = splitVals(f["Awards"])[0]; if (a && bits.length < 3) bits.push(a);
+  if (bits.length) return bits.join(" · ");
+  if (f["Description"]) return gist(f["Description"], 140);
+  return "Nothing recorded on this record but its name";
+}
+
+// ---- the news side -----------------------------------------------------------
+// Yellow marks the name; green marks the value a change would add.
+function marked(text, names, vals) {
+  const N = [...new Set((names || []).filter(n => n && String(n).trim().length >= 2))];
+  const V = [...new Set((vals || []).filter(n => n && String(n).trim().length >= 2))];
+  const kindOf = new Map();
+  N.forEach(x => kindOf.set(x.toLowerCase(), 1));
+  V.forEach(x => { if (!kindOf.has(x.toLowerCase())) kindOf.set(x.toLowerCase(), 3); });
+  const all = [...kindOf.keys()].sort((a, b) => b.length - a.length);
+  if (!all.length) return esc(text);
+  const re = new RegExp(all.map(reEsc).join("|"), "gi");
+  return esc(String(text).replace(re, m => { const k = kindOf.get(m.toLowerCase()) || 1; return String.fromCharCode(k) + m + String.fromCharCode(k + 1); }))
+    .replace(/\u0001/g, "<mark>").replace(/\u0002/g, "</mark>").replace(/\u0003/g, '<mark class="v">').replace(/\u0004/g, "</mark>");
+}
+function newsBlock(c, o) {
+  const src = c.sources[o.i] || {};
+  // A change may carry its own sentence from this article: the one the person was given can back a different fact.
+  const own = (o.quotes || {})[src.link];
+  const s = own ? { ...src, quote: own.quote, original: own.original } : src;
+  const translated = s.original && s.original !== s.quote;
+  // A card whose sources are in two languages says which is which, so a reader of one can pick theirs.
+  const mixed = cardLangs(c).length > 1, lg = i => LANG_TAG[langOf(c.sources[i].link || "")] || "";
+  const pills = o.pills.length > 1
+    ? `<span class="pills">${o.pills.map(i => `<button class="${i === o.i ? "on" : ""}${mixed ? " lg" : ""}" data-act="${o.act}" data-i="${i}" title="${esc(outletOf(c.sources[i].link))}">${i + 1}${mixed ? `<small>${lg(i)}</small>` : ""}</button>`).join("")}</span>` : "";
+  return `<div class="side news${o.small ? " small" : ""}">
+    <div class="label">In the news${pills} <span class="src">${esc(outletOf(s.link))}${dayOf(s.date) ? ` &middot; ${esc(dayOf(s.date))}` : ""}${s.link ? ` &middot; <a href="${esc(s.link)}" target="_blank" rel="noopener">Open article &#8599;</a>` : ""}${o.suffix || ""}</span></div>
+    ${s.article ? `<div class="hl">${marked(s.article, o.names, o.vals)}</div>` : ""}
+    <blockquote>&ldquo;${marked(translated ? s.original : s.quote, o.names, o.vals)}&rdquo;</blockquote>
+    ${translated ? `<p class="tr">&ldquo;${marked(s.quote, o.names, o.vals)}&rdquo;</p>` : ""}
+  </div>`;
+}
+const news = (c, st) => newsBlock(c, { i: st.src || 0, pills: c.sources.map((_, i) => i), act: "src", names: [c.entity, c.entityEn, (c.sources[st.src || 0] || {}).name] });
+
+// ---- what a card asks ------------------------------------------------------------
+// One article naming two values (a gold in 2023 and again in 2026) is not two sources disagreeing: both are
+// additions. And a list field is one question, however many changes the builder split it into.
+const sameSource = ch => { const by = {}; (ch.saidBy || []).forEach(x => (by[x.from] = by[x.from] || new Set()).add(x.value)); return Object.values(by).some(v => v.size > 1); };
+function listRow(ch) {
+  const vals = splitVals(ch.adding), both = ch.conflict && sameSource(ch), conf = [];
+  if (both) (ch.saidBy || []).forEach(x => { if (x.value && !vals.includes(x.value)) vals.push(x.value); });
+  else if (ch.conflict) (ch.saidBy || []).forEach(x => { if (!conf.includes(x.value)) conf.push(x.value); });
+  return { ...ch, vals0: vals, confVals: conf, conflict: ch.conflict && !both };
+}
+function mergeRows(rows) {
+  const out = [], at = new Map();
+  rows.forEach(ch => {
+    if (ch.diff || ch.strategy === "REPLACE") { out.push(ch); return; }
+    const r = listRow(ch), key = r.field + "|" + r.strategy;
+    if (!at.has(key)) { at.set(key, out.length); out.push(r); return; }
+    const m = out[at.get(key)];
+    r.vals0.forEach(v => { if (!m.vals0.includes(v)) m.vals0.push(v); });
+    r.confVals.forEach(v => { if (!m.confVals.includes(v)) m.confVals.push(v); });
+    m.saidBy = (m.saidBy || []).concat(r.saidBy || []); m.perValue = (m.perValue || []).concat(r.perValue || []);
+    m.supporters = [...new Set([...(m.supporters || []), ...(r.supporters || [])])];
+    if (r.quotes) m.quotes = { ...(r.quotes || {}), ...(m.quotes || {}) };
+    if (Array.isArray(m.inTTE) || Array.isArray(r.inTTE)) m.inTTE = (m.inTTE || []).concat(r.inTTE || []);
+    m.conflict = m.conflict || r.conflict;
+  });
+  return out;
+}
+const valsOf = (st, k, ch) => st.val[k] || (st.val[k] = (ch.vals0 || splitVals(ch.adding)).slice());
+// Fields that hold one value: a date part, a postal code, an address. Adding a second one writes "12 | 05".
+const SCALAR = f => /\((yyyy|mm|dd)\)$/.test(f) || ["Postal Code", "Street Address", "Place of Birth", "Feature Type", "Year", "Month", "Day", "Year First Awarded", "SN"].includes(f);
+// Prose fields hold sentences in one value; " | " is for lists. An addition is a sentence at the end, as in a description.
+const PROSE = f => f === "Achievements";
+const toSentence = t => { t = String(t || "").trim(); if (!t) return ""; t = t[0].toUpperCase() + t.slice(1); return /[.!?\u3002]$/.test(t) ? t : t + "."; };
+const asProse = ch => {
+  if (ch.diff || !PROSE(ch.field) || (ch.strategy !== "APPEND" && ch.strategy !== "REPLACE")) return ch;
+  const was = (ch.existing || []).join(" ").trim(), add = toSentence(ch.adding), keep = ch.strategy === "APPEND" && was;
+  return { ...ch, strategy: "MERGE", verb: "Rewrite", adds: [add], result: (keep ? was + " " : "") + add,
+           diff: (keep ? [{ op: "same", text: was + " " }] : (was ? [{ op: "out", text: was }] : [])).concat([{ op: "in", text: add }]) };
+};
+const sentences = t => String(t || "").split(/(?<=[.!?\u3002])\s+/).filter(Boolean);
+const asReplace = ch => ch.strategy === "APPEND" && SCALAR(ch.field) ? { ...ch, strategy: "REPLACE", verb: "Replace" } : ch;
+const modeOf = (st, k, ch) => st.mode[k] || (ch.strategy === "REPLACE" ? "replace" : "add");
+// A Chinese name confirmed against a record TTE holds only in English is a variant name TTE lacks. It is asked as a
+// change like any other, not added to the sheet unseen, and not asked at all when TTE already holds that name.
+const plainName = n => String(n || "").replace(/[\s()（）]/g, "");
+let NPT_READY = !ONLINE;   // online, the variant names arrive with the search index, a moment after the deck
+function variantRow(c, o) {
+  if (!o || !NPT_READY || !CJK.test(c.entity) || CJK.test(o.name)) return null;
+  const held = (NPT[o.uid] || []).concat(o.npt ? [o.npt] : []);
+  if (held.some(n => plainName(n) === plainName(c.entity))) return null;
+  const zh = c.sources.find(s => langOf(s.link || "") === "zh") || c.sources[0] || {};
+  return { field: "Variant name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held)], result: c.entity, from: zh.link || "", variant: true };
+}
+const rowsFor = (c, o) => o ? mergeRows((o.extra || []).concat(o.uid === c.picked ? c.changes : []).map(asReplace).map(asProse)).concat(variantRow(c, o) || []) : [];
+const chosenOpt = (c, st) => ordered(c)[st.chosen != null ? st.chosen : st.cand];
+let NAMEIDX = null;
+const idxHas = v => { if (!NAMEIDX) NAMEIDX = new Set(INDEX.map(r => normVal(r[1]))); return NAMEIDX.has(normVal(v)); };
+
+const stepper = (mode, c, st) => {
+  if (mode === "create" || mode === "endnew") return "";
+  const nCh = rowsFor(c, mode === "who" ? ordered(c)[st.cand] : chosenOpt(c, st)).length;
+  const dot = (cls, n, text, extra) => `<li class="${cls}"><span class="n">${cls === "done" ? "&#10003;" : n}</span> ${text}${extra || ""}</li>`;
+  const segs = `<span class="segs">${Array.from({ length: nCh }, (_, i) => `<i class="${i < st.ch ? "done" : i === st.ch ? "on" : ""}"></i>`).join("")}</span>`;
+  const first = mode === "who" ? dot("now", 1, "Same record?") : dot("done", 1, "Same record?");
+  const second = nCh ? dot(mode === "change" ? "now" : mode === "done" ? "done" : "", 2, "Changes", mode === "change" && nCh > 1 ? segs : "") : "";
+  return `<ol class="steps">${first}${second ? `<li class="bar" aria-hidden="true"></li>${second}` : ""}</ol>`;
+};
+const stamp = (a, cls) => `<button class="stamp ${cls}" data-act="${a[0]}"><b>${a[1]}</b>${a[2] ? `<span>${a[2]}</span>` : ""}</button>`;
+const actions = (a, b, quiet) => `<div class="actions"><div class="pair">${stamp(a, a[3] || "go")}${stamp(b, b[3] || "grey")}</div>
+  <div class="qrow">${quiet.map(q => `<button class="quiet" data-act="${q[0]}">${q[1]}</button>`).join("")}</div></div>`;
+
+// search: every record of the card's type, ranked as the desk ranks it
+function hitsHtml(c, query) {
+  const nz = t => String(t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const q = nz(query);
+  if (q.length < 2) return `<div class="nohits">Type at least two letters.</div>`;
+  const have = new Set(ordered(c).map(o => o.uid));
+  const wordStart = new RegExp("(^|\\s)" + reEsc(q), "u");
+  const starts = t => wordStart.test(nz(t)), has = t => nz(t).includes(q);
+  const via = {};
+  const byNpt = test => row => { const n = (NPT[row[0]] || []).find(test); if (n) via[row[0]] = n; return !!n; };
+  const passes = [r => starts(r[1]), byNpt(starts), r => has(r[1]), byNpt(has), r => starts(r[3]) || starts(r[4]), r => has(r[3]) || has(r[4])];
+  const found = []; let listed = 0;
+  const only = (S[c.key] || {}).stype || "all";
+  for (const pass of passes) for (const r of INDEX) {
+    if (found.length >= 80) break;
+    if ((only !== "all" && r[2] !== only) || found.includes(r)) continue;
+    if (pass(r)) { if (have.has(r[0])) { listed++; continue; } found.push(r); }
+  }
+  found.sort((a, b) => (b[2] === c.type) - (a[2] === c.type));
+  if (!found.length) return `<div class="nohits">${listed ? "That record is already one of the candidates above." : "No record by that name."}</div>`;
+  return found.slice(0, 25).map(r => `<button class="hit" data-act="pickhit" data-u="${esc(r[0])}" data-npt="${esc(via[r[0]] || "")}"><b>${esc(r[1])}</b><span class="tt">${esc(kind({ type: r[2] }))}</span>${via[r[0]] ? `<span class="npt2">NPT ${esc(via[r[0]])}</span>` : ""}${r[3] ? `<small>${esc(gist(r[3], 60))}</small>` : ""}</button>`).join("");
+}
+const candRow = (c, st, label) => {
+  const opts = ordered(c);
+  return `<div class="cands">${opts.length ? label : "Not in the list?"} ${opts.map((o, i) => `<button class="${st.screen === "who" && i === st.cand ? "on" : ""}" data-act="cand" data-i="${i}">${esc(o.name)}${typeTag(c, o)}</button>`).join("")}
+    <button data-act="find">${st.finding ? "Close search" : "Search TTE"}</button>${st.screen === "who" ? `<button class="newrec" data-act="newrec">+ New record</button>` : ""}</div>
+  ${st.finding ? `<div class="find"><div class="frow"><input id="q" type="search" autocomplete="off" placeholder="Search every record in TTE by name, occupation or description" value="${esc(st.query || "")}"><select id="qt" aria-label="Record type"><option value="all">All types</option>${Object.keys(TYPES).map(t => `<option value="${t}" ${st.stype === t ? "selected" : ""}>${TYPES[t][0]}</option>`).join("")}</select></div><div class="hits" id="hits">${hitsHtml(c, st.query)}</div></div>` : ""}`;
+};
+
+// ---- screens ---------------------------------------------------------------------
+// A search result carries an identity line and the opening of the description; the two often start the same way.
+const thinIdent = o => { const d = gist((fieldMap(o.fields)).Description, 120), id = o.ident || ""; return [id && !d.startsWith(id.replace(/…$/, "").trim()) ? id : "", d].filter(Boolean).join(" · "); };
+function who(c, st) {
+  const opts = ordered(c), o = opts[st.cand];
+  if (!o) return create(c, st);
+  const nCh = rowsFor(c, o).length;
+  const rows = checks(c, o);
+  return `${stepper("who", c, st)}
+  <h1>Is this TTE record the same ${esc(kind(c))} as the one in the news?</h1>
+  ${c.isFlag && c.flagWhy ? `<p class="flag">${esc(c.flagWhy)}.</p>` : ""}
+  <section class="focus">
+    ${news(c, st)}
+    <div class="join">same ${esc(kind(c))}?</div>
+    <div class="side tte">
+      <div class="label">In TTE now <span class="src">${esc(o.rtype || c.type)} &middot; no. ${esc(o.uid)}</span></div>
+      <h2 class="name">${esc(o.name)}</h2>
+      <p class="ident">${esc(o.thin ? thinIdent(o) || "Nothing recorded but its name" : identLine(c, o))}</p>
+      ${o.npt ? `<p class="npt">Found through the name &ldquo;${esc(o.npt)}&rdquo;</p>` : ""}
+      <ul class="checks">${rows.map(r => `<li class="${r.k}"><b>${r.label}</b><span>${r.text}${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span></li>`).join("")}</ul>
+      ${o.thin ? `<p class="npt">Only the name and the start of the description are shown for a search result.</p>` : `<button class="more" data-act="full">${st.full ? "Hide the full record &#9652;" : "Show the full record &#9662;"}</button>`}
+      ${st.full && !o.thin ? `<div class="full">${(o.fields.length ? o.fields : [{ key: "", value: "Nothing recorded" }]).map(x => `<div><span class="k">${esc(x.key)}</span><span>${esc(x.value)}</span></div>`).join("")}</div>` : ""}
+    </div>
+  </section>
+  ${candRow(c, st, "Closest records:")}
+  ${actions(["same", `Same record${nCh ? ` (${nCh} change${nCh > 1 ? "s" : ""})` : ""}`, nCh ? "" : "already up to date", "go"],
+            ["discard", "No thanks", "discard this one", "red"],
+            quiet(st))}`;
+}
+
+function create(c, st) {
+  const name = c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity;
+  const fresh = c.isNew;
+  const nf = c.newsFields.filter(f => f.key !== "Description"), desc = fieldMap(c.newsFields)["Description"];
+  const shown = st.full ? nf : nf.slice(0, 5);
+  return `<h1>${esc(fresh ? name + " is not in TTE. Create a record?" : "No record for " + name + ". Create one?")}</h1>
+  <section class="focus">
+    ${news(c, st)}
+    <div class="join">would become a new record</div>
+    <div class="draftbox">
+      <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Record type">${Object.keys(TYPES).map(t => `<option value="${t}" ${(st.ctype || c.type) === t ? "selected" : ""}>${TYPES[t][0].replace(/ \(.*\)/, "")}${t === "FACILITY" ? " (building)" : t === "LOCATION" ? " (place)" : ""}</option>`).join("")}</select> &middot; new record</span></div>
+      <h2 class="name">${esc(c.entityEn || c.entity)}</h2>
+      ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
+      ${desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
+      ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => `<div><span class="k">${esc((FACTS.find(f => f[0] === x.key) || [0, x.key])[1])}</span><span>${esc(gist(x.value, st.full ? 400 : 90))}</span></div>`).join("")}</div>` : ""}
+      ${nf.length > 5 || (desc && desc.length > 170) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show everything the article gave &#9662;"}</button>` : ""}
+    </div>
+  </section>
+  ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Closest records:")}
+  ${actions(["create", "Create a new record", "goes on the sheet", "go"], ["noworth", "Not worth a record", "nothing is created", "red"],
+            quiet(st))}`;
+}
+
+const TYPES = { PERSON: ["People", "People"], ORGANISATION: ["Organisations", "Organisations"], FACILITY: ["Facilities (buildings)", "Geobuildings"], LOCATION: ["Locations (places)", "Geographics"],
+                EVENT: ["Events", "Events"], AWARD: ["Awards", "Awards"], PROGRAMME: ["Programmes", "Programmes"], LEGAL_ACT: ["Legal acts", "Legal acts"] };
+const FIELD_Q = { "Description": "the description", "Title": "the title", "Affiliations(groupName)": "the affiliations", "Awards": "the awards", "Occupation": "the occupation",
+                  "Parent Organisation": "the parent organisation", "Achievements": "the achievements", "Year Ended (yyyy)": "the year ended",
+                  "Month Ended (mm)": "the month ended", "Day Ended (dd)": "the day ended", "Death Day (dd)": "the day of death", "Child": "the children" };
+const fq = f => FIELD_Q[f] || f.replace(/\s*\(.*\)$/, "").toLowerCase();
+
+function diffHtml(diff, full) {
+  return diff.map((d, i) => {
+    if (d.op === "in") return `<span class="add">${esc(d.text)}</span>`;
+    if (d.op === "out") return `<del>${esc(d.text)}</del>`;
+    const t = d.text, first = i === 0, last = i === diff.length - 1;
+    if (full || t.length <= 260) return `<span class="fade">${esc(t)}</span>`;
+    if (first) return `<span class="gap">… </span><span class="fade">${esc(tail(t, 200))}</span>`;
+    if (last) return `<span class="fade">${esc(head(t, 160))}</span><span class="gap"> …</span>`;
+    return `<span class="fade">${esc(head(t, 100))}</span><span class="gap"> … </span><span class="fade">${esc(tail(t, 100))}</span>`;
+  }).join(" ");   // the parts are runs of words: without the space, "2025." and "2025, and" read "2025.2025, and"
+}
+// a hand-edited description, shown against what TTE has: new sentences green, dropped ones struck
+function sentDiff(was, now) {
+  const split = t => String(t || "").split(/(?<=[.!?。！？])\s+/).filter(Boolean);
+  const A = split(was), B = split(now), inA = new Set(A), inB = new Set(B);
+  return B.map(x => inA.has(x) ? `<span class="fade">${esc(x)}</span>` : `<span class="add">${esc(x)}</span>`).join(" ")
+    + A.filter(x => !inB.has(x)).map(x => ` <del>${esc(x)}</del>`).join("");
+}
+const srcIdxOf = (c, links) => [...new Set((links || []).map(l => c.sources.findIndex(s => s.link === l)).filter(i => i >= 0))].sort((a, b) => a - b);
+
+function change(c, st) {
+  const o = chosenOpt(c, st), rows = rowsFor(c, o), n = rows.length, k = st.ch, ch = rows[k];
+  const { sup, si } = srcFor(c, st, k, ch);
+  const editing = !!st.edit[k];
+  const isText = !!ch.diff;
+  const vals = isText ? [] : valsOf(st, k, ch);
+  const after = isText ? (st.text[k] != null ? st.text[k] : ch.result) : "";
+  const REL = Array.isArray(ch.inTTE), linked = new Set((ch.inTTE || []).filter(x => x.uid).map(x => x.name));
+  const inTte = v => linked.has(v) || idxHas(v);
+  const refsOf = v => srcIdxOf(c, (ch.perValue || []).filter(x => x.value === v).flatMap(x => x.sources || []).concat((ch.saidBy || []).filter(x => x.value === v).map(x => x.from)));
+  const mode = isText ? "" : modeOf(st, k, ch), replace = mode === "replace";
+
+  let title, body, tools = "";
+  const was = (ch.existing || []).join(" ");
+  if (isText) {
+    title = ch.diff.some(d => d.op === "out") ? `Rewrite ${fq(ch.field)} like this?` : `Add this to ${fq(ch.field)}?`;
+    const long = was.length > 260 || ch.diff.some(d => d.op === "same" && d.text.length > 260);
+    body = `<div class="row"><div class="tag">In TTE now</div><div class="desc fade">${st.descFull ? esc(was) : (was.length > 260 ? `<span class="gap">… </span>${esc(tail(was, 220))}` : esc(was) || "<em>no description</em>")}</div></div>
+      <div class="arrow"><span>after you accept</span><i class="ln"></i><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+      <div class="row">${editing ? `<textarea class="dta" aria-label="The text after you accept">${esc(after)}</textarea>`
+                                  : `<div class="desc">${st.text[k] != null ? sentDiff(was, after) : diffHtml(ch.diff, st.descFull)}</div>`}
+        ${!editing && long && st.text[k] == null ? `<button class="more" data-act="descfull">${st.descFull ? "Show less &#9652;" : "Show all of it &#9662;"}</button>` : ""}
+        ${editing && st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}
+</div>`;
+  } else {
+    // The variant name has the same Edit and Add / Replace as any list: the reviewer may correct the name, or replace
+    // a variant TTE holds that is wrong.
+    const vn = vals.filter(v => v.trim()).join(" | ") || c.entity;
+    title = ch.variant ? (replace ? `Make ${vn} this record's only variant name?` : `Add ${vn} to this record as a variant name?`)
+          : replace ? `Set ${fq(ch.field)} to this?` : ch.strategy === "INSERT_RELATION" ? `Link ${fq(ch.field)} to this record?` : `Add this to ${fq(ch.field)}?`;
+    const rowsHtml = vals.map((v, i) => {
+      const out = st.out[k + ":" + i], isNew = REL && !inTte(v), refs = refsOf(v);
+      if (editing) return `<div class="vrow ${isNew ? "new" : ""}"><input class="cin" data-i="${i}" value="${esc(v)}" aria-label="Value ${i + 1}"><button class="x" data-act="rm" data-i="${i}" title="Remove">&times;</button></div>`;
+      return `<div class="vrow ${isNew ? "new" : ""} ${out ? "out" : ""}"><div class="vmain"><span class="plus">${replace ? "\u2192" : "+"}</span><b>${esc(v)}</b>${c.sources.length > 1 && refs.length ? refs.map(r => `<button class="ref" data-act="csrc" data-i="${r}" title="Said by source ${r + 1}">${r + 1}</button>`).join("") : ""}</div>
+        <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div></div>`;
+    }).join("");
+    const existing = ch.existing || [], keptVals = vals.filter((v, i) => v.trim() && !st.out[k + ":" + i]);
+    const finalLine = (replace ? "" : existing.map(x => `<span class="old">${esc(x)}</span>`).join(" | ") + (existing.length && keptVals.length ? " | " : ""))
+      + keptVals.map(v => `<span class="newv ${REL && !inTte(v) ? "nt" : ""}">${esc(v)}</span>`).join(" | ");
+    body = `<div class="row"><div class="tag">${ch.variant ? "Other names in TTE now" : "In TTE now"}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
+      <div class="arrow"><span>after you accept</span><i class="ln"></i><span class="seg2" role="group" aria-label="Add or replace"><button class="${replace ? "" : "on"}" data-act="mode" data-m="add">Add</button><button class="${replace ? "on" : ""}" data-act="mode" data-m="replace">Replace</button></span><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+      <div class="final">${finalLine || "<em>nothing</em>"}</div>
+      <div class="row"><div class="tag">${replace ? "New value" : "Adding"}</div><div class="vrows">${rowsHtml}${editing && !replace ? `<button class="addchip" data-act="addval">+ Add</button>` : ""}</div></div>`;
+  }
+  const nSent = ch.field === "Achievements" && isText ? sentences(st.text[k] != null ? st.text[k] : ch.result).length : 0;
+  const warnLong = nSent > 5 ? `<div class="note">Achievements are meant to be 3 to 5 sentences; this will be ${nSent}.</div>` : "";
+  const warn = warnLong + (ch.overEdit ? `<div class="warn">This rewrite drops most of the current description: only ${Math.round((ch.kept || 0) * 100)}% of it survives.</div>` : "");
+  let conflict = "";
+  if (ch.conflict && (ch.saidBy || []).length) {
+    const seen = new Map(); (ch.saidBy || []).filter(x => (ch.confVals || []).includes(x.value)).forEach(x => { if (!seen.has(x.value)) seen.set(x.value, []); seen.get(x.value).push(x.from); });
+    const opts = [...seen.entries()], held = opts.filter(([v]) => vals.includes(v)).length;
+    conflict = `<div class="note">The sources disagree. Keep the one you trust, or both:<div class="picks">${opts.map(([v, links], j) => `<button class="pick ${held === 1 && vals.includes(v) ? "on" : ""}" data-act="pick" data-j="${j}">${esc(v)} <span>${srcIdxOf(c, links).map(r => "·" + (r + 1)).join(" ")}</span></button>`).join("")}<button class="pick ${held === opts.length ? "on" : ""}" data-act="pickboth">Keep both</button></div></div>`;
+  }
+  const valsForMark = isText ? (ch.adds || []).map(x => gist(x, 60)) : vals;
+  const support = sup.length > 1 ? ` &middot; ${sup.length} sources say this` : "";
+  return `${stepper("change", c, st)}
+  <h1>${esc(title)}</h1>
+  <section class="focus">
+    ${newsBlock(c, { i: si, pills: sup, act: "csrc", small: true, suffix: support, quotes: ch.quotes, names: [c.entity, c.entityEn, (c.sources[si] || {}).name], vals: isText ? [] : vals })}
+    <div class="join">update TTE?</div>
+    <div class="ba">${warn}${conflict}${body}${tools}</div>
+  </section>
+  ${actions(["accept", "Accept", k + 1 < n ? `change ${k + 1} of ${n}` : `change ${k + 1} of ${n}, the last`, "go"],
+            ["nochange", "No change", "leave the record as it is", "grey"], quiet(st))}`;
+}
+
+const SCREEN = { who, create, change };
+let allDone = false;
+// a decision is made: say so briefly and show the next card
+function finish(c, kind) {
+  const st = stOf(c), o = chosenOpt(c, st) || ordered(c)[st.cand];
+  const k = kind === "approved" && !st.accepted.length ? "uptodate" : kind;
+  const matched = (k === "approved" || k === "uptodate") && o;
+  const src0 = c.sources[st.src || 0] || {};
+  LOG.push({ ctype: st.ctype || c.type, key: c.key, entity: c.entity, entityEn: c.entityEn, newsFields: c.newsFields, title: src0.article || "", says: src0.says || "",
+             name: c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity, type: c.type, group: groupOf(c), kind: k,
+             rec: matched ? o.name : k === "created" ? "new record" : "", uid: matched ? o.uid : "", when: new Date(),
+             secs: Math.max(1, Math.round((Date.now() - st.t0) / 1000)), accepted: st.accepted.slice(), seen: st.seen, link: (c.sources[st.src || 0] || {}).link || "",
+             found: !!(matched && o.thin && !o.cross), done: false });
+  const x = LOG[LOG.length - 1];
+  x.dropped = matched ? rowsFor(c, o).map(r => r.field).filter(f => !x.accepted.some(a => a.field === f)) : [];
+  if (sb) sendDecision(c, x);
+  DECIDED.add(c.key); S[c.key] = undefined; NOTICE = "";
+  LIST.splice(cur, 1);
+  if (!LIST.length) allDone = true; else cur = Math.min(cur, LIST.length - 1);
+  fillJump(); fillGroups(); draw(true);
+}
+
+// ---- who is working ---------------------------------------------------------------
+const HELD = new Map((/*__HELD__*/[]).map(x => [x.key, x.since]));
+const LANG_NAMES = { en: "English", zh: "Chinese", ms: "Malay", ta: "Tamil" };
+const LANG_TAG = { en: "EN", zh: "中", ms: "BM", ta: "த" };
+const langOf = link => /zaobao/.test(link) ? "zh" : /beritaharian/.test(link) ? "ms" : /tamilmurasu/.test(link) ? "ta" : "en";
+const cardLangs = c => [...new Set((c.sources || []).map(s => langOf(s.link || "")))];
+const GROUPS = [["people", "People", t => t === "PERSON"], ["organisations", "Organisations", t => t === "ORGANISATION"],
+                ["legal acts", "Legal acts", t => t === "LEGAL_ACT"], ["everything else", "Everything else", () => true]];
+const groupOf = c => GROUPS.find(g => g[2](c.type))[0];
+let langs = null, group = "all", PAGE = "home";
+try { langs = JSON.parse(localStorage.getItem("proto-langs") || "null"); } catch (e) {}
+const readable = c => !langs || cardLangs(c).some(l => langs.includes(l));
+const LOG = [], DECIDED = new Set();
+const TAKEN = new Set();   // online: records another reviewer has decided or holds
+// a card is dealt to you if you can read it, nobody else holds it, and it is not already decided
+const available = c => (readable(c) || MINE.has(c.key)) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
+
+// ---- online: sign-in, the deck, holding a record, saving each decision -------------------
+// The same database calls as the first desk (src/export/desk_template.html), so the `reviews` rows, the sheets built
+// from them (src/export/reviews.py) and the reminders read exactly as before.
+let sb = null, me = null, myName = "", testing = false, loading = "", NOTICE = "", TEAM = [], TEAM_N = 4, STATUS = null;
+const MINE = new Set();     // records this reviewer held when the deck was fetched: they come back first
+const CLAIM = new Map();    // record key -> "asking" | true | false | "retry"
+let UNSENT = {};            // record key -> rows the table has not taken yet
+const LOST = new Set(["23505", "42501"]);   // the table already holds another reviewer's decision on it
+if (ONLINE && window.supabase) { try { sb = window.supabase.createClient(ONLINE.url, ONLINE.anonKey); } catch (e) { sb = null; } }
+const unsentKey = () => "desk2-unsent:" + (me ? me.id : "");
+const keepUnsent = () => { if (testing) return; try { localStorage.setItem(unsentKey(), JSON.stringify(UNSENT)); } catch (e) {} };
+
+// Paged in a fixed order: unordered pages can repeat or skip rows.
+async function pageAll(table, columns, order) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from(table).select(columns).order(order).range(from, from + 999);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+// The search index, the variant names and the pipeline's status: one file, fetched while the first record is on screen.
+async function loadIndex() {
+  try {
+    const { data } = await sb.storage.from("desk").download("desk.json");
+    const text = data && data.text ? await data.text() : (typeof data === "string" ? data : "");
+    const desk = text ? JSON.parse(text) : {};
+    INDEX.length = 0; (desk.index || []).forEach(r => INDEX.push(r));
+    Object.keys(NPT).forEach(k => delete NPT[k]); Object.assign(NPT, desk.npt || {});
+    STATUS = desk.status || null;
+  } catch (e) { /* search and the variant check wait; the record itself does not */ }
+  _names = null; _cross = new WeakMap(); NAMEIDX = null; NPT_READY = true;
+  if (me && !loading && !document.querySelector("#veil")) draw();
+}
+// A saved decision, as the sheet and the team pages read it.
+const kindOf = d => d.kind || (d.verdict === "unsure" ? "keep" : d.verdict === "reject" ? (d.reason === "discard" ? "discard" : "noworth")
+                               : d.chose === "new-entity" ? "created" : (d.rows || []).length ? "approved" : "uptodate");
+function fromDecision(d, c) {
+  const k = kindOf(d);
+  return { ctype: d.ctype || (c ? c.type : ""), key: c ? c.key : d.card_key, entity: c ? c.entity : d.entity, entityEn: c ? c.entityEn : "", newsFields: c ? c.newsFields : [],
+           title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "everything else",
+           kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
+           secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
+           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], link: d.link || "", found: !!d.foundBySearch,
+           done: !!d.done, who: d.reviewer || "" };
+}
+// A decision as the `reviews` table has always held it, plus what this desk needs to show it again.
+function toDecision(x, c) {
+  const verdict = x.kind === "keep" ? "unsure" : x.kind === "noworth" || x.kind === "discard" ? "reject" : "approve";
+  return { verdict, kind: x.kind, entity: c.entity, chose: x.kind === "created" ? "new-entity" : verdict === "approve" ? x.uid : null,
+           foundBySearch: !!x.found, reason: x.kind === "discard" ? "discard" : "", note: "",
+           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [],
+           rows: x.accepted.map(a => ({ field: a.field, current: a.current, proposed: a.proposed, from: a.link || x.link })),
+           record: x.kind === "created" ? "" : x.rec, reviewer: myName, at: x.when.toISOString(),
+           languages: (langs || []).slice(), types: group === "all" ? null : [group], seconds: x.secs, seen: x.seen, ctype: x.ctype, link: x.link, done: !!x.done };
+}
+async function signedIn(user) {
+  me = user; testing = !!(user.app_metadata && user.app_metadata.test);
+  myName = (user.user_metadata && user.user_metadata.name) || (user.email || "").split("@")[0] || "reviewer";
+  SAMPLE = false; _team = null;
+  const v = $("#veil"); if (v) v.remove();
+  loading = "Fetching the records…"; draw();
+  loadIndex();
+  let rows, reviews, holds;
+  try {
+    [rows, reviews, holds] = await Promise.all([pageAll("deck", "key,card", "key"), pageAll("reviews", "pid,card_key,reviewer,decision", "pid"),
+                                                pageAll("claims", "card_key,reviewer,claimed_at", "card_key")]);
+  } catch (e) { loading = "The records could not be fetched. Check the connection and reload the page."; return draw(); }
+  CARDS.length = 0; rows.map(r => r.card).sort((a, b) => a.i - b.i).forEach(c => CARDS.push(c));
+  const byKey = new Map(CARDS.map(c => [c.key, c]));
+  LOG.length = 0; DECIDED.clear(); TAKEN.clear(); TEAM = []; MINE.clear(); HELD.clear(); CLAIM.clear();
+  const seen = new Set(), others = new Set();
+  reviews.forEach(r => {
+    if (seen.has(r.reviewer + "|" + r.card_key)) return;   // one card settles several proposals: one decision
+    seen.add(r.reviewer + "|" + r.card_key);
+    const d = r.decision || {}, x = fromDecision(d, byKey.get(r.card_key));
+    if (r.reviewer === me.id) { LOG.push(x); DECIDED.add(r.card_key); }
+    else { TEAM.push(x); TAKEN.add(r.card_key); others.add(r.reviewer); }
+  });
+  LOG.sort((a, b) => a.when - b.when);
+  TEAM_N = Math.max(1, others.size);
+  holds.forEach(h => { if (h.reviewer === me.id) MINE.add(h.card_key); else HELD.set(h.card_key, h.claimed_at || ""); });
+  // Decisions made while the connection was down go up now; one someone else decided meanwhile is theirs.
+  try { UNSENT = testing ? {} : JSON.parse(localStorage.getItem(unsentKey()) || "{}"); } catch (e) { UNSENT = {}; }
+  Object.keys(UNSENT).forEach(key => {
+    if (TAKEN.has(key) || !byKey.has(key)) { delete UNSENT[key]; return; }
+    if (!DECIDED.has(key)) { const d = (UNSENT[key][0] || {}).decision; if (d) { LOG.push(fromDecision(d, byKey.get(key))); DECIDED.add(key); } }
+  });
+  loading = ""; PAGE = "home"; HOMENOTE = "";
+  buildList("all"); draw(true);
+  flushUnsent();
+  // How it works, once per browser; then the languages, if not chosen yet.
+  let welcomed = false;
+  try { welcomed = !!localStorage.getItem("desk2-welcomed"); localStorage.setItem("desk2-welcomed", "1"); } catch (e) {}
+  if (!welcomed) welcome(); else if (!langs) settings();
+}
+// A record is shown only once the table says it is this reviewer's; it stays theirs until they decide it, with no expiry.
+// A refusal means someone else has it: the desk moves on and says so once.
+function claimed(c) {
+  if (!sb || testing || DECIDED.has(c.key) || MINE.has(c.key)) return true;
+  const s = CLAIM.get(c.key);
+  if (s !== undefined) return s;
+  CLAIM.set(c.key, "asking");
+  Promise.resolve(sb.rpc("claim_card", { key: c.key })).then(({ data, error }) => {
+    if (error) { CLAIM.set(c.key, "retry"); return draw(); }
+    CLAIM.set(c.key, !!data);
+    if (data) MINE.add(c.key);
+    else { TAKEN.add(c.key); NOTICE = `${c.entity} is on someone else's desk, so you have the next record.`; buildList($("#filter").value); }
+    draw();
+  }).catch(() => { CLAIM.set(c.key, "retry"); draw(); });
+  return "asking";
+}
+async function sendDecision(c, x) {
+  if (!sb || testing) return;
+  const d = toDecision(x, c);
+  UNSENT[c.key] = c.pids.map(pid => ({ pid, card_key: c.key, reviewer: me.id, verdict: d.verdict, decision: { ...d, pid } }));
+  keepUnsent();
+  await flushUnsent();
+}
+// The table keeps one decision per proposal. A refusal because someone else's is already there is told, not hidden;
+// any other failure keeps the decision here and tries again with the next one.
+async function flushUnsent() {
+  for (const key of Object.keys(UNSENT)) {
+    let error = null;
+    try { ({ error } = await sb.from("reviews").upsert(UNSENT[key], { onConflict: "pid" })); } catch (e) { error = e || {}; }
+    if (error && !LOST.has(error.code)) continue;
+    delete UNSENT[key]; keepUnsent();
+    MINE.delete(key); CLAIM.delete(key);
+    Promise.resolve(sb.rpc("release_card", { key })).catch(() => {});
+    if (error) {
+      const x = LOG.find(y => y.key === key);
+      for (let i = LOG.length - 1; i >= 0; i--) if (LOG[i].key === key) LOG.splice(i, 1);
+      DECIDED.delete(key); TAKEN.add(key);
+      NOTICE = `Someone else had already decided ${x ? x.name : "a record"}, so your decision on it was not kept.`;
+    }
+  }
+  if (PAGE === "review" || NOTICE) draw();
+}
+// "Done in TTE" goes back to the table with the decision it belongs to.
+function saveDone(x) {
+  if (!sb || testing) return;
+  const c = CARDS.find(y => y.key === x.key); if (!c) return;
+  const d = toDecision(x, c);
+  UNSENT[c.key] = c.pids.map(pid => ({ pid, card_key: c.key, reviewer: me.id, verdict: d.verdict, decision: { ...d, pid } }));
+  keepUnsent(); flushUnsent();
+}
+function signInPage(message) {
+  if ($("#veil")) $("#veil").remove();
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
+  v.innerHTML = sb ? `<form class="welcome small signin" role="dialog" aria-label="Sign in" onsubmit="return false">
+      <h2>TTE Review Desk</h2><p class="sub">Sign in with the account Ashwin gave you.</p>
+      <label class="fld">Email<input id="em" type="email" autocomplete="username" required></label>
+      <label class="fld">Password<input id="pw" type="password" autocomplete="current-password" required></label>
+      ${message ? `<p class="err">${esc(message)}</p>` : ""}
+      <button class="go" data-act="signin">Sign in</button></form>`
+    : `<div class="welcome small" role="dialog"><h2>TTE Review Desk</h2><p class="sub">The desk cannot reach its database. Check the internet connection and reload the page.</p></div>`;
+  document.body.appendChild(v);
+  const em = v.querySelector("#em"); if (em) em.focus();
+}
+async function signIn() {
+  const email = ($("#em") || {}).value || "", password = ($("#pw") || {}).value || "";
+  if (!email || !password) return;
+  let out;
+  try { out = await sb.auth.signInWithPassword({ email: email.trim(), password }); } catch (e) { out = { error: e }; }
+  if (out.error || !out.data || !out.data.user) return signInPage("That email and password do not match an account.");
+  signedIn(out.data.user);
+}
+async function startOnline() {
+  if (!sb) return signInPage();
+  let user = null;
+  try { const { data } = await sb.auth.getSession(); user = data && data.session ? data.session.user : null; } catch (e) {}
+  if (user) signedIn(user); else signInPage();
+}
+
+// ---- state and flow ------------------------------------------------------------
+let LIST = CARDS.map((_, i) => i), cur = 0, S = {};
+const readsSource = s => !langs || langs.includes(langOf((s || {}).link || ""));
+const firstReadable = c => Math.max(0, (c.sources || []).findIndex(readsSource));
+const fresh = c => ({ mode: {}, hist: [], t0: Date.now(), accepted: [], seen: 0, screen: c.isNew ? "create" : "who", cand: 0, chosen: null, ch: 0, src: firstReadable(c), csrc: {}, val: {}, text: {}, edit: {}, out: {},
+                      extra: [], finding: false, query: "", full: false, descFull: false, exhausted: false, kind: "" });
+const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest); };
+const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
+const quiet = st => (st.hist.length ? [["back", "&larr; Back"]] : []).concat([["keep", "Not sure? Keep for review"], ["stopnow", "Stop for now"]]);
+const stOf = c => S[c.key] || (S[c.key] = fresh(c));
+const card = () => CARDS[LIST[cur]];
+function srcFor(c, st, k, ch) {
+  const link = ch.from || (c.newsFrom || {})[ch.field] || (c.sources[0] || {}).link;
+  const fromIdx = Math.max(0, c.sources.findIndex(s => s.link === link));
+  let sup = srcIdxOf(c, ch.supporters); if (!sup.length) sup = [fromIdx];
+  // Of the articles that back this change, one in a language the reviewer reads comes first.
+  const mine = sup.filter(i => readsSource(c.sources[i])), base = mine.length ? mine : sup;
+  const si = st.csrc[k] != null && sup.includes(st.csrc[k]) ? st.csrc[k] : (base.includes(fromIdx) ? fromIdx : base[0]);
+  return { sup, si };
+}
+const acceptedOf = (c, st, ch, k) => {
+  const src = c.sources[srcFor(c, st, k, ch).si] || {}, base = { field: ch.field, link: src.link || "", title: src.article || "", says: src.says || "" };
+  if (ch.diff) return { ...base, current: ch.diff.filter(d => d.op !== "in").map(d => d.text).join(" "), proposed: st.text[k] != null ? st.text[k] : ch.result };
+  const kept = valsOf(st, k, ch).filter((v, i) => v.trim() && !st.out[k + ":" + i]), existing = ch.existing || [];
+  return { ...base, current: existing.join(" | "), proposed: modeOf(st, k, ch) === "replace" ? kept.join(" | ") : existing.concat(kept).join(" | ") };
+};
+const go = (st, screen, extra) => Object.assign(st, { screen, full: false, descFull: false, finding: false }, extra || {});
+
+function act(a, el) {
+  const i = el ? Number(el.dataset.i) : 0;
+  if (a === "signin") { signIn(); return; }
+  if (a === "start") { PAGE = "review"; HOMENOTE = ""; allDone = false; return draw(true); }
+  if (a === "startgroup") { group = el.dataset.g; PAGE = "review"; HOMENOTE = ""; buildList($("#filter").value); return draw(true); }
+  if (a === "stopnow") {
+    // The record on screen is let go, since nothing was decided on it: a colleague can take it.
+    const c0 = card();
+    if (c0 && sb && !testing && !DECIDED.has(c0.key) && (MINE.has(c0.key) || CLAIM.get(c0.key) === true)) {
+      Promise.resolve(sb.rpc("release_card", { key: c0.key })).catch(() => {}); MINE.delete(c0.key); CLAIM.delete(c0.key);
+    }
+    const left = CARDS.filter(available).length;
+    HOMENOTE = `${ONLINE && !testing ? "Saved. " : ""}${left} record${left === 1 ? "" : "s"} still waiting for you. Continue whenever you like.`;
+    PAGE = "home"; return draw(true);
+  }
+  if (a === "signout") { Promise.resolve(sb && sb.auth.signOut()).catch(() => {}).then(() => location.reload()); return; }
+  if (a === "retryclaim") { const c0 = card(); if (c0) CLAIM.delete(c0.key); return draw(); }
+  if (a === "help") return welcome();
+  if (a === "closewelcome") { const v = $("#veil"); if (v) v.remove(); if (!langs) settings(); return; }
+  if (a === "settings") return settings();
+  if (a === "savelangs") {
+    const picked = [...document.querySelectorAll("#veil .lang input:checked")].map(x => x.value); if (!picked.length) return;
+    langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
+    $("#veil").remove(); buildList($("#filter").value); return draw(true);   // stays on the page it was opened from
+  }
+  if (a === "view") { VIEW = el.dataset.v; return draw(); }
+  if (a === "sample") { SAMPLE = !SAMPLE; _team = null; $("#samplebtn").classList.toggle("on", SAMPLE); buildList($("#filter").value); return draw(); }
+  if (a === "rail") { $("#panel").classList.toggle("open"); return; }
+  if (a === "nav") { PAGE = el.dataset.nav; $("#panel").classList.remove("open"); if (document.activeElement) document.activeElement.blur(); return draw(true); }
+  if (a === "done") { LOG[i].done = !LOG[i].done; saveDone(LOG[i]); return draw(); }
+  if (a === "release") { HELD.delete(el.dataset.k); buildList($("#filter").value); return draw(); }
+  if (a === "dlchanges") return download("approved-changes.csv", changesRows(LOG));
+  if (a === "dlall") return download("decisions.csv", decisionRows(LOG));
+  if (a === "dlchangesall") return download("team-approved-changes" + (SAMPLE ? "-SAMPLE" : "") + ".csv", changesRows(everyone()));
+  if (a === "dlallteam") return download("team-decisions" + (SAMPLE ? "-SAMPLE" : "") + ".csv", decisionRows(everyone()));
+  if (a === "restart") { if (ONLINE) return; LOG.length = 0; DECIDED.clear(); allDone = false; buildList($("#filter").value); return draw(true); }
+  if (a === "prev") { allDone = false; cur = Math.max(0, cur - 1); return draw(true); }
+  if (a === "next") { allDone = false; cur = Math.min(LIST.length - 1, cur + 1); return draw(true); }
+  if (a === "phone") { $("#wrap").classList.toggle("phone"); $("#phone").classList.toggle("on"); return; }
+  const c = card(); if (!c) return;
+  const st = stOf(c), k = st.ch;
+  if (PUSH.has(a)) st.hist.push(snapOf(st));
+  if (a === "back") { const prev = st.hist.pop(); if (prev) Object.assign(st, prev); return draw(); }
+  if (a === "full") { st.full = !st.full; return draw(); }
+  if (a === "descfull") { st.descFull = !st.descFull; return draw(); }
+  if (a === "src") { st.src = i; return draw(); }
+  if (a === "csrc") { st.csrc[k] = i; return draw(); }
+  if (a === "out") { const key = k + ":" + i; st.out[key] = !st.out[key]; return draw(); }
+  if (a === "edit") { st.edit[k] = !st.edit[k]; return draw(); }
+  const ch = (rowsFor(c, chosenOpt(c, st)) || [])[k];
+  if (a === "mode") { st.mode[k] = el.dataset.m; return draw(); }
+  if (a === "addval") { valsOf(st, k, ch).push(""); return draw(); }
+  if (a === "rm") { valsOf(st, k, ch).splice(i, 1); return draw(); }
+  if (a === "resettext") { delete st.text[k]; return draw(); }
+  if (a === "pick" || a === "pickboth") {
+    const conf = ch.confVals || [], v = valsOf(st, k, ch).filter(x => !conf.includes(x));
+    const chosen = a === "pickboth" ? conf : [conf[Number(el.dataset.j)]];
+    st.val[k] = v.concat(chosen);
+    const from = srcIdxOf(c, (ch.saidBy || []).filter(x => chosen.includes(x.value)).map(x => x.from)); if (from.length) st.csrc[k] = from[0];
+    return draw();
+  }
+  if (a === "find") { st.finding = !st.finding; return draw(); }
+  if (a === "pickhit") {
+    const r = INDEX.find(x => x[0] === el.dataset.u); if (!r) return;
+    st.extra.push({ uid: r[0], name: r[1], npt: el.dataset.npt || undefined, rtype: r[2], fields: r[4] ? [{ key: "Description", value: r[4] }] : [], extra: [], thin: true, ident: r[3] });
+    go(st, "who", { cand: ordered(c).length - 1, query: "" }); return draw();
+  }
+  if (a === "cand") { go(st, "who", { cand: i, exhausted: false }); return draw(); }
+  if (a === "same") { st.chosen = st.cand; return rowsFor(c, ordered(c)[st.cand]).length ? (go(st, "change", { ch: 0 }), draw()) : finish(c, "uptodate"); }
+  if (a === "discard") return finish(c, "discard");
+  if (a === "newrec") { go(st, "create", { exhausted: true }); return draw(); }
+  if (a === "accept" || a === "nochange") {
+    st.seen++;
+    if (a === "accept") { const row = rowsFor(c, chosenOpt(c, st))[k]; const got = acceptedOf(c, st, row, k); if (got.proposed !== got.current) st.accepted.push(got); } if (k + 1 < rowsFor(c, chosenOpt(c, st)).length) { go(st, "change", { ch: k + 1 }); return draw(); } return finish(c, "approved"); }
+  if (a === "create") return finish(c, "created");
+  if (a === "noworth") return finish(c, "noworth");
+  if (a === "keep") return finish(c, "keep");
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest("#panel")) $("#panel").classList.remove("open");
+  const nv = e.target.closest("button[data-nav]"); if (nv) return act("nav", nv);
+  const b = e.target.closest("button[data-act]"); if (b) act(b.dataset.act, b);
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "qt") { const c = card(), st = c && stOf(c); if (st) { st.stype = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); } return; }
+  if (t.id === "ctype") { const c = card(), st = c && stOf(c); if (st) st.ctype = t.value; return; }
+  if (t.id === "fo") { SHEET.outcome = t.value; $("#srows").innerHTML = sheetRows(); }
+  else if (t.id === "fg") { SHEET.group = t.value; $("#srows").innerHTML = sheetRows(); }
+});
+document.addEventListener("input", e => {
+  const t = e.target, c = card(), st = c ? stOf(c) : null, k = st ? st.ch : 0;
+  if (t.id === "sq") { SHEET.q = t.value; $("#srows").innerHTML = sheetRows(); return; }
+  if (!c) return;
+  if (t.id === "q") { st.query = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); }
+  else if (t.classList.contains("cin")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; valsOf(st, k, ch)[Number(t.dataset.i)] = t.value; }
+  else if (t.classList.contains("dta")) st.text[k] = t.value;
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { const v = $("#veil"); if (v && !v.querySelector(".signin")) v.remove(); }
+  if (["SELECT", "INPUT", "TEXTAREA"].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+  if (e.key === "Backspace" && PAGE === "review") { e.preventDefault(); act("back"); return; }
+  if (e.key === "ArrowRight") act("next"); else if (e.key === "ArrowLeft") act("prev");
+});
+
+function welcome() {
+  if ($("#veil")) return;
+  const svg = p => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const icon = { news: svg('<rect x="7" y="9" width="34" height="30" rx="3"/><path d="M13 16h12M13 22h22M13 28h22M13 34h14"/>'),
+                 ai: svg('<rect x="10" y="14" width="28" height="22" rx="5"/><circle cx="19" cy="25" r="2.2"/><circle cx="29" cy="25" r="2.2"/><path d="M24 14V7M20 7h8"/>'),
+                 you: svg('<circle cx="24" cy="24" r="16"/><path d="M16 24.5l6 6 11-12"/>'),
+                 rec: svg('<path d="M12 8h20l6 6v26H12z"/><path d="M18 22h14M18 28h14M18 34h9"/>') };
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
+  v.innerHTML = `<div class="welcome" role="dialog" aria-label="How this works">
+    <h2>An AI reads the news and proposes updates to TTE. You decide each one.</h2>
+    <p class="sub">One card per record: is it the same entity, and which changes go in.</p>
+    <div class="flow">
+      <div class="fstep">${icon.news}<b>The news</b><span>CNA, The Straits Times and Lianhe Zaobao</span></div>
+      <div class="fstep">${icon.ai}<b>The AI proposes</b><span>It spots people, organisations and places, and suggests updates to their records</span></div>
+      <div class="fstep you"><em>You are here</em>${icon.you}<b>You decide</b><span>Accept, edit or leave out each change</span></div>
+      <div class="fstep">${icon.rec}<b>The sheet</b><span>Approved changes go on the sheet. TTE changes only when you make them</span></div>
+    </div>
+    ${ONLINE ? `<p class="foot">Your decisions are saved as you go. Close the page whenever you like: the record you are on stays yours and comes back first next time. Nobody else is given a record you hold or have decided.</p>` : ""}
+    <button class="go" data-act="closewelcome">Start checking</button></div>`;
+  document.body.appendChild(v);
+  v.querySelector(".go").focus();
+}
+let SAMPLE = true, VIEW = "mine", _team = null;
+const rng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// Made-up decisions by four pretend reviewers, so the team views and the comparison have something to show.
+// They avoid the cards used in demos. Real numbers start when the team does.
+function teamLog() {
+  if (ONLINE) return TEAM;
+  if (!SAMPLE) return [];
+  if (_team) return _team;
+  const r = rng(7), out = [], protect = new Set([94, 161, 181]);
+  for (let i = 61; i < CARDS.length && out.length < 80; i += 2) {
+    if (protect.has(i)) continue;
+    const c = CARDS[i], rows = rowsFor(c, ordered(c)[0]).length, p = r();
+    const kd = c.isNew ? (p < .55 ? "created" : p < .8 ? "noworth" : p < .93 ? "discard" : "keep") : rows ? (p < .6 ? "approved" : p < .78 ? "uptodate" : p < .93 ? "discard" : "keep") : (p < .6 ? "uptodate" : p < .9 ? "discard" : "keep");
+    const accepted = kd === "approved" ? Array.from({ length: Math.max(1, Math.ceil(r() * rows)) }, () => ({ field: "Sample", current: "", proposed: "sample", link: "", title: "", says: "" })) : [];
+    out.push({ key: c.key, name: c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity, type: c.type, group: groupOf(c), kind: kd, rec: "", uid: "",
+               when: new Date(Date.now() - Math.floor(r() * 6) * 864e5 - Math.floor(r() * 5) * 36e5), secs: Math.round(35 + Math.pow(r(), 2) * 330), accepted,
+               seen: accepted.length + (kd === "approved" && r() < .5 ? 1 : 0), link: "", found: r() < .06, done: kd === "approved" && r() < .55, sample: true });
+  }
+  return (_team = out);
+}
+const everyone = () => LOG.concat(teamLog());
+const OUTCOME = { approved: "Amended", created: "To create", uptodate: "Nothing to change", discard: "Discarded", noworth: "Not worth a record", keep: "Kept for review" };
+let SHEET = { outcome: "", group: "", q: "" };
+const fmtSecs = n => n < 60 ? n + " s" : Math.floor(n / 60) + " min" + (n % 60 ? " " + (n % 60) + " s" : "");
+const median = a => { if (!a.length) return 0; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+const tile = (num, label) => `<div class="tile"><b>${num}</b><span>${label}</span></div>`;
+const dayStr = d => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+// ---- home: where you are, what is waiting, and the one button to go on ------------------------
+// Opened after sign-in and on "Stop for now", so stopping is a visible place to come back to rather than a guess.
+let HOMENOTE = "";
+const greet = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
+// The numbers every version of home is drawn from.
+function homeData() {
+  const mine = CARDS.filter(available), n = mine.length, back = mine.filter(c => MINE.has(c.key)).length;
+  const others = new Set(teamLog().map(x => x.key)), you = DECIDED.size;
+  const them = [...others].filter(k => !DECIDED.has(k)).length;
+  const held = [...HELD.keys()].filter(k => !DECIDED.has(k) && !others.has(k)).length;
+  const waiting = Math.max(0, CARDS.length - you - them - held);
+  const next = card() && available(card()) ? card() : mine[0];
+  const pending = Object.keys(UNSENT).length;
+  const types = GROUPS.map(([k, label]) => [k, label, mine.filter(c => groupOf(c) === k).length]);
+  const segs = [["you", you, "decided by you"], ["them", them, "decided by others"], ["held", held, "on someone else’s desk"], ["wait", waiting, "still to decide"]];
+  return { n, back, next, pending, types, segs, total: CARDS.length };
+}
+const nameOf = c => c.entityEn && c.entityEn !== c.entity ? c.entityEn : c.entity;
+// Said only when something is wrong: nothing to say when everything is saved.
+const warnNote = d => testing ? "Test account: nothing you do here is saved." : ONLINE && d.pending ? `${d.pending} decision${d.pending === 1 ? " is" : "s are"} not saved yet. Check the connection.` : "";
+// The line of the day, written by the model in the nightly publish; shown only on the day it was written.
+const dayLine = () => { const l = STATUS && STATUS.line; if (!l || !l.text) return ""; const t = new Date(), d = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; return l.date === d ? l.text : ""; };
+const startLabel = d => LOG.length || d.back ? "Continue" : "Start";
+const subLine = d => d.n ? (d.back ? `${d.back === 1 ? "One is" : d.back + " are"} on your desk from last time.` : "In the languages you read.")
+                         : LOG.length ? "That was every record you can read. New ones arrive after each night’s run." : "New records arrive after each night’s run.";
+
+// A: minimal. One number, one button, the types as chips, and the team's progress as one thin line.
+function homeMinimal(d) {
+  const shown = d.segs.filter(s => s[1] > 0);
+  return `<div class="home hm">
+  <h1 class="hello">${greet()}${myName ? ", " + esc(myName) : ""}</h1>
+  ${dayLine() ? `<p class="dayline">${esc(dayLine())}</p>` : ""}
+  ${warnNote(d) ? `<p class="warnnote">${esc(warnNote(d))}</p>` : ""}
+  ${HOMENOTE ? `<p class="notice">${esc(HOMENOTE)}</p>` : ""}
+  <div class="hmnum">${d.n}</div>
+  <p class="hmlab">${d.n === 1 ? "record waiting for you" : "records waiting for you"}</p>
+  <p class="hmsub">${subLine(d)}</p>
+  ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b>${d.next ? `<small>${esc(gist(nameOf(d.next), 40))}</small>` : ""}</span><i aria-hidden="true">&rarr;</i></button>`
+        : !ONLINE && LOG.length ? `<button class="cta" data-act="restart"><span><b>Start over</b><small>clears this session</small></span></button>` : ""}
+  ${d.n ? `<div class="chips">${d.types.filter(t => t[2]).map(([k, label, v]) => `<button data-act="startgroup" data-g="${k}">${label} <b>${v}</b></button>`).join("")}</div>` : ""}
+  <div class="teamline">
+    <div class="tl2" role="img" aria-label="${shown.map(s => s[1] + " " + s[2]).join(", ")}">${shown.map(([k, v, lab]) => `<i class="${k}" style="flex:${v}" data-tip="${v} ${lab}"></i>`).join("")}</div>
+    <p>${shown.filter(s => s[0] !== "wait").map(([k, v, lab]) => `<span><i class="sw ${k}"></i>${v} ${lab}</span>`).join("")}<span class="of">of ${d.total}</span></p>
+  </div>
+  <p class="minor">${ONLINE ? "Saved as you go. Stop whenever you like!" : `Prototype: decisions stay in this page until you close it.${SAMPLE ? " The team&rsquo;s figures are made-up sample data." : ""}`}</p>
+</div>`;
+}
+
+const homePage = () => homeMinimal(homeData());
+
+function sheetRows() {
+  const q = SHEET.q.trim().toLowerCase();
+  const rows = LOG.map((x, i) => [x, i]).reverse().filter(([x]) => (!SHEET.outcome || x.kind === SHEET.outcome) && (!SHEET.group || x.group === SHEET.group) && (!q || (x.name + " " + x.rec).toLowerCase().includes(q)));
+  if (!rows.length) return `<p class="empty">${LOG.length ? "Nothing matches." : "Nothing yet. Your decisions will show up here."}</p>`;
+  return rows.map(([x, i]) => `<div class="srow"><div class="sname"><b>${esc(gist(x.name, 60))}</b><small>${esc(kind({ type: x.type }))}</small></div><span class="pill ${x.kind}">${OUTCOME[x.kind]}</span><div class="srec">${esc(x.rec)}</div><div class="swhen">${esc(dayStr(x.when))}</div>${x.kind === "approved" ? `<button class="donebtn ${x.done ? "on" : ""}" data-act="done" data-i="${i}">${x.done ? "&#10003; Done in TTE" : "Mark done in TTE"}</button>` : "<span></span>"}</div>`).join("");
+}
+function sheetPage() {
+  const n = k => LOG.filter(x => x.kind === k).length, acc = LOG.reduce((a, x) => a + x.accepted.length, 0);
+  return `<div class="tiles">${tile(n("approved"), "records to amend")}${tile(n("created"), "records to create")}${tile(acc, "changes accepted")}${tile(LOG.length ? fmtSecs(median(LOG.map(x => x.secs))) : "\u2014", "median time per record")}</div>
+  <p class="minor">${n("uptodate")} nothing to change &middot; ${n("discard")} discarded &middot; ${n("noworth")} not worth a record &middot; ${n("keep")} kept for review &middot; ${LOG.filter(x => x.found).length} found by searching</p>
+  <div class="filters"><select id="fo" aria-label="Outcome"><option value="">Every outcome</option>${Object.entries(OUTCOME).map(([k, v]) => `<option value="${k}" ${SHEET.outcome === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    <select id="fg" aria-label="Type"><option value="">Every type</option>${GROUPS.map(([k, v]) => `<option value="${k}" ${SHEET.group === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    <input id="sq" type="search" placeholder="Search by name" value="${esc(SHEET.q)}"></div>
+  <section class="focus sheet" id="srows">${sheetRows()}</section>`;
+}
+const PIPE = { published: "2 Oct, 04:52 am", news: "2026-10-01", dump: "TTE-DELTA_20260901.zip (2026-09-01)", steps: [["TTE dump", 1], ["relevance", 1], ["extraction", 0], ["matching", 1]] };
+// Online, the pipeline's own status, published with the deck; in the prototype, a made-up one.
+const pipeNow = () => !ONLINE ? PIPE : {
+  published: STATUS && STATUS.published ? new Date(STATUS.published).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "\u2014",
+  news: (STATUS && STATUS.newest_news) || "\u2014", dump: (STATUS && STATUS.tte_dump) || "\u2014",
+  steps: Object.entries((STATUS && STATUS.steps) || {}).map(([n, o]) => [n, o === "failure" ? 0 : 1]) };
+function teamPage() {
+  const PIPE = pipeNow();
+  const ALL = everyone(), doneKeys = new Set(ALL.map(x => x.key));
+  const rows = GROUPS.map(([k, name]) => {
+    const all = CARDS.filter(c => groupOf(c) === k), mine = ALL.filter(x => x.group === k);
+    const decided = mine.filter(x => x.kind !== "keep").length, kept = mine.length - decided, held = all.filter(c => HELD.has(c.key)).length;
+    return { name, total: all.length, decided, kept, held, waiting: all.length - decided - kept - held };
+  });
+  const sum = f => rows.reduce((a, r) => a + r[f], 0);
+  const waiting = CARDS.filter(c => !HELD.has(c.key) && !doneKeys.has(c.key));
+  const zh = waiting.filter(c => cardLangs(c).includes("zh")).length, en = waiting.filter(c => cardLangs(c).includes("en")).length;
+  const bar = r => { const p = v => (r.total ? v / r.total * 100 : 0) + "%"; return `<div class="stack"><i class="d" style="width:${p(r.decided)}"></i><i class="k" style="width:${p(r.kept)}"></i><i class="h" style="width:${p(r.held)}"></i></div>`; };
+  const held = [...HELD.entries()].map(([key, since]) => { const c = CARDS.find(x => x.key === key); return `<div class="heldrow"><span><b>${esc(c ? c.entity : key)}</b> &middot; on someone&rsquo;s desk since ${esc(dayStr(since))}</span>${ONLINE ? "" : `<button class="donebtn" data-act="release" data-k="${esc(key)}">Release</button>`}</div>`; }).join("");
+  const approved = ALL.filter(x => x.kind === "approved");
+  return `<div class="tiles">${tile(sum("decided"), "decided")}${tile(sum("waiting"), "waiting")}${tile(sum("held"), "on someone&rsquo;s desk")}${tile(sum("kept"), "kept for review")}</div>
+  <section class="focus">${rows.map(r => `<div class="grp"><div class="top">${esc(r.name)}<span>${r.total} cards</span></div>${bar(r)}<div class="legend"><span><i class="sw" style="background:var(--tick)"></i>${r.decided} decided</span><span><i class="sw" style="background:var(--amber-line)"></i>${r.kept} kept</span><span><i class="sw" style="background:var(--accent)"></i>${r.held} on someone&rsquo;s desk</span><span><i class="sw" style="background:#E4DFD2"></i>${r.waiting} waiting</span></div></div>`).join("")}</section>
+  <p class="minor">Waiting, by the language of their articles: Chinese ${zh}, English ${en}. A card with articles in both is counted in both.</p>
+  ${HELD.size ? `<h2 class="h2">On someone&rsquo;s desk</h2><section class="focus">${held}</section><p class="minor">A card stays on one person&rsquo;s desk until they decide it, so nobody else is dealt it. If someone is away, ${ONLINE ? "ask Ashwin to release it" : "release it here"}.</p>` : ""}
+  <p class="minor">This week: ${approved.length} records approved, ${approved.filter(x => x.done).length} of them done in TTE.</p>
+  <h2 class="h2">The pipeline</h2>
+  <section class="focus pipe"><div class="line"><span class="k">Cards last published</span><b>${PIPE.published}</b></div><div class="line"><span class="k">Newest news in the deck</span><b>${PIPE.news}</b></div>
+    <div class="line"><span class="k">TTE dump loaded</span><b>${PIPE.dump}</b></div><div class="line"><span class="k">That run&rsquo;s steps</span><span class="stp">${PIPE.steps.map(([n, ok]) => `<span class="st ${ok ? "ok" : "bad"}">${ok ? "\u2713" : "\u2717"} ${n}${ok ? "" : " failed"}</span>`).join("")}</span></div></section>
+  <p class="minor">No one&rsquo;s individual numbers are shown here.</p>`;
+}
+const sampleNote = () => SAMPLE ? `<p class="sample">Prototype: the team&rsquo;s figures are made-up sample data. Real numbers appear once the team starts.</p>` : "";
+function resultsPage() {
+  const seg = `<div class="seg"><button class="${VIEW === "mine" ? "on" : ""}" data-act="view" data-v="mine">Mine</button><button class="${VIEW === "team" ? "on" : ""}" data-act="view" data-v="team">Everyone&rsquo;s</button></div>`;
+  return `<div class="phead"><h1>Results</h1>${seg}</div>${VIEW === "mine" ? sheetPage() : sampleNote() + teamPage()}`;
+}
+const stats = X => {
+  const n = X.length, kinds = {}; Object.keys(OUTCOME).forEach(k => kinds[k] = X.filter(x => x.kind === k).length);
+  const acc = X.reduce((a, x) => a + x.accepted.length, 0), seen = X.reduce((a, x) => a + (x.seen || 0), 0);
+  return { n, kinds, secs: n ? median(X.map(x => x.secs)) : null, acc, seen, accRate: seen ? acc / seen : null, search: n ? X.filter(x => x.found).length / n : null };
+};
+const pct = v => v == null ? "\u2014" : Math.round(v * 100) + "%";
+function analyticsPage() {
+  const me = stats(LOG), all = stats(everyone()), pairs = [["You", me, "you"], ["Everyone", all, "team"]];
+  const mix = pairs.map(([lab, s]) => `<div class="brow"><span class="lab">${lab}</span><div class="track">${Object.keys(OUTCOME).map(k => s.n && s.kinds[k] ? `<i class="o-${k}" style="width:${s.kinds[k] / s.n * 100}%" title="${OUTCOME[k]}: ${s.kinds[k]}">${s.kinds[k] / s.n >= .09 ? Math.round(s.kinds[k] / s.n * 100) + "%" : ""}</i>` : "").join("")}</div><span class="val">${s.n} decided</span></div>`).join("");
+  const max = Math.max(1, me.secs || 0, all.secs || 0);
+  const bars = (f, fmt, scale) => pairs.map(([lab, s, cls]) => `<div class="brow"><span class="lab">${lab}</span><div class="track"><i class="${cls}" style="width:${s[f] == null ? 0 : s[f] / scale * 100}%"></i></div><span class="val">${s[f] == null ? "\u2014" : fmt(s[f])}</span></div>`).join("");
+  const faster = me.secs != null && all.secs ? Math.round((1 - me.secs / all.secs) * 100) : null;
+  const dayKeys = Array.from({ length: 7 }, (_, i) => { const d = new Date(Date.now() - (6 - i) * 864e5); return [d.toDateString(), d.toLocaleDateString("en-GB", { weekday: "short" })]; });
+  const per = dayKeys.map(([k]) => [LOG.filter(x => x.when.toDateString() === k).length, teamLog().filter(x => x.when.toDateString() === k).length / (ONLINE ? TEAM_N : 4)]);
+  const top = Math.max(1, ...per.flat());
+  return `<div class="phead"><h1>Analytics</h1></div>${sampleNote()}
+  ${LOG.length ? "" : `<p class="minor">Make a few decisions on the Review page and your numbers appear here next to the team&rsquo;s.</p>`}
+  <section class="focus">
+    <div class="an"><h3>What you decide</h3>${mix}<div class="leg">${Object.keys(OUTCOME).map(k => `<span><i class="o-${k}"></i>${OUTCOME[k]}</span>`).join("")}</div></div>
+    <div class="an"><h3>How long a record takes</h3><p class="hint">Median time per record${faster != null ? ` &middot; you are ${Math.abs(faster)}% ${faster >= 0 ? "faster" : "slower"} than everyone` : ""}</p>${bars("secs", fmtSecs, max)}</div>
+    <div class="an"><h3>Changes you accept</h3><p class="hint">Of the changes shown to you, the share you accepted</p>${bars("accRate", pct, 1)}</div>
+    <div class="an"><h3>Records you had to search for</h3><p class="hint">Share of decisions where the right record was not among the closest options. Lower means the pipeline found it first.</p>${bars("search", pct, Math.max(.25, me.search || 0, all.search || 0))}</div>
+    <div class="an"><h3>Decisions by day</h3><p class="hint">You, and the average for each reviewer</p>
+      <div class="days">${dayKeys.map(([, lab], i) => `<div class="day"><div class="cols"><i class="you" style="height:${per[i][0] / top * 100}%;background:var(--accent)" title="You: ${per[i][0]}"></i><i style="height:${per[i][1] / top * 100}%;background:#9AA3B5" title="Average reviewer: ${per[i][1].toFixed(1)}"></i></div><small>${lab}</small></div>`).join("")}</div>
+      <div class="leg"><span><i style="background:var(--accent)"></i>You</span><span><i style="background:#9AA3B5"></i>Average reviewer</span></div></div>
+  </section>`;
+}
+function downloadsPage() {
+  const rowsChanges = L => changesRows(L).length - 1, all = everyone();
+  const card = (title, text, mineN, teamN, mine, team) => `<div class="dlcard"><h3>${title}</h3><p>${text}</p><div class="dlbtns"><button class="p" data-act="${mine}" ${mineN ? "" : "disabled"}>Download mine (${mineN})</button><button data-act="${team}" ${teamN ? "" : "disabled"}>Download everyone&rsquo;s${SAMPLE ? " (sample)" : ""} (${teamN})</button></div></div>`;
+  return `<div class="phead"><h1>Downloads</h1></div>${sampleNote()}<section class="focus">
+    ${card("Approved changes", "What to make in TTE: one row per accepted change, plus the records to create. This is the sheet the cataloguers work from.", rowsChanges(LOG), rowsChanges(all), "dlchanges", "dlchangesall")}
+    ${card("Every decision", "Every card with its outcome, the record, how many changes were accepted and how long it took.", LOG.length, all.length, "dlall", "dlallteam")}</section>`;
+}
+const REVIEWER = "Prototype reviewer";
+const stampTime = d => new Date(d || Date.now()).toLocaleString("sv-SE");   // 2026-10-02 17:15:00, local time, reads as a date in Excel
+const changesRows = L => {
+  const rows = [["TTE_UUID", "Entity", "Attribute", "Current_Value", "Proposed_Value", "Article_URL", "Person Who Approved", "Timestamp"]];
+  L.forEach(x => {
+    const ent = x.entity || x.name, tail = [x.link || "", REVIEWER, stampTime(x.when)];
+    if (x.kind === "created") {
+      rows.push(["NEW", ent, "Name", "", x.entityEn ? `${x.entity} (${x.entityEn})` : ent, ...tail]);
+      rows.push(["NEW", ent, "TTE file", "", (TYPES[x.ctype || x.type] || ["", x.type])[1], ...tail]);
+      (x.newsFields || []).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
+      return;
+    }
+    if (x.kind !== "approved" && x.kind !== "uptodate") return;
+    if (!x.accepted.length) rows.push([x.uid, ent, "(match confirmed)", x.rec, "", ...tail]);
+    x.accepted.forEach(a => rows.push([x.uid, ent, a.field, a.current, a.proposed, a.link || x.link || "", REVIEWER, stampTime(x.when)]));
+  });
+  return rows;
+};
+const decisionRows = L => [["Entity", "Type", "Outcome", "Record", "TTE no.", "Changes accepted", "Seconds", "When"]].concat(L.map(x => [x.name, x.type, OUTCOME[x.kind], x.rec, x.uid, x.accepted.length, x.secs, x.when.toISOString()]));
+const csvCell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+function download(name, rows) {
+  const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function settings() {
+  if ($("#veil")) return;
+  const count = l => CARDS.filter(c => !HELD.has(c.key) && !DECIDED.has(c.key) && cardLangs(c).includes(l)).length;
+  const chosen = new Set(langs || ["en"]);
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
+  v.innerHTML = `<div class="welcome small" role="dialog" aria-label="Languages"><h2>Which languages do you read?</h2>
+    <p class="sub">You are only given cards with an article in a language you read. You choose once; change it any time from the menu at the top.</p>
+    <div class="langs">${Object.entries(LANG_NAMES).filter(([l]) => count(l) || chosen.has(l)).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} cards waiting</small></label>`).join("")}</div>
+    <button class="go" data-act="savelangs">Done</button></div>`;
+  document.body.appendChild(v);
+}
+function navState() {
+  document.querySelectorAll(".navi").forEach(b => b.classList.toggle("on", b.dataset.nav === PAGE));
+  $("#topbar").hidden = $("#progwrap").hidden = PAGE !== "review";
+  $("#waitbadge").textContent = CARDS.filter(available).length;
+  $("#signout").hidden = !me; if (me) $("#signout").title = "Sign out " + myName;
+  $("#langpill").textContent = "Reading: " + (langs ? langs.map(l => LANG_NAMES[l]).join(" + ") : "all languages");
+}
+function draw(top) {
+  const c = card(); navState();
+  const lines = (testing ? `<p class="notice test">Test account: try anything you like. Nothing is saved and no record is held.</p>` : "")
+              + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "");
+  const wait = (h, p, b) => `<div class="done-card"><h2>${h}</h2>${p ? `<p>${p}</p>` : ""}${b || ""}</div>`;
+  if (loading) $("#stage").innerHTML = wait(esc(loading));
+  else if (PAGE === "home" || (PAGE === "review" && (!c || allDone))) { PAGE = "home"; navState(); $("#stage").innerHTML = homePage(); }
+  else if (PAGE === "results") $("#stage").innerHTML = resultsPage();
+  else if (PAGE === "analytics") $("#stage").innerHTML = analyticsPage();
+  else if (PAGE === "downloads") $("#stage").innerHTML = downloadsPage();
+  else if (!c || allDone) $("#stage").innerHTML = `<div class="done-card"><div class="bigtick">&#10003;</div><h2>${LOG.length ? "All done" : "Nothing waiting for you"}</h2><p>${LOG.length ? "That was every card you can read." : "No cards match your languages and the type you chose."}</p>${LOG.length && !ONLINE ? `<button class="stamp go" data-act="restart"><b>Start over</b><span>clears this session</span></button>` : ""}</div>`;
+  else {
+    const held = claimed(c);
+    if (held === true) $("#stage").innerHTML = lines + SCREEN[stOf(c).screen](c, stOf(c));
+    else if (held === "retry") $("#stage").innerHTML = wait("The database did not answer", "Your decisions so far are saved. Check the connection, then try again.", `<button class="stamp go" data-act="retryclaim"><b>Try again</b></button>`);
+    else $("#stage").innerHTML = wait("Checking nobody else has this record&hellip;");
+  }
+  const avail = CARDS.filter(available).length, pending = Object.keys(UNSENT).length;
+  $("#count").textContent = `${LOG.length} of ${LOG.length + avail} records reviewed`
+    + (ONLINE && !testing && me ? (pending ? ` \u00b7 ${pending} not saved yet` : LOG.length ? " \u00b7 all saved" : "") : "");
+  $("#pos").textContent = LIST.length ? `${cur + 1} / ${LIST.length}` : "0 / 0";
+  $("#prog").style.width = (LOG.length / Math.max(1, LOG.length + avail) * 100) + "%";
+  $("#jump").value = String(cur);
+  if (top) window.scrollTo(0, 0);
+  const q = $("#q"); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+}
+function fillJump() {
+  $("#jump").innerHTML = LIST.map((ci, n) => { const c = CARDS[ci], rc = rowsFor(c, ordered(c)[0]).length; return `<option value="${n}">${ci + 1}. ${esc(gist(c.entityEn ? c.entity + " / " + c.entityEn : c.entity, 40))} \u00b7 ${esc(kind(c))}${c.isNew ? " \u00b7 new" : ""}${rc ? " \u00b7 " + rc + " change" + (rc > 1 ? "s" : "") : ""}</option>`; }).join("");
+}
+function fillGroups() {
+  const base = CARDS.filter(available);
+  $("#group").innerHTML = `<option value="all">All types (${base.length})</option>` + GROUPS.map(([k, n]) => `<option value="${k}">${n} (${base.filter(c => groupOf(c) === k).length})</option>`).join("");
+  $("#group").value = group;
+}
+function buildList(filter) {
+  const keep = { all: () => true, who: c => !c.isNew, new: c => c.isNew, chg: c => ordered(c).some(o => rowsFor(c, o).length), flag: c => c.isFlag }[filter || "all"];
+  LIST = CARDS.map((c, i) => [c, i]).filter(([c]) => keep(c) && available(c) && (group === "all" || groupOf(c) === group)).map(([, i]) => i);
+  LIST.sort((a, b) => MINE.has(CARDS[b].key) - MINE.has(CARDS[a].key));   // a record already on your desk comes first
+  cur = 0; allDone = !LIST.length && LOG.length > 0; fillJump(); fillGroups();
+}
+$("#jump").addEventListener("change", e => { cur = Number(e.target.value); draw(true); });
+$("#filter").addEventListener("change", e => { buildList(e.target.value); draw(true); });
+$("#group").addEventListener("change", e => { group = e.target.value; PAGE = "review"; buildList($("#filter").value); draw(true); });
+
+// every card, every screen, editing or not: a page that throws on one card should be found here, not by a reader
+function selftest() {
+  let screens = 0; const errors = [];
+  const T = { n: 0, name: { same: 0, part: 0, diff: 0 }, extraOk: 0, cross: 0, nothing: 0, chips: 0, newChips: 0 };
+  CARDS.forEach((c, n) => {
+    const st = fresh(c); S[c.key] = st;
+    const run = (name, fn) => { try { const h = fn(); if (typeof h !== "string" || h.length < 50) throw new Error("empty screen"); screens++; } catch (e) { errors.push(`#${n + 1} ${c.entity} ${name}: ${e.message}`); } };
+    if (c.isNew) run("create", () => create(c, st));
+    ordered(c).forEach((o, i) => {
+      run("who " + i, () => who(c, Object.assign(st, { cand: i })));
+      const rows = checks(c, o); T.n++;
+      const nm = rows[0].k === "ok" ? "same" : rows[0].k === "part" ? "part" : "diff"; T.name[nm]++;
+      const rest = rows.slice(1);
+      if (rest.some(r => r.k === "ok")) T.extraOk++; if (rest.some(r => r.k === "bad")) T.cross++; if (!rest.some(r => r.k === "ok" || r.k === "bad")) T.nothing++;
+      rowsFor(c, o).forEach((ch, j) => {
+        Object.assign(st, { chosen: i, cand: i, ch: j });
+        [false, true].forEach(ed => { st.edit[j] = ed; run(`change ${i}.${j}${ed ? " edit" : ""}`, () => change(c, st)); });
+        st.edit[j] = false;
+        const html = change(c, st); T.chips += (html.match(/class="vrow /g) || []).length; T.newChips += (html.match(/class="vrow new/g) || []).length;
+        (ch.supporters || []).forEach((_, q) => { st.csrc[j] = srcIdxOf(c, ch.supporters)[q]; run(`change ${i}.${j} source ${q}`, () => change(c, st)); });
+      });
+    });
+    run("create (set aside)", () => create(c, Object.assign(st, { exhausted: true, full: true, finding: true, query: "alliance" })));
+    S[c.key] = undefined;
+  });
+  try { buildList(); homePage(); sheetPage(); teamPage(); resultsPage(); VIEW = "team"; resultsPage(); VIEW = "mine"; analyticsPage(); downloadsPage(); LOG.push({ key: "x", name: "X", type: "PERSON", group: "people", kind: "approved", rec: "R", uid: "1", when: new Date(), secs: 5, accepted: [{ field: "Awards", value: "A", link: "" }], link: "", found: false, done: false }); homePage(); sheetPage(); teamPage(); analyticsPage(); downloadsPage(); LOG.length = 0; screens += 8; }
+  catch (e) { errors.push("pages: " + e.message); }
+  const msg = `selftest: ${CARDS.length} cards, ${screens} screens, ${errors.length} errors` + (errors.length ? "\n" + errors.slice(0, 20).join("\n") : "")
+    + `\nchecks over ${T.n} candidate records: name same ${T.name.same}, part ${T.name.part}, different ${T.name.diff}; a shared fact beyond the name ${T.extraOk}; a conflicting fact ${T.cross}; nothing but the name to go on ${T.nothing}`
+    + `\nvalue rows on change screens: ${T.chips}, of which not in TTE (orange): ${T.newChips}`;
+  const pre = $("#selftest"); pre.hidden = false; pre.textContent = msg; document.title = msg.split("\n")[0];
+}
+
+(function init() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (REVIEW && !p.has("proto")) document.body.classList.add("noproto");
+  if (ONLINE) { loading = "Signing in\u2026"; draw(); startOnline(); return; }
+  buildList("all");
+  if (p.has("c")) { PAGE = "review"; cur = Math.min(CARDS.length - 1, Number(p.get("c"))); const c = card(), st = stOf(c);
+    if (p.get("s")) Object.assign(st, { screen: p.get("s"), ch: Number(p.get("i") || 0), cand: Number(p.get("cand") || 0), chosen: p.get("s") === "change" ? Number(p.get("cand") || 0) : null, kind: p.get("k") || "", exhausted: p.get("x") === "1", full: p.get("full") === "1", finding: p.get("find") === "1", query: p.get("q") || "" });
+    if (p.get("edit") === "1") st.edit[st.ch] = true; if (p.has("src")) st.csrc[st.ch] = Number(p.get("src")); }
+  if (location.search.includes("phone")) { $("#wrap").classList.add("phone"); $("#phone").classList.add("on"); }
+  if (p.has("demo")) { ["approved", "created", "approved", "uptodate", "discard", "keep"].forEach((kd, n) => { const c = CARDS[n * 3 + 1]; LOG.push({ key: c.key, name: c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity, type: c.type, group: groupOf(c), kind: kd, rec: kd === "approved" || kd === "uptodate" ? (c.options[0] || {}).name || "" : kd === "created" ? "new record" : "", uid: "", when: new Date(), secs: 40 + n * 25, accepted: kd === "approved" ? [{ field: "Awards", value: "x", link: "" }, { field: "Description", value: "y", link: "" }] : [], seen: kd === "approved" ? 3 : 0, link: "", found: n === 2, done: n === 0 }); DECIDED.add(c.key); }); buildList(); }
+  if (p.get("flow") === "back2") {
+    PAGE = "review"; cur = LIST.indexOf(14); draw(); const c = CARDS[14], st = stOf(c), r = [];
+    r.push(["start", st.screen, st.hist.length]);
+    act("cand", { dataset: { i: "0" } }); r.push(["after choosing a closest record", st.screen, st.hist.length]);
+    act("back"); r.push(["after back", st.screen, st.hist.length]);
+    act("find"); st.query = "snow"; act("pickhit", { dataset: { u: INDEX.find(x => x[1] === "Snow City")[0], npt: "" } }); r.push(["after picking a search result", st.screen, st.extra.length]);
+    act("back"); r.push(["after back", st.screen, st.extra.length]);
+    const pre = $("#selftest"); pre.hidden = false; pre.textContent = "FLOW\n" + JSON.stringify(r); return;
+  }
+  if (p.get("flow") === "shanti") {
+    PAGE = "review"; cur = LIST.indexOf(16); draw(); act("same");
+    for (let g = 0; g < 20 && LOG.length === 0; g++) act("accept");
+    const pre = $("#selftest"); pre.hidden = false; pre.textContent = "FLOW\n" + JSON.stringify(changesRows(LOG), null, 1); return;
+  }
+  if (p.get("rail") === "open") $("#panel").classList.add("open");
+  if (p.get("page")) PAGE = p.get("page"); if (p.get("view")) VIEW = p.get("view"); if (p.has("nosample")) { SAMPLE = false; _team = null; $("#samplebtn").classList.remove("on"); buildList(); }
+  draw();
+  if (!p.has("c") && !p.has("selftest") && !p.has("nowelcome")) welcome(); else if (!p.has("c") && !p.has("selftest") && !langs && !p.has("demo")) settings();
+  if (p.has("selftest")) selftest();
+})();
+</script>
+</body>
+</html>

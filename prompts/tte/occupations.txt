@@ -1,0 +1,284 @@
+OCCUPATIONS THESAURUS
+
+The only permitted values for Occupation, from the National Library Board's
+Occupations Thesaurus. Use one of these exactly, or omit Occupation. A post
+or designation is never an occupation: "Chairperson", "CEO" and "Minister
+for Defence" belong in Description.
+
+Academic
+Accountant
+Activist
+Actor
+Adventurer
+Air force officer
+Animator
+Archaeologist
+Archer
+Architect
+Archivist
+Army officer
+Art collector
+Art director
+Art teacher
+Artist
+Artistic director
+Arts administrator
+Athlete
+Athletic director
+Auditor
+Badminton player
+Banker
+Basketball player
+Billiard player
+Biochemist
+Biographer
+Biologist
+Blogger
+Bodybuilder
+Book editor
+Bookkeeper
+Botanist
+Bowler
+Boxer (Athlete)
+Brother (Religious)
+Business owner
+Business person
+Cabinet Minister
+Calligrapher
+Canoeist
+Cardiologist
+Cartoonist
+Cellist
+Chef
+Children's writer
+Choreographer
+Civil servant
+Clerk
+Coach (Sports)
+College administrator
+Colonial administrator
+Comedian
+Comics artist
+Company director
+Composer
+Conductor (Music)
+Conservationist
+Construction worker
+Consultant
+Cookery teacher
+Counsellor
+Creative director
+Cricket player
+Critic
+Curator
+Cyclist
+Dance teacher
+Dancer
+Dentist
+Designer
+Diplomat
+Disc jockey
+Diver (Athlete)
+Doctor
+Drama teacher
+Economist
+Editor
+Educator
+Engineer
+Entertainer
+Entrepreneur
+Environmentalist
+Essayist
+Executive
+Factory worker
+Farmer
+Fashion designer
+Fashion editor
+Fashion model
+Fencer
+Film director
+Film producer
+Financial planner
+Firefighter
+Fisherman
+Food writer
+Footballer
+Forensic pathologist
+Funeral director
+Gallerist
+Geriatrician
+Golfer
+Government official
+Graphic artist
+Graphic designer
+Gymnast
+Gynaecologist
+Hair stylist
+Hawker
+Historian
+Hockey player
+Homemaker
+Horticulturist
+Housekeeper
+Humanitarian worker
+Humorist
+Hydrographer
+Illustrator
+Industrial designer
+Insurance agent
+Interior designer
+Interpreter
+Inventor
+Investment advisor
+Jockey
+Journalist
+Judge
+Justice of the Peace
+Lawyer
+Librarian
+Lyricist
+Magazine editor
+Magician
+Makeup artist
+Martial artist
+Master of ceremony
+Mayor
+Mechanic
+Medical scientist
+Member of Parliament
+Merchant
+Midwife
+Mime
+Minister of State
+Missionary
+Mixed media artist
+Monk
+Motivational speaker
+Movie actor
+Music arranger
+Music director
+Music teacher
+Musician
+Naval architect
+Naval officer
+Netball player
+Neurologist
+Newscaster
+Newspaper editor
+Novelist
+Nun
+Nurse
+Obstetrician
+Oncologist
+Ophthalmologist
+Optician
+Optometrist
+Orthopaedic surgeon
+Painter (Art)
+Para-athlete
+Parliamentary Secretary
+Pathologist
+Pediatrician
+Pharmacist
+Philanthropist
+Photographer
+Pianist
+Pilot
+Pioneer
+Plastic surgeon
+Playwright
+Poet
+Police officer
+Politician
+Polo player
+Potter
+President (Government)
+Priest
+Printmaker
+Psychiatrist
+Psychologist
+Psychotherapist
+Publisher
+Puppeteer
+Racing driver
+Radio presenter
+Real estate agent
+Referee
+Religious leader
+Research analyst
+Researcher
+Restaurateur
+Rower
+Rugby player
+Ruler
+Runner (Athlete)
+Sailor (Athlete)
+Salesperson
+Scholar
+School administrator
+School principal
+Scientist
+Screenwriter
+Sculptor
+Sepak takraw player
+Ship captain
+Shooter
+Short story writer
+Singer
+Social entrepreneur
+Social scientist
+Social worker
+Sociologist
+Softball player
+Songwriter
+Sports administrator
+Sportscaster
+Sportswriter
+Squash Player
+Statistician
+Stenographer
+Stockbroker
+Storyteller
+Street entertainer
+Surgeon
+Surveyor
+Swimmer
+Synchronized swimmer
+TCM physician
+TCM physician
+Table tennis player
+Tailor
+Talk show host
+Tattoo artist
+Taxi driver
+Teacher
+Technician
+Television actor
+Television director
+Television journalist
+Television presenter
+Television producer
+Television writer
+Tennis player
+Textile artist
+Theatre actor
+Theatre director
+Theatrical producer
+Tour guide
+Track and field athlete
+Trade unionist
+Translator
+Triathlete
+Ventriloquist
+Veterinarian
+Video artist
+Violinist
+Voice actor
+Volleyball player
+Volunteer
+Water polo player
+Water-skier
+Weightlifter
+Wrestler
+Writer
+Zoologist

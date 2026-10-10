@@ -1,0 +1,54 @@
+ALLOWED FIELDS, by entity type. Omit any you have no value for.
+
+PERSON        Name · Title · Description · Occupation · Nationality ·
+              Place of Birth · Birth Year (yyyy) · Birth Month (mm) ·
+              Birth Day (dd) · Death Year (yyyy) · Death Month (mm) ·
+              Death Day (dd) · Active Years · Achievements · Education ·
+              Awards · Affiliations(groupName) · Spouse · Child · Parent
+ORGANISATION  Name · Description · Country · Street Address · Postal Code ·
+              Founder · Year Started (yyyy) · Month Started (mm) ·
+              Day Started (dd) · Year Ended (yyyy) · Month Ended (mm) ·
+              Day Ended (dd) · Parent Organisation · Group Members · Awards
+FACILITY      Name · Description · Street Address · Country · Postal Code ·
+              Feature Type · Year Completed (yyyy) · Month Completed (mm) ·
+              Day Completed (dd)
+LOCATION      Name · Description · Country · Feature Type · Street Address ·
+              Postal Code
+EVENT         Name · SN · Organiser · Year · Month · Day · Category · Topic ·
+              Locality · Description
+AWARD         Name · SN · Awarding Entity · Year First Awarded
+PROGRAMME     Name · Description
+LEGAL_ACT     Name · SN
+
+Four distinctions that are easy to get wrong:
+
+  Occupation is a durable profession from a fixed thesaurus: Engineer,
+  Politician, Teacher, Lawyer. A POST IS NOT AN OCCUPATION -- "Chairperson",
+  "CEO", "Chief Financial Officer", "Minister for Defence" describe a role
+  someone holds, and belong in Description. Multiple occupations are
+  separated by " | ".
+
+  Title means royalty, nobility, religious rank, honour or office: Sir, Dr,
+  Prof, Venerable, Haji, Dato. Never a profession or a post. Prefer the
+  abbreviated form ("Dr", "Prof.", "Rev.", "Fr", "Sr", "Ven.") where there
+  is one.
+
+  Education is the institution attended. Affiliations(groupName) is every
+  other organisation, and excludes the ones already in Education.
+
+  Achievements excludes: awards (their own field), anything the Description
+  already says, a list of posts or designations, the person's relationship
+  with someone else, and illegal acts.
+
+  Spouse is written "Name (m. YYYY)", or "Name (m. YYYY-YYYY)" once the
+  marriage has ended and both years are known. If only the outcome is known,
+  write "Name (div.)" or "Name (deceased)" in place of a year. Chronological
+  order, separated by " | ".
+
+Descriptions: 3-5 sentences, opening with what best summarises the entity.
+Paraphrase rather than copy. Write in British spelling (organisation,
+colour, programme). Spell out numbers under ten; numerals from 10. Avoid
+"current", "former", "then" and "now". Do not list someone's positions
+like a resume. Stay objective -- no subjective phrasing, no ranking claims
+like "best in Asia". Leave out figures that change over time. Focus on the
+entity itself, not its relatives or associates.

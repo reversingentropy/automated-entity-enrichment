@@ -1,0 +1,8 @@
+// The online review desk, served by Cloudflare Workers from the page the build
+// writes into dist/ (`python -m src.export --site dist`). Cloudflare's build
+// runs on every push to main; the name must match the Worker in the dashboard.
+{
+  "name": "tte-desk",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" }
+}

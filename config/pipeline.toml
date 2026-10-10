@@ -1,0 +1,48 @@
+# How the pipeline behaves: which model answers each job, how hard it thinks,
+# and how work is batched and paced. This file is the only place these are
+# set; nothing in .env or GitHub overrides them. Change one here and commit
+# it, so the history shows which settings produced which night's results.
+# Keys and passwords do not belong here: they stay in .env and GitHub secrets.
+#
+# Models are listed strongest first. The next one is used only once the one
+# before has spent its daily allowance (the full Flash models allow 20
+# requests a day, Flash Lite 500), and a spent model is skipped for the rest
+# of the run. docs/design.md has the measurements behind each choice.
+
+[relevance]
+# One batch is one request, so it leads with the strongest model.
+models = ["gemini-3.8-flash"]
+thinking = "high"
+# Articles per request. Smaller batches find more relevant articles (548
+# articles: batch 100 found 16, one batch of 548 found 6; 200 was not
+# measured). A normal run's queue is a few dozen new articles, one request
+# at 100 as at 1000; a backlog after an outage costs one request per 100.
+batch_size = 100
+# Only matters after an outage leaves more than one batch waiting.
+seconds_between_batches = 15
+
+[extraction]
+# One request per article
+models = ["gemini-3.8-flash"]
+thinking = "high"
+seconds_between_articles = 5
+
+[resolution]
+# The highest-stakes judgement: a wrong match corrupts an authority record.
+models = ["gemini-3.8-flash"]
+thinking = "high"
+seconds_between_articles = 5
+# Articles per request. One keeps each decision in a small context; raise it
+# only for a backfill.
+articles_per_request = 1
+
+[greeting]
+# The line of the day on the desk's home screen (src/export/greeting.py):
+# written once a day by the nightly publish, kept for the noon run.
+models = ["gemini-3.8-flash"]
+thinking = "low"
+
+[notify]
+# The daily email ends with a link to the desk. Put its address here once it
+# is hosted (e.g. https://tte-desk.pages.dev); empty leaves the link out.
+desk_url = "https://tte-desk.nair-ashwin1994.workers.dev/"

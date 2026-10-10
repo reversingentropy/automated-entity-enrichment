@@ -1,0 +1,36 @@
+name: Job 0 - RSS Ingestion
+
+# Run by hand; the schedule is in nightly.yml, where this is the first step.
+on:
+  workflow_dispatch:
+
+# Shares the pipeline's queue so a manual run waits for a nightly one rather
+# than inserting articles while Job 1 is scoring the previous set.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # The secrets live in this GitHub Environment, not at repo level. Without
+    # this line secrets.* resolve to empty strings and the run fails on auth.
+    environment: automated-tte-enrichment
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen --no-dev
+
+      - name: Ingest the RSS feeds
+        run: uv run python -m src.job0_ingest
+        env:
+          PYTHONUNBUFFERED: "1"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

@@ -1,0 +1,238 @@
+[
+  {
+    "id": "real-homonym-different-field",
+    "source": "real (article 22)",
+    "note": "Caught a regression once already. The names match exactly; only the fields separate them.",
+    "expect": {"action": "FLAG_AMBIGUOUS"},
+    "confidence": "certain",
+    "article_title": "Aidha launches free financial education course for migrant workers",
+    "entity": {
+      "entity_name": "Jacqueline Loh", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Jacqueline Loh is the chief executive officer of Aidha.",
+      "evidence": "Aidha chief executive Jacqueline Loh said the new course would reach newly arrived workers.",
+      "fields": {"Name": "Jacqueline Loh", "Title": "Chief Executive Officer", "Affiliations": "Aidha"}
+    },
+    "candidates": [
+      {"canonical_uid": "18607331", "canonical_name": "Loh, Jacqueline", "similarity": 1.0,
+       "canonical_fields": {"Name": "Loh, Jacqueline", "Occupation": "Civil servant | Executive",
+         "Description": "Deputy Managing Director (Monetary Policy & Investment) at the Monetary Authority of Singapore."}}
+    ]
+  },
+  {
+    "id": "real-award-append",
+    "source": "real (article 1937)",
+    "note": "The append should reuse the record's existing 'Name (YYYY)' style and add only the new item.",
+    "expect": {"action": "MATCH_AND_UPDATE", "matched_id": "19984562",
+               "field_updates_include": {"field": "Awards", "strategy": "APPEND"}},
+    "confidence": "certain",
+    "article_title": "Former NEA chairman among eight lauded at President's Science and Technology Awards",
+    "entity": {
+      "entity_name": "Lee Chuan Seng", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Lee Chuan Seng was awarded the President's Science and Technology Medal in 2026.",
+      "evidence": "For his contributions, he was on Aug 28 awarded the President's Science and Technology Medal.",
+      "fields": {"Name": "Lee Chuan Seng", "Occupation": "Engineer", "Awards": "President's Science and Technology Medal (2026)"}
+    },
+    "candidates": [
+      {"canonical_uid": "19984562", "canonical_name": "Lee, Chuan Seng", "similarity": 1.0,
+       "canonical_fields": {"Name": "Lee, Chuan Seng", "Occupation": "Engineer", "Nationality": "Singaporean",
+         "Awards": "Public Service Medal (2010) | Public Service Star (2018) | President's Award for the Environment (2023)",
+         "Description": "Founding president of the Singapore Green Building Council."}}
+    ]
+  },
+  {
+    "id": "real-weak-candidate-rejected",
+    "source": "real (article 47)",
+    "note": "Trigram offers a plausible-looking neighbour. Nothing about it is the same place.",
+    "expect": {"action": "OMITTED"},
+    "confidence": "certain",
+    "article_title": "Government will continue to invest in infrastructure and education",
+    "entity": {
+      "entity_name": "Fuchun Community Club", "entity_name_en": null, "entity_type": "FACILITY",
+      "summary": "Fuchun Community Club reopened on 1 August 2026 after redevelopment.",
+      "evidence": "The revamped Fuchun Community Club officially reopened on Aug 1.",
+      "fields": {"Name": "Fuchun Community Club", "Year Completed": "2026"}
+    },
+    "candidates": [
+      {"canonical_uid": "18551234", "canonical_name": "Yishun Public Library (Place)", "similarity": 0.35,
+       "canonical_fields": {"Name": "Yishun Public Library", "Feature Type": "Library", "Country": "Singapore"}}
+    ]
+  },
+  {
+    "id": "real-cross-language-match",
+    "source": "real (article 63)",
+    "note": "Retrieval already hopped CHItoENG; the model should accept the English canonical.",
+    "expect": {"action": "MATCH_AND_UPDATE", "matched_id": "18338733"},
+    "confidence": "certain",
+    "article_title": "海南两大社团完成改选",
+    "entity": {
+      "entity_name": "新加坡海南会馆", "entity_name_en": "Singapore Hainan Hwee Kuan",
+      "entity_type": "ORGANISATION",
+      "summary": "新加坡海南会馆完成新一届领导层改选，由王振胡出任会长。",
+      "evidence": "新加坡海南会馆完成改选，王振胡当选会长。",
+      "fields": {"Name": "新加坡海南会馆", "Description": "新加坡海南会馆完成新一届领导层改选。"}
+    },
+    "candidates": [
+      {"canonical_uid": "18338733", "canonical_name": "Singapore Hainan Hwee Kuan (Clan association)",
+       "similarity": 1.0,
+       "canonical_fields": {"Name": "Singapore Hainan Hwee Kuan", "Country": "Singapore",
+         "Description": "Clan association for the Hainanese community in Singapore."}}
+    ]
+  },
+  {
+    "id": "edge-homonym-same-profession",
+    "source": "synthetic",
+    "note": "The hard version of the Jacqueline Loh case. Same name AND same profession, so the fields no longer separate them. If the model matches confidently here it is matching on the name.",
+    "expect": {"action": "FLAG_AMBIGUOUS"},
+    "confidence": "certain",
+    "article_title": "Local engineer honoured for coastal protection work",
+    "entity": {
+      "entity_name": "Tan Wei Ming", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Tan Wei Ming, a civil engineer, led the Changi coastal barrier project.",
+      "evidence": "Civil engineer Tan Wei Ming led the design of the Changi coastal barrier.",
+      "fields": {"Name": "Tan Wei Ming", "Occupation": "Engineer"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500001", "canonical_name": "Tan, Wei Ming", "similarity": 1.0,
+       "canonical_fields": {"Name": "Tan, Wei Ming", "Occupation": "Engineer", "Birth Year": "1961",
+         "Description": "Structural engineer known for work on public housing."}},
+      {"canonical_uid": "18500002", "canonical_name": "Tan, Wei Ming", "similarity": 1.0,
+       "canonical_fields": {"Name": "Tan, Wei Ming", "Occupation": "Engineer", "Birth Year": "1978",
+         "Description": "Civil engineer specialising in marine infrastructure."}}
+    ]
+  },
+  {
+    "id": "edge-award-already-recorded",
+    "source": "synthetic",
+    "note": "The article reports an award the record already lists. Appending it again duplicates the entry. Either no update, or an update that does not repeat what is there.",
+    "expect": {"action": "MATCH_AND_UPDATE", "no_duplicate_award": "Public Service Star (2018)"},
+    "confidence": "certain",
+    "article_title": "Retrospective: honouring Singapore's public servants",
+    "entity": {
+      "entity_name": "Lim Hui Fang", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Lim Hui Fang received the Public Service Star in 2018.",
+      "evidence": "Ms Lim Hui Fang was awarded the Public Service Star in 2018.",
+      "fields": {"Name": "Lim Hui Fang", "Awards": "Public Service Star (2018)"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500010", "canonical_name": "Lim, Hui Fang", "similarity": 1.0,
+       "canonical_fields": {"Name": "Lim, Hui Fang", "Occupation": "Civil servant",
+         "Awards": "Public Service Medal (2012) | Public Service Star (2018)"}}
+    ]
+  },
+  {
+    "id": "edge-contradictory-fact",
+    "source": "synthetic",
+    "note": "The article's birth year contradicts the record. A news article is not authority for correcting an authority file. Overwriting silently would be the worst outcome.",
+    "expect": {"action_in": ["FLAG_AMBIGUOUS", "MATCH_AND_UPDATE"], "no_replace_of": "Birth Year"},
+    "confidence": "judgement call - decide what you want here",
+    "article_title": "Veteran broadcaster marks 50 years on air",
+    "entity": {
+      "entity_name": "Goh Mei Ling", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Goh Mei Ling, born 1955, marked fifty years in broadcasting.",
+      "evidence": "Ms Goh, born in 1955, began her career at Radio Singapore.",
+      "fields": {"Name": "Goh Mei Ling", "Birth Year": "1955", "Occupation": "Broadcaster"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500020", "canonical_name": "Goh, Mei Ling", "similarity": 1.0,
+       "canonical_fields": {"Name": "Goh, Mei Ling", "Birth Year": "1950", "Occupation": "Broadcaster",
+         "Description": "Broadcaster with Radio Singapore from 1976."}}
+    ]
+  },
+  {
+    "id": "edge-former-title",
+    "source": "synthetic",
+    "note": "The article refers to someone by a lapsed role. Writing 'Former Minister for Trade' into Title makes the record worse, not better.",
+    "expect": {"action": "MATCH_AND_UPDATE", "no_title_containing": "Former"},
+    "confidence": "certain",
+    "article_title": "Former trade minister appointed to university board",
+    "entity": {
+      "entity_name": "Rahim Osman", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "Former Minister for Trade Rahim Osman was appointed to the NTU board of trustees.",
+      "evidence": "Former Minister for Trade Rahim Osman will join the NTU board of trustees.",
+      "fields": {"Name": "Rahim Osman", "Title": "Former Minister for Trade", "Affiliations": "Nanyang Technological University"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500030", "canonical_name": "Osman, Rahim", "similarity": 1.0,
+       "canonical_fields": {"Name": "Osman, Rahim", "Title": "Minister for Trade", "Occupation": "Politician",
+         "Description": "Member of Parliament and Minister for Trade."}}
+    ]
+  },
+  {
+    "id": "edge-unnamed-role",
+    "source": "synthetic",
+    "note": "Extraction produced a role rather than a named entity. It should not be matched to whoever currently holds the post, and arguably should never have been extracted.",
+    "expect": {"action_in": ["OMITTED", "FLAG_AMBIGUOUS"]},
+    "confidence": "certain",
+    "article_title": "Health Minister announces new subsidy scheme",
+    "entity": {
+      "entity_name": "the Health Minister", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "The Health Minister announced a new subsidy scheme.",
+      "evidence": "The Health Minister said the scheme would start in January.",
+      "fields": {"Title": "Minister for Health"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500040", "canonical_name": "Ong, Ye Kung", "similarity": 0.42,
+       "canonical_fields": {"Name": "Ong, Ye Kung", "Title": "Minister for Health", "Occupation": "Politician"}}
+    ]
+  },
+  {
+    "id": "edge-foreign-org-sg-branch",
+    "source": "synthetic",
+    "note": "Job 1 is meant to exclude these, but if one slips through, resolution must not attach a foreign company's news to a Singapore institution with a similar name.",
+    "expect": {"action_in": ["OMITTED", "FLAG_AMBIGUOUS"]},
+    "confidence": "certain",
+    "article_title": "Global bank opens new Singapore office",
+    "entity": {
+      "entity_name": "Meridian Bank Singapore", "entity_name_en": null, "entity_type": "ORGANISATION",
+      "summary": "Meridian Bank, a European bank, opened a Singapore branch office.",
+      "evidence": "Meridian Bank opened its Singapore branch at Marina Bay.",
+      "fields": {"Name": "Meridian Bank Singapore", "Country": "Netherlands"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500050", "canonical_name": "Meridian Bank (Singapore) Ltd", "similarity": 0.82,
+       "canonical_fields": {"Name": "Meridian Bank (Singapore) Ltd", "Country": "Singapore",
+         "Description": "Local bank incorporated in Singapore in 1968, unrelated to any European institution."}}
+    ]
+  },
+  {
+    "id": "edge-organisation-renamed",
+    "source": "synthetic",
+    "note": "A rename is not a Name overwrite. The schema has Successor and Predecessor for exactly this, and losing the former name loses the record's history.",
+    "expect": {"action": "MATCH_AND_UPDATE", "no_replace_of": "Name"},
+    "confidence": "judgement call - decide whether rename means Successor or a new entity",
+    "article_title": "Ministry of Trade and Industry renamed",
+    "entity": {
+      "entity_name": "Ministry of Energy, Trade and Industry", "entity_name_en": null,
+      "entity_type": "ORGANISATION",
+      "summary": "The Ministry of Trade and Industry was renamed the Ministry of Energy, Trade and Industry.",
+      "evidence": "The Ministry of Trade and Industry will be renamed the Ministry of Energy, Trade and Industry.",
+      "fields": {"Name": "Ministry of Energy, Trade and Industry", "Predecessor": "Ministry of Trade and Industry"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500060", "canonical_name": "Singapore. Ministry of Trade and Industry",
+       "similarity": 0.71,
+       "canonical_fields": {"Name": "Singapore. Ministry of Trade and Industry", "Country": "Singapore",
+         "Year Started": "1979", "Description": "Government ministry overseeing trade and industry policy."}}
+    ]
+  },
+  {
+    "id": "edge-posthumous-award",
+    "source": "synthetic",
+    "note": "The award is real and belongs on the record. The death is already recorded. Nothing here justifies inventing or changing a death date.",
+    "expect": {"action": "MATCH_AND_UPDATE", "field_updates_include": {"field": "Awards", "strategy": "APPEND"},
+               "no_replace_of": "Death Year"},
+    "confidence": "certain",
+    "article_title": "Pioneer architect honoured posthumously",
+    "entity": {
+      "entity_name": "Chua Beng Huat", "entity_name_en": null, "entity_type": "PERSON",
+      "summary": "The late Chua Beng Huat was posthumously awarded the Cultural Medallion in 2026.",
+      "evidence": "The late Mr Chua Beng Huat was posthumously awarded the Cultural Medallion.",
+      "fields": {"Name": "Chua Beng Huat", "Awards": "Cultural Medallion (2026)"}
+    },
+    "candidates": [
+      {"canonical_uid": "18500070", "canonical_name": "Chua, Beng Huat", "similarity": 1.0,
+       "canonical_fields": {"Name": "Chua, Beng Huat", "Occupation": "Architect", "Death Year": "2019",
+         "Awards": "Singapore Institute of Architects Gold Medal (2001)"}}
+    ]
+  }
+]
