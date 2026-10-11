@@ -309,3 +309,13 @@ def test_one_failed_write_does_not_stop_the_feeds_after_it(monkeypatch):
 def test_all_feeds_ok_exits_clean(monkeypatch):
     insert = lambda articles, known=None: {"attempted": len(articles), "inserted": 0, "copies": 0, "error": None}
     assert _run_main(monkeypatch, _ok, insert) == 0
+
+
+def test_a_feed_with_nothing_seen_before_is_flagged(monkeypatch, capsys):
+    # In 65 of 81 twice-daily runs every Zaobao item was new: the feed had moved past articles before they were read.
+    insert = lambda articles, known=None: {"attempted": len(articles), "inserted": len(articles), "copies": 0, "error": None}
+    assert _run_main(monkeypatch, _ok, insert) == 0
+    assert capsys.readouterr().out.count("::warning::") == 3
+    some_seen = lambda articles, known=None: {"attempted": len(articles), "inserted": len(articles) - 1, "copies": 0, "error": None}
+    _run_main(monkeypatch, _ok, some_seen)
+    assert "::warning::" not in capsys.readouterr().out

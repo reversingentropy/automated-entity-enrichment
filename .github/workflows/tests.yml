@@ -23,4 +23,11 @@ jobs:
       # drifted from it. One source of truth for local and CI alike.
       - run: uv sync --frozen --group dev
 
+      # The second desk's tests drive the page in Chrome's headless shell. The
+      # Google Chrome already on the runner never exits after --dump-dom, and
+      # those two tests timed out on every push; tests/test_desk2.py now skips
+      # rather than use it, and this puts the shell where it looks.
+      - name: Install Chrome's headless shell
+        run: uvx --from playwright==1.52.0 playwright install --only-shell chromium
+
       - run: uv run pytest

@@ -2,8 +2,10 @@
 The second desk (prototype/desk.template.html), the one the reviewers chose, run in a headless browser.
 
 Its screens are written as HTML strings, which the small DOM stand-in the first desk's tests use cannot run, so
-these tests need Chromium (Playwright's headless shell is found on its own; DESK_CHROME points elsewhere). The
-cards are real ones from a build of the deck (tests/fixtures/desk2_cards.json); nothing reaches a database.
+these tests need Chrome's headless shell (Playwright's is found on its own; DESK_CHROME points elsewhere; CI
+installs it). Not the full browser: with --dump-dom it never exits, even on a one-line page, and in CI, which has
+Google Chrome installed, both tests waited out their two minutes and failed every push from 10 October. The cards
+are real ones from a build of the deck (tests/fixtures/desk2_cards.json); nothing reaches a database.
 """
 
 import glob
@@ -28,13 +30,12 @@ def chrome() -> str | None:
     found = [os.environ.get("DESK_CHROME", "")]
     home = Path.home() / ".cache" / "ms-playwright"
     found += sorted(glob.glob(str(home / "chromium_headless_shell-*" / "chrome-headless-shell-linux64" / "chrome-headless-shell")), reverse=True)
-    found += sorted(glob.glob(str(home / "chromium-*" / "chrome-linux64" / "chrome")), reverse=True)
-    found += [shutil.which(n) or "" for n in ("chromium", "chromium-browser", "google-chrome")]
+    found += [shutil.which("chrome-headless-shell") or ""]
     return next((f for f in found if f and Path(f).exists()), None)
 
 
 CHROME = chrome()
-needs_chrome = pytest.mark.skipif(CHROME is None, reason="needs a headless Chromium")
+needs_chrome = pytest.mark.skipif(CHROME is None, reason="needs Chrome's headless shell (uvx playwright install --only-shell chromium)")
 
 
 def blob(value) -> str:

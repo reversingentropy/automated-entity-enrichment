@@ -82,6 +82,11 @@ def main(argv: list[str] | None = None) -> int:
 
         total_written += result["inserted"]
         total_copies += result["copies"]
+        if parsed["after_filter"] and result["inserted"] >= parsed["after_filter"]:
+            # Nothing in the feed was seen before, so it may have moved past articles published since the last run.
+            # "::warning::" puts the line on the run's page in GitHub Actions.
+            print(f"::warning::{label}: every article in the feed was new, so some published since the last run may have "
+                  f"dropped off it unread. Ingest more often if this keeps happening.")
         print(f"  {label}: {parsed['mode']}, {parsed['after_filter']} article(s) in the feed, "
               f"{result['inserted']} new" + (f", {result['copies']} of them a story already stored (not queued)." if result["copies"] else "."))
 

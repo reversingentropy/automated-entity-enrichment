@@ -1,13 +1,23 @@
 name: Job 0 - RSS Ingestion
 
-# Run by hand; the schedule is in nightly.yml, where this is the first step.
+# Every two hours, on its own: the pipeline (nightly.yml) scores whatever has
+# come in since its last run. A feed holds only its newest items -- Zaobao 24,
+# CNA 20, The Straits Times 50 -- and twice a day was not enough: in 65 of 81
+# runs every Zaobao item was new, so the feed had already moved past what was
+# published in between, and GitHub starts scheduled runs hours late, which made
+# the gaps 9 and 15 hours. Ingesting calls no model and takes seconds.
+# At 17 minutes past: GitHub delays and drops more runs on the hour.
 on:
+  schedule:
+    - cron: '17 */2 * * *'
   workflow_dispatch:
 
-# Shares the pipeline's queue so a manual run waits for a nightly one rather
-# than inserting articles while Job 1 is scoring the previous set.
+# Its own queue, not the pipeline's: a run pending in a shared group is
+# replaced by the next one to queue, so a two-hourly ingest would cancel a
+# waiting pipeline run. Two ingests never overlap, so a copy of a story cannot
+# slip in between two runs' checks.
 concurrency:
-  group: pipeline
+  group: ingest
   cancel-in-progress: false
 
 jobs:

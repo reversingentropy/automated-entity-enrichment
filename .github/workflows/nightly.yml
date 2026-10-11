@@ -41,21 +41,14 @@ jobs:
       # Each step works its own queue, so a failure upstream does not stop the
       # rest: Job 3 still clears earlier nights' entities, and the deck still
       # publishes. The run is marked failed all the same.
-      # Replaces the Supabase Edge Function rss-ingest-v5: same feeds (from
-      # `rss_feeds`), same target (`article`), but a feed that fails to fetch
-      # no longer stops the ones after it. Runs on both schedules below, so
-      # the noon run also sees whatever a feed has published since midnight.
-      - name: Job 0 - RSS ingestion
-        id: ingest
-        timeout-minutes: 10
-        run: uv run python -m src.job0_ingest
+      # The RSS feeds are read every two hours by job0_ingest.yml, not here:
+      # twice a day, the feeds moved past articles before they were read.
 
       # New TTE exports the team has uploaded to the tte-imports bucket are
       # loaded first, so tonight's matching uses them; only the matches they
       # may change are requeued. A night with nothing new downloads nothing.
       - name: Load new TTE exports
         id: load
-        if: ${{ !cancelled() }}
         timeout-minutes: 30
         run: uv run python -m src.load_tte --new-only --requeue-stale
 
@@ -84,7 +77,7 @@ jobs:
         run: uv run python -m src.export --publish
         env:
           # How each earlier step went, for the team page and the daily email.
-          PIPELINE_STEPS: "ingest=${{ steps.ingest.outcome }},load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }}"
+          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }}"
 
       # Once a day, after the midnight run: an email to each reviewer with
       # something to act on, and silence for everyone else. Mail settings are
@@ -94,7 +87,7 @@ jobs:
         timeout-minutes: 10
         run: uv run python -m src.export --notify
         env:
-          PIPELINE_STEPS: "ingest=${{ steps.ingest.outcome }},load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},publish=${{ steps.publish.outcome }}"
+          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},publish=${{ steps.publish.outcome }}"
           MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
           MAIL_PORT: ${{ secrets.MAIL_PORT }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
