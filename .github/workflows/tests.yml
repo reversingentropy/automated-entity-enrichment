@@ -28,6 +28,12 @@ jobs:
       # those two tests timed out on every push; tests/test_desk2.py now skips
       # rather than use it, and this puts the shell where it looks.
       - name: Install Chrome's headless shell
-        run: uvx --from playwright==1.52.0 playwright install --only-shell chromium
+        run: |
+          uvx --from playwright==1.52.0 playwright install --only-shell chromium
+          ls -d ~/.cache/ms-playwright/chromium_headless_shell-*/*/
 
-      - run: uv run pytest
+      # The desk tests fail rather than skip if the shell is not found: a skip
+      # once passed in four seconds with the shell installed but not found.
+      - run: uv run pytest -rs
+        env:
+          DESK_REQUIRE_CHROME: "1"

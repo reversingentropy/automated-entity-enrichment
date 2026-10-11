@@ -30,12 +30,18 @@ def chrome() -> str | None:
     found = [os.environ.get("DESK_CHROME", "")]
     home = Path.home() / ".cache" / "ms-playwright"
     found += sorted(glob.glob(str(home / "chromium_headless_shell-*" / "chrome-headless-shell-linux64" / "chrome-headless-shell")), reverse=True)
+    # older Playwright releases, such as the one CI installs, lay it out as chrome-linux/headless_shell
+    found += sorted(glob.glob(str(home / "chromium_headless_shell-*" / "chrome-linux" / "headless_shell")), reverse=True)
     found += [shutil.which("chrome-headless-shell") or ""]
     return next((f for f in found if f and Path(f).exists()), None)
 
 
 CHROME = chrome()
-needs_chrome = pytest.mark.skipif(CHROME is None, reason="needs Chrome's headless shell (uvx playwright install --only-shell chromium)")
+# CI sets this: there the shell is installed on purpose, so not finding it is a failure, not a skip. A skip passed
+# quietly once, when the shell was installed where the search above did not look.
+REQUIRED = bool(os.environ.get("DESK_REQUIRE_CHROME"))
+needs_chrome = pytest.mark.skipif(CHROME is None and not REQUIRED,
+                                  reason="needs Chrome's headless shell (uvx playwright install --only-shell chromium)")
 
 
 def blob(value) -> str:
@@ -44,6 +50,7 @@ def blob(value) -> str:
 
 def run(page: str, tmp_path: Path, fragment: str = "") -> str:
     """Open the page headless, let its timers run, and return what it wrote into #selftest."""
+    assert CHROME, "Chrome's headless shell was not found, and DESK_REQUIRE_CHROME says it should be there"
     path = tmp_path / "page.html"
     path.write_text(page, encoding="utf-8")
     done = subprocess.run([CHROME, "--headless", "--no-sandbox", "--disable-gpu", "--allow-file-access-from-files",
