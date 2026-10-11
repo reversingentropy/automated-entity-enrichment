@@ -359,3 +359,82 @@ def test_the_model_that_answered_is_remembered_for_the_jobs_to_store(monkeypatch
     g.generate_json(["strong", "light"], "p", Out)
     # The chain fell through, so the answer came from the weaker model.
     assert g.LAST_MODEL == "light"
+
+
+def test_a_model_that_does_not_answer_is_not_waited_on_again_this_run(monkeypatch):
+    # Three nights of jobs sat silent for their whole time limit on requests that never came back.
+    import httpx
+    import pytest
+    import src.shared.gemini_client as g
+    from pydantic import BaseModel
+
+    class Out(BaseModel):
+        ok: str
+
+    calls, waits = [], []
+
+    def raw(model, prompt, schema, thinking_level):
+        calls.append(model)
+        if model == "flash":
+            raise httpx.ReadTimeout("The read operation timed out")
+        return '{"ok": "yes"}'
+
+    monkeypatch.setattr(g, "_raw_call", raw)
+    monkeypatch.setattr(g.time, "sleep", waits.append)
+    monkeypatch.setattr(g, "_SPENT", set())
+    monkeypatch.setattr(g, "_SILENT", set())
+    with pytest.raises(httpx.ReadTimeout):
+        g.generate_json(["flash"], "p", Out)
+    assert calls == ["flash"] and waits == []          # a timeout is not retried: it would only wait the same again
+    with pytest.raises(RuntimeError, match="did not answer"):
+        g.generate_json(["flash"], "p", Out)
+    assert calls == ["flash"]                          # nor asked again this run
+    assert g.generate_json(["flash", "lite"], "p", Out).ok == "yes" and calls == ["flash", "lite"]
+
+
+def test_an_overload_is_waited_out_as_asked_then_set_aside(monkeypatch):
+    import pytest
+    import src.shared.gemini_client as g
+    from pydantic import BaseModel
+
+    class Out(BaseModel):
+        ok: str
+
+    calls, waits = [], []
+
+    def raw(model, prompt, schema, thinking_level):
+        calls.append(model)
+        raise RuntimeError("503 UNAVAILABLE. gemini-3.8-flash is currently experiencing high demand. Please retry in 30s.")
+
+    monkeypatch.setattr(g, "_raw_call", raw)
+    monkeypatch.setattr(g.time, "sleep", waits.append)
+    monkeypatch.setattr(g, "_SPENT", set())
+    monkeypatch.setattr(g, "_SILENT", set())
+    with pytest.raises(RuntimeError, match="high demand"):
+        g.generate_json(["gemini-3.8-flash"], "p", Out)
+    assert len(calls) == 4 and waits == [31.0, 31.0, 31.0]
+    with pytest.raises(RuntimeError, match="did not answer"):
+        g.generate_json(["gemini-3.8-flash"], "p", Out)
+    assert len(calls) == 4
+
+
+def test_a_call_goes_to_generate_content_with_the_thinking_level_and_the_schema(monkeypatch):
+    # Not the Interactions API: its SDK client retried a 503 by itself, sleeping as told, and the job never heard.
+    import src.shared.gemini_client as g
+    from pydantic import BaseModel
+
+    class Out(BaseModel):
+        ok: str
+
+    sent = {}
+
+    class Models:
+        def generate_content(self, model, contents, config):
+            sent.update(model=model, contents=contents, config=config)
+            return type("R", (), {"text": '{"ok": "yes"}'})()
+
+    monkeypatch.setattr(g, "get_client", lambda: type("C", (), {"models": Models()})())
+    assert g._raw_call("gemini-3.8-flash", "p", Out, "high") == '{"ok": "yes"}'
+    assert sent["model"] == "gemini-3.8-flash"
+    assert sent["config"].thinking_config.thinking_level.value == "HIGH"
+    assert sent["config"].response_json_schema == Out.model_json_schema()
