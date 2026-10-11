@@ -7,8 +7,8 @@ on:
     # four clocks: separately, a late Job 2 and an on-time Job 3 overlapped,
     # and a night's entities waited a day to be resolved.
     - cron: '0 16 * * *'
-    # 04:00 UTC = noon Singapore. Second run of the day, same chain.
-    - cron: '0 4 * * *'
+    ## 04:00 UTC = noon Singapore. Second run of the day, same chain. Stopping for now.
+    #- cron: '0 4 * * *'
   workflow_dispatch:
 
 # Shared with the single-job workflows, so a manual run waits for the night's.
