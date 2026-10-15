@@ -101,15 +101,16 @@ practice records the first time, **How this works** in the tray, **Your
 sheet** at the top with every decision, the filters and the two downloads.
 
 Nothing is pre-assigned: there is one pile, latest news first, and the
-next card that matches your groups and languages, that nobody has decided
-and nobody holds, is checked out to you as it is dealt. It is yours until
-you stamp it, with no time limit: sign out or close the laptop and it is
-the first card you see next time. Nobody else is ever dealt it, so no
-record is ever worked twice. The count in the masthead says how many the
-others have done.
+database deals the next card that matches your groups and languages, that
+has something left to decide and that nobody holds (`take_next` in
+`sql/15_desk_queue.sql`). You hold one card at a time. It stays yours while
+you work: the page renews the hold every 3 minutes while you click or type,
+and after 60 minutes with neither it goes back to the pile. Nobody else is
+ever dealt a card you hold, a decision is saved only by the person holding
+the card, and a colleague's decision is never replaced. The whole of it, for
+the team: `docs/load-balancing.md`.
 
-Someone away with a card on their desk keeps it until they return. To put
-it back in the pile:
+A hold left behind lapses by itself after the hour. To put one back sooner:
 
 ```bash
 python -m src.export --holds                    # who has which card
@@ -201,8 +202,8 @@ folder, as before.
 | Table or file | Holds | Who may |
 |---|---|---|
 | `deck` | one row per card | reviewers read; the nightly job writes |
-| `reviews` | one decision per proposal, the whole label | reviewers read all, write their own |
-| `claims` | who has which card open | reviewers read; written only through `claim_card` / `release_card` |
+| `reviews` | one decision per proposal, the whole label | reviewers read all; written only through `decide` / `mark_done` (sql/15) |
+| `claims` | who has which card open, and since when | reviewers read; written only through `take_next` / `claim_card` / `renew_card` / `release_card` / `decide` |
 | `access_requests` | who asked for an account | anyone may insert; only the service role reads |
 | `change_log`, `weekly_log` | the evaluation's two logs | each reviewer their own; the service role all |
 | bucket `desk/desk.json` | search index, NPT map, noted list, the pipeline's status | reviewers read |

@@ -100,7 +100,8 @@ local file also has an advantage the artifact does not, in that it may start
 a download.
 
 A Chinese name confirmed against an English record adds a row to the
-approved-changes sheet, "Variant name", because TTE holds the Chinese name for
+approved-changes sheet, "Non-English name" (the reviewers' term; the first desk
+and the weekly sheet still say "Variant name"), because TTE holds the Chinese name for
 only one in four of the people the news mentions and the review is where the
 missing ones are found. A "create a record?" for a non-Latin name says the
 English spelling was the model's guess and opens the search first, which
