@@ -60,6 +60,10 @@
     for (let r = 0; r < 3; r++) for (const g of groups) { sel.value = g; sel.dispatchEvent(new Event("change")); await tick(2); }
     await settled();
     out.oneHoldAfterTypes = F.mine().length <= 1 && (F.mine()[0] || null) === DEALT;
+    // updating and creating apart: a new person is under "Create new records", never "People"; the groups never move
+    const newP = CARDS.find(c => c.isNew && c.type === "PERSON");
+    out.newRecordsApart = !!newP && groupOf(newP) === "new records" && CARDS.filter(c => groupOf(c) === "people").every(c => !c.isNew)
+      && groups.join() === "all,people,organisations,other changes,new records";
     for (const ls of [["zh"], ["en"], ["en", "zh"], ["zh"], ["en", "zh"]]) {
       act("settings"); document.querySelectorAll("#veil .lang input").forEach(x => { x.checked = ls.includes(x.value); }); act("savelangs"); await tick(2);
     }

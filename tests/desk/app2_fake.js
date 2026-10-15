@@ -15,7 +15,8 @@
   const me = () => user && user.id;
   const isTest = () => !!(user && user.app_metadata && user.app_metadata.test);
   const langOf = link => /zaobao/.test(link) ? "zh" : /beritaharian/.test(link) ? "ms" : /tamilmurasu/.test(link) ? "ta" : "en";
-  const groupOf = t => t === "PERSON" ? "people" : t === "ORGANISATION" ? "organisations" : t === "LEGAL_ACT" ? "legal acts" : "everything else";
+  // card_group() in sql/16_desk_groups.sql
+  const groupOf = c => c.isNew ? "new records" : c.type === "PERSON" ? "people" : c.type === "ORGANISATION" ? "organisations" : "other changes";
   const rev = pid => F.reviews.find(r => r.pid === pid);
   const keptBy = r => (r && r.decision && r.decision.kept_by) || [];
   const openFor = (c, who) => (c.pids || []).some(pid => { const r = rev(pid); return !r || (r.verdict === "unsure" && r.reviewer !== who && !keptBy(r).includes(who)); });
@@ -33,7 +34,7 @@
     take_next({ langs, grp }) {
       const who = me(); if (!who || isTest()) return null;
       F.claims = F.claims.filter(h => h.reviewer !== who);
-      const ok = d => (!grp || grp === "all" || groupOf(d.card.type) === grp)
+      const ok = d => (!grp || grp === "all" || groupOf(d.card) === grp)
         && (d.card.sources || []).some(s => (langs || ["en", "zh", "ms", "ta"]).includes(langOf(s.link || "")))
         && openFor(d.card, who) && !(holdOf(d.key) && live(holdOf(d.key)));
       const order = (a, b) => (newest(b.card) > newest(a.card) ? 1 : newest(b.card) < newest(a.card) ? -1 : 0) || (a.card.i - b.card.i) || (a.key < b.key ? -1 : 1);
