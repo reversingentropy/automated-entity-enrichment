@@ -95,7 +95,7 @@ a build step.
 ## What a reviewer sees
 
 Sign in, then once per browser: the languages they read and which groups to
-work on (people, organisations, legal acts, everything else), changeable
+work on (people, organisations, other vocab changes, create new records), changeable
 under **settings** in the masthead. Then the desk, as in the zip: three
 practice records the first time, **How this works** in the tray, **Your
 sheet** at the top with every decision, the filters and the two downloads.

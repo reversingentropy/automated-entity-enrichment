@@ -18,10 +18,13 @@ at the same time, and the changes to one record are decided together.
 1. **One pile, in news order.** Every record with something left to decide is in one pile. The record whose
    newest article is most recent comes first.
 2. **Filtered for you.** You are only given records with at least one article in a language you read, and only
-   of the type you chose ("All types", "People", "Organisations", "Legal acts" or "Everything else").
+   of the group you chose: "All records", "People", "Organisations", "Other vocab changes" (changes to any other
+   existing record) or "Create new records" (every new record, whatever its type). Updating a record and creating
+   one are kept apart because they are different decisions; only people and organisations have a group of their
+   own, because over five weeks they were 87 of every 100 decisions on existing records.
 3. **The database chooses, not the page.** When you press Start, or finish a record, the page asks the database
    for your next record. The database takes the first record in the pile that:
-   - you can read and is of your type,
+   - you can read and is in your group,
    - has something left for you to decide, and
    - nobody else holds.
 
@@ -151,6 +154,7 @@ Measured, not assumed:
 | A hold lapses after no clicking or typing for | 60 minutes | `hold_minutes()` in `sql/15_desk_queue.sql`, and `HOLD_MIN` in the page |
 | The page renews the hold every | 3 minutes, if there was activity | `RENEW_MS` in `prototype/desk.template.html` |
 | Order of the pile | newest article first | `take_next()` in `sql/15_desk_queue.sql` |
+| The groups | People, Organisations, Other vocab changes, Create new records | `card_group()` in `sql/16_desk_groups.sql`, and `GROUPS` in the page |
 
 ## For the technically minded
 
