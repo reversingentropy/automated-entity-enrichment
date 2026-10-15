@@ -15,17 +15,22 @@ laptop, and would run unchanged from a static host later.
    `claims` and `access_requests`, the two claim functions, and the private
    `desk` bucket.
 
-   Before running it, check what key the **news feed** writes `article`
-   with. The feed is not this repository's code. If it uses the anon key,
-   RLS on `article` will stop it; give it the service role key first.
+   The news feed is Job 0 in this repository and writes `article` with the
+   service role key, which RLS does not apply to.
 
    Then **run `sql/12_field_test.sql`**: the columns that record which model
    answered, and the evaluation's two logs. Then **`sql/13_desk_record.sql`**:
    the function the desk calls for the properties of a record a reviewer
-   finds by search. All three files are safe to re-run.
+   finds by search. Then `sql/14` to `sql/17`: duplicate articles, the
+   desk's queue, its four groups, and `article` and `rss_feeds` closed to
+   the page's key (they had a policy and a grant from before this
+   repository). Every file is safe to re-run.
 
-2. **Turn sign-ups off**: Authentication > Providers > Email > "Allow new
-   users to sign up" off. Accounts are made by hand.
+2. **Turn sign-ups off**: Authentication > Sign In / Providers > "Allow new
+   users to sign up" off. Accounts are made by hand. This matters more than
+   anything in the SQL: every signed-in account is treated as a reviewer, so
+   with sign-ups on, anyone with an email address can read the deck and save
+   decisions. It was found still on on 15 Oct 2026.
 
 3. **Create the accounts**, one line each, with the service role key
    already in `.env`:

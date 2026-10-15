@@ -113,7 +113,13 @@ is shown as it is and never drawn on; when the pencilled value sat on the
 record, the first reviewer could not tell the proposal from the record. An
 award value carries a badge, *in TTE* or *not in TTE yet*, because an award
 must have its own record before it can go on a person's, and a reviewer who
-has to notice that unaided will forget to. The labels are plain: *Same* /
+has to notice that unaided will forget to. A name in a link field (Awards,
+Affiliations, Parent Organisation, Founder) is offered the way the sheet will
+carry it, in English: the record's own name when TTE has it, the English of
+"高级律师 (Senior Counsel)" when it does not. Two wordings of one record are
+one value, and a name the record already holds is not offered at all; the
+cataloguers' second round of feedback found an award offered in Chinese to a
+record that held it in English, and one affiliation asked twice. The labels are plain: *Same* /
 *Not this record* / *Keep for review*, then *Accept* / *No change* / *Edit the
 wording*; the desk metaphor's own words ("pencil it in", "pending tray",
 "look further back") cost the first reviewer time and are gone.

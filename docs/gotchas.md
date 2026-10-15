@@ -58,3 +58,24 @@ Each of these cost at least an evening.
   candidates at similarity 1. An omission with an exact own-spelling hit is
   built as the identity question (`omitted_exact` in `src/export/cards.py`);
   the row keeps its reasoning, which is the truth of what happened.
+- The Gemini SDK's Interactions API retries 408, 409, 429 and 5XX by itself,
+  honours any Retry-After without a cap, and has no timeout by default. A
+  503 it was quietly retrying held each job silent until GitHub killed it,
+  three nights running. The jobs call `generateContent` with a timeout
+  (`REQUEST_TIMEOUT_S` in `src/shared/gemini_client.py`), so a stuck request
+  fails in five minutes and says why.
+- An article's url is not the story. The Straits Times moves an article
+  between sections, CNA rewrites the headline in its address, and Zaobao is on
+  two domains, so one story arrived as two rows. Job 0 matches the outlet's
+  story number, or the same outlet and title within two days
+  (`src/shared/stories.py`), and keeps the copy marked as judged rather than
+  deleting it: a deleted row is inserted again by the next run.
+- Every signed-in Supabase account can do whatever the policies allow
+  `authenticated`, and sign-up is a dashboard switch the SQL cannot set. On
+  15 Oct 2026 it was still on, which would have let anyone with an email
+  address make themselves a reviewer. Check it after any project change
+  (Authentication, "Allow new users to sign up").
+- A table made in the dashboard before the SQL here can carry its own
+  policies and grants. `article` let the desk page's public key read every
+  row, the scraped text included, though `sql/11` had turned row level
+  security on; `sql/17` drops its policies and grants.

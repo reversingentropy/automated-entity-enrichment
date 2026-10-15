@@ -12,8 +12,9 @@ historical archive runs the same code through an institutional model.
 ## How it works
 
 ```
-RSS feeds ──> article   (Job 0, src/job0_ingest: the first step of every run,
-                         reading the feed list from the rss_feeds table)
+RSS feeds ──> article   (Job 0, src/job0_ingest: every two hours, reading the
+                         feed list from the rss_feeds table; a story already
+                         stored at another address is kept as a judged copy)
                   │
    ┌──────────────┴───────────────────┐
    │ 1  RELEVANCE            00:00 SGT│  queue: relevant IS NULL
@@ -38,18 +39,19 @@ RSS feeds ──> article   (Job 0, src/job0_ingest: the first step of every run
                   │
    ┌──────────────┴───────────────────┐
    │ 5  REVIEW           the desk     │  a person: same record? then each change;
-   └──────────────┬───────────────────┘  a zip, or online with one reviewer per card
+   └──────────────┬───────────────────┘  online, the database deals one record at a time
                   │
    ┌──────────────┴───────────────────┐
    │ 6  SHEETS            two CSVs    │  every decision; approved changes for
-   └──────────────────────────────────┘  a cataloguer, plus variant names
+   └──────────────────────────────────┘  a cataloguer, plus non-English names
 ```
 
-Stages 1-3 and the loader run nightly, and so does the deck publish for
-stage 5. Stage 4 is `src/export/cards.py`; stage 5 is the review desk, the
-same page built as a zip or served with the database behind it
-([docs/online.md](docs/online.md)); stage 6 is what the desk hands back,
-and nothing applies it. Ordering between the jobs is a convenience, not
+Job 0 runs every two hours on its own. Stages 1-3 and the loader run once a
+night, and so does the deck publish for stage 5. Stage 4 is
+`src/export/cards.py`; stage 5 is the review desk, served by Cloudflare with
+the database behind it ([docs/online.md](docs/online.md), and
+[docs/load-balancing.md](docs/load-balancing.md) for how records are shared
+out); stage 6 is what the desk hands back, and nothing applies it. Ordering between the jobs is a convenience, not
 a requirement: each stage's queue is a column, so a job run out of order
 simply finds no work.
 
@@ -67,14 +69,17 @@ enforced. Read that first if you're meeting this system cold.
 src/
   shared/           the Supabase and Gemini clients, response schemas, paged
                     reads, the TTE field rules and field-name corrections
+  job0_ingest/      the feeds into article, a story already stored kept as a copy
   job1_relevance/   fetch -> prompt -> update
   job2_extraction/  fetch -> scraper -> prompt -> update
   job3_resolution/  fetch -> candidates -> rank -> prompt -> update
                     requeue: what a TTE update invalidates
   load_tte/         the authority file from the Storage bucket into entities
-  export/           cards (the review data), desk_template.html (the review
-                    page), package (a zip for reviewers), proposals (CSV),
-                    reviews (collect decisions)
+  export/           cards (the review data), desk_template.html (the first
+                    desk, still the zip's), package (a zip for reviewers),
+                    proposals (CSV), reviews (collect decisions), site (the
+                    online page)
+prototype/          desk.template.html: the second desk, the one online
   eval/             the resolution prompt against frozen cases (cases.json)
   backfill/         the outlets' archives: collect, split, bodies, prompts
                     for an internal model, ingest and resolve by CSV
@@ -82,7 +87,8 @@ config/             pipeline.toml: models, thinking, batching and pacing
 prompts/            relevance, extraction, resolution; tte/ holds what the
                     code injects into them or enforces after
 sql/                numbered setup scripts, run in order
-tests/              offline unit tests, no network
+tests/              unit tests, no network; the desk in headless Chrome, the
+                    queue in a throwaway Postgres (Docker)
 docs/               design.md, gotchas.md, review.md, backfill.md, the
                     explainer page and the paper
 data/               ignored: the archive, the model's answers, built packages
@@ -105,8 +111,11 @@ uv run pytest
 ```
 
 Every test runs offline against fixtures: no network, no credentials, no
-Gemini calls. Integration behaviour is checked by running a job with
-`--dry-run` and `--limit`.
+Gemini calls. The desk's tests drive the page in Chrome's headless shell
+(`uvx playwright install --only-shell chromium`), and the queue's run the
+desk's SQL in a throwaway Postgres in Docker; each is skipped when its tool is
+missing. Integration behaviour is checked by running a job with `--dry-run`
+and `--limit`.
 
 ### Environment
 
@@ -134,9 +143,12 @@ workflow declares `environment: automated-tte-enrichment`; without that line
 does not read `.env`. Scheduled workflows fire from the
 default branch only, hours late under load, and are disabled after 60 days of
 inactivity. So the jobs run one after another in a single workflow,
-`nightly.yml`: on separate clocks, a late Job 2 overlapped Job 3 and a
-night's entities waited a day. Each single-job workflow remains, to run by
-hand, and all of them share one queue so nothing runs alongside anything else.
+`nightly.yml`, at midnight Singapore time: on separate clocks, a late Job 2
+overlapped Job 3 and a night's entities waited a day. Job 0 is the exception:
+`job0_ingest.yml` collects articles every two hours, because a feed lists only
+its newest 20 to 50 items and twice a day missed what came out in between. Each
+single-job workflow remains, to run by hand, and the pipeline's share one
+queue so nothing runs alongside anything else.
 
 ### Database
 
@@ -146,7 +158,10 @@ resolution queue; `06` to `10` are the later migrations (body fetch,
 recorded CREATE_NEW, the dropped claim function, the backfill flag, the
 article subject); `11` is the online desk (row level security everywhere,
 the deck, reviews, claims and access-request tables, the bucket); `12` is
-the field test (which model answered, the evaluation's two logs). Each ends
+the field test (which model answered, the evaluation's two logs); `13` the
+desk's record lookup; `14` duplicate articles; `15` the desk's queue (holds
+that lapse after an hour, decisions saved only through `decide`); `16` its
+four groups; `17` closes the article table to the page's key. Each ends
 with an explicit `grant ... to service_role`, which Supabase does not always
 do for you.
 
@@ -195,20 +210,20 @@ funnel, regenerated with `python -m src.export --numbers`.
 
 | Stage | State |
 |---|---|
-| 1. Relevance | twice a day (midnight and noon SGT), queue drained; 149 of 3,511 live articles relevant |
-| 2. Extraction | twice a day; 309 entities from the live articles |
-| 3. Resolution | twice a day; all 309 resolved (101 matched, 206 new, 2 unsure) |
+| 1. Relevance | nightly (midnight SGT; articles collected every two hours), queue drained; 149 of 3,511 live articles relevant |
+| 2. Extraction | nightly; 309 entities from the live articles |
+| 3. Resolution | nightly; all 309 resolved (101 matched, 206 new, 2 unsure) |
 | TTE loader | first step of each run, for any new dump uploaded; 52,437 records from TTE-DELTA_20260901 |
 | 4. Consolidation | merged into the card layer; not a pipeline stage yet |
-| 5. Review | the desk online (accounts, a card held by one reviewer until stamped) and as a zip; 170 cards, none decided yet; two trial rounds on the offline desk (14 and 38 records) |
+| 5. Review | the desk online (accounts; the database deals one record at a time, and a hold lapses after an hour) and as a zip; 170 cards, none decided yet; two trial rounds on the offline desk (14 and 38 records) |
 | 6. Export | `--weekly`: the week's approved changes as the reviewers' Excel file; no automatic apply, by design |
 | Archive | 295,279 articles (2015 on), 27,941 relevant, 12,447 through extraction (48,387 entities), all answered by the internal model. The answers are kept in files; the articles and entities are still in the database, about 100 MB, until moved out. `python -m src.backfill proposals` writes the unreviewed spreadsheet |
 
-Two reviewers have been through the desk; the second's questions were about
-working in parallel, which the online version answers once `sql/11` is run
-and the accounts exist ([docs/online.md](docs/online.md)). Run
-`sql/10_role.sql` so the extraction model's "subject" reaches the deck;
-until then the headline stands in.
+Since then (to 15 October): five cataloguers tried both desks and chose the
+second, which is now the online desk; two rounds of their feedback are in it.
+The online desk shares records out through the database
+([docs/load-balancing.md](docs/load-balancing.md)) and has not yet been used
+for real.
 
 Known and unfinished:
 
