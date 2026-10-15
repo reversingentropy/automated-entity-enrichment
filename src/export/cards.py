@@ -22,7 +22,8 @@ from src.shared.description import (
     SENTENCE_LIMIT, SURVIVES_FLOOR, additions, judge, over_limit, sentence_count, sentence_edits,
     split_sentences, survives)
 from src.shared.names import (
-    LINKED_FIELDS, YEAR, house, plain, renamed, tries_for)
+    GLOSS_WITH_ORIGINAL, LINKED_FIELDS, ORIGINAL_WITH_GLOSS, TRAILING_YEAR, YEAR, house, plain, renamed, tries_for,
+    without_year)
 from src.shared.pagination import fetch_all
 from src.shared.supabase_client import column_exists, get_client
 
@@ -156,9 +157,34 @@ PROSE = {"Description", "Achievements"}
 
 
 def _gloss(value: str) -> str:
-    """The English in brackets after an original-language name, else the value itself."""
-    m = re.search(r"\(([^()]*[A-Za-z][^()]*)\)\s*$", value)
-    return (m.group(1) if m else value).strip()
+    """
+    The English in brackets after an original-language name, else the value itself. A year
+    after it stays: "功绩奖章 (Meritorious Service Medal) (2024)" is "Meritorious Service Medal
+    (2024)", which is how TTE holds the award, so the record that has it is not offered it again.
+    """
+    year = TRAILING_YEAR.search(value)
+    name = value[:year.start()] if year else value
+    m = re.search(r"\(([^()]*[A-Za-z][^()]*)\)\s*$", name)
+    if not m:
+        return value.strip()
+    return m.group(1).strip() + (" " + year.group(0).strip() if year else "")
+
+
+# A script other than Latin: Chinese, Tamil, Jawi. Accented Latin ("Société Générale") is not one.
+NON_LATIN = re.compile(r"[^\x00-\u024F\u1E00-\u1EFF\u2000-\u206F]")
+
+
+def _english(value: str) -> str:
+    """
+    A name written with its original-script form beside it, either way round, as the English
+    alone, keeping a year after it: "高级律师 (Senior Counsel)" is "Senior Counsel", "National
+    University Hospital (新加坡国立大学医院)" is "National University Hospital". Else the value.
+    """
+    m = ORIGINAL_WITH_GLOSS.match(without_year(value)) or GLOSS_WITH_ORIGINAL.match(without_year(value))
+    if not m or not NON_LATIN.search(m.group("original")) or NON_LATIN.search(m.group("gloss")):
+        return value
+    year = TRAILING_YEAR.search(value)
+    return m.group("gloss").strip() + (" " + year.group(0).strip() if year else "")
 
 
 def news_values(text) -> list[str]:
@@ -775,22 +801,67 @@ def named_as_tte(change: dict) -> None:
     Board", so the reviewer is not asked to reword a house-style prefix and
     the sheet carries the value the cataloguer will type. A record that is
     merely nearest is left as written; the desk offers it as one click.
+
+    A name TTE does not hold is still written in English, as TTE writes these
+    fields: "高级律师 (Senior Counsel)" was offered as an award in Chinese, and
+    the reviewers said no field but a variant name takes Chinese. Once named,
+    two wordings of one record are one value: "Land Transport Authority" from
+    two articles and the record's own name from a third were asked as the
+    same affiliation twice. And a name the record already holds is no change:
+    "功绩奖章 (Meritorious Service Medal) (2024)" was offered to a record
+    holding "Meritorious Service Medal (2024)". False when nothing is left.
     """
-    swap = {a["name"]: renamed(a["name"], a["as"]) for a in change["inTTE"] if a.get("uid") and a.get("as")}
+    swap = {}
+    for a in change["inTTE"]:
+        if a.get("uid") and a.get("as"):
+            swap[a["name"]] = renamed(a["name"], a["as"])
+        elif not a.get("uid"):
+            swap[a["name"]] = _english(a["name"])
     swap = {k: v for k, v in swap.items() if k != v}
-    if not swap:
-        return
-    values = [swap.get(v, v) for v in _values(change["adding"])]
-    change["wrote"] = {v: k for k, v in swap.items()}
-    change["adding"] = DELIMITER.join(values)
+    key = lambda v: house(v) or plain(v)
+    held = {key(v) for v in change.get("existing") or []}
+    named, seen = [], set()
+    for v in _values(change["adding"]):
+        v = swap.get(v, v)
+        if key(v) not in seen:
+            seen.add(key(v))
+            named.append(v)
+    values = [v for v in named if key(v) not in held]
+    # A disagreement over the year is still one, even when the record holds one of the years.
+    rival = bool(change.get("conflict")) and any(key(swap.get(sb["value"], sb["value"])) not in held
+                                                 for sb in change.get("saidBy") or [])
+    if not values and not rival:
+        return False
+    if swap:
+        change["wrote"] = {v: k for k, v in swap.items()}
+    change["adding"] = DELIMITER.join(values or named)
     change["result"] = result_of(change["strategy"], change.get("existing") or [], change["adding"])
+    inTTE, seen = [], set()
     for a in change["inTTE"]:
         if a["name"] in swap:
             a["wrote"], a["name"] = a["name"], swap[a["name"]]
-    for pv in change.get("perValue") or []:
-        pv["value"] = swap.get(pv["value"], pv["value"])
-    for sb in change.get("saidBy") or []:
-        sb["value"] = swap.get(sb["value"], sb["value"])
+        if key(a["name"]) not in seen:
+            seen.add(key(a["name"]))
+            inTTE.append(a)
+    change["inTTE"] = inTTE
+    if change.get("perValue"):
+        merged: dict[str, dict] = {}
+        for pv in change["perValue"]:
+            pv["value"] = swap.get(pv["value"], pv["value"])
+            if key(pv["value"]) in held:
+                continue
+            m = merged.setdefault(key(pv["value"]), {**pv, "sources": [], "variants": []})
+            m["sources"] = sorted(set(m["sources"]) | set(pv.get("sources") or []))
+            m["variants"] = sorted(set(m["variants"]) | set(pv.get("variants") or []))
+        change["perValue"] = list(merged.values())
+    if change.get("saidBy"):
+        said = []
+        for sb in change["saidBy"]:
+            sb = {**sb, "value": swap.get(sb["value"], sb["value"])}
+            if sb not in said and (rival or key(sb["value"]) not in held):
+                said.append(sb)
+        change["saidBy"] = said
+    return True
 
 
 def record_flags(value: str, lookup: "Lookup", soft: bool = False) -> list[dict]:
@@ -809,6 +880,10 @@ def record_flags(value: str, lookup: "Lookup", soft: bool = False) -> list[dict]
             got = lookup.find(t)
             if got.get("uid"):
                 found = got
+                # Found through one half of "功绩奖章 (Meritorious Service Medal)": the half
+                # is the record's name, the value as written is not, so it is renamed too.
+                if not found.get("as") and plain(t) != plain(without_year(v)):
+                    found = {**found, "as": lookup.canonical_name.get(found["uid"], "")}
                 break
             if got.get("nearest") and not found.get("nearest"):
                 found = got
@@ -1094,11 +1169,14 @@ def build_cards(include_new: bool = True, backfill: bool = False,
                     quotes[link] = better
             if quotes:
                 ch["quotes"] = quotes
+        kept = []
         for ch in card["changes"]:
             if ch["strategy"] != "MERGE":
                 ch["inTTE"] = flags_for(ch["field"], ch["adding"])
-                if ch["inTTE"]:
-                    named_as_tte(ch)
+                if ch["inTTE"] and not named_as_tte(ch):
+                    continue
+            kept.append(ch)
+        card["changes"] = kept
         card["options"].sort(key=lambda o: -(o["similarity"] or 0))
         # Every candidate answers "and what would that change?", not just the
         # one the model picked -- a reviewer who overrides the match needs the
@@ -1112,14 +1190,28 @@ def build_cards(include_new: bool = True, backfill: bool = False,
             # so for any other candidate everything the article adds is offered
             # rather than assumed.
             same = option["uid"] == card["picked"]
-            option["extra"] = derived_changes(rows, covered if same else set())
-            for row in option["extra"]:
+            extra = []
+            for row in derived_changes(rows, covered if same else set()):
                 row["inTTE"] = flags_for(row["field"], row["adding"])
-                if row["inTTE"]:
-                    named_as_tte(row)
+                if row["inTTE"] and not named_as_tte(row):
+                    continue
+                extra.append(row)
+            option["extra"] = extra
         if card["isNew"]:
-            card["newsLinked"] = {f: flags_for(f, news[f]) for f in list(LINKED_FIELDS) + list(SOFT_LINKED_FIELDS)
-                                  if news.get(f) and flags_for(f, news[f])}
+            card["newsLinked"] = {}
+            # A record to create takes these names the same way: as TTE names them, in English
+            # ("全国职工总会 (National Trades Union Congress)" was its parent on the create screen).
+            for f in list(LINKED_FIELDS) + list(SOFT_LINKED_FIELDS):
+                value = DELIMITER.join(news_values(news.get(f)))   # a list the model joined with commas, split
+                flags = flags_for(f, value) if value else None
+                if not flags:
+                    continue
+                named = {"field": f, "strategy": "APPEND", "existing": [], "adding": value, "inTTE": flags}
+                named_as_tte(named)
+                card["newsLinked"][f] = named["inTTE"]
+                for nf in card["newsFields"]:
+                    if nf["key"] == f:
+                        nf["value"] = named["adding"]
 
     # What is dealt, what is noted, and what is merely footnoted.
     def anything_to_decide(card: dict) -> bool:

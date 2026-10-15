@@ -17,8 +17,11 @@ DELIMITER = " | "
 YEAR = re.compile(r"\(?\b(?:18|19|20)\d{2}\b\)?")
 TRAILING_YEAR = re.compile(r"\s*\((?:18|19|20)\d{2}\)\s*$")
 HOUSE_STYLE = re.compile(r"^singapore\.?\s+|\s*\(singapore\)$|\s*\([a-z]{2,6}\)|^the\s+|,?\s+singapore$")
-# "博理中学 (Bendemeer Secondary School)": the original name with its gloss.
-ORIGINAL_WITH_GLOSS = re.compile(r"^(?P<original>[^()]*[^\x00-\x7F][^()]*?)\s*\((?P<gloss>[^()]+)\)\s*$")
+# "博理中学 (Bendemeer Secondary School)": the original name with its gloss, which may have a
+# bracket of its own: "SaferSG合作伙伴个人奖 (SaferSG Partner (Individual) Award)".
+ORIGINAL_WITH_GLOSS = re.compile(r"^(?P<original>[^()]*[^\x00-\x7F][^()]*?)\s*\((?P<gloss>[^()]+(?:\([^()]*\)[^()]*)*)\)\s*$")
+# "National University Hospital (新加坡国立大学医院)": the same pair, the English first.
+GLOSS_WITH_ORIGINAL = re.compile(r"^(?P<gloss>[^()]*[A-Za-z][^()]*?)\s*\((?P<original>[^()]*[㐀-鿿][^()]*)\)\s*$")
 
 
 def values(text) -> list[str]:
@@ -55,7 +58,7 @@ def renamed(value: str, tte_name: str) -> str:
 def tries_for(value: str) -> list[str]:
     """What to look up for one value: the original and its gloss, or the value itself."""
     name = without_year(value)
-    m = ORIGINAL_WITH_GLOSS.match(name)
+    m = ORIGINAL_WITH_GLOSS.match(name) or GLOSS_WITH_ORIGINAL.match(name)
     return [m.group("original").strip(), m.group("gloss").strip()] if m else [name]
 
 
