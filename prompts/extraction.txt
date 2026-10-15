@@ -109,6 +109,10 @@ are not:
   other organisation, and explicitly excludes the ones in Education.
 - "Achievements" excludes awards, a repeat of the description, and the
   person's relationships or misdeeds.
+- "Awards" is an honour or prize conferred on the person or organisation: a
+  medal, an award, a prize. A designation or appointment is not an award:
+  "Senior Counsel" is a lawyer's designation, and goes in Description with
+  the person's other posts.
 
 {field_rules}
 
