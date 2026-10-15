@@ -21,3 +21,4 @@ create table public.extracted_entities (id bigint primary key);
 create table public.entities (uid text primary key);
 create table public.tte_imports (id bigint primary key);
 create table public.candidate_matches (id bigint primary key);
+create table public.rss_feeds (id bigint primary key);

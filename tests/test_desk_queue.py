@@ -1,7 +1,7 @@
 """
-The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql) in a real Postgres: who is given which record, for how long, and who may decide it.
+The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql) and what the page's key can reach (sql/17) in a real Postgres: who is given which record, for how long, and who may decide it.
 
-Runs the desk's own SQL (sql/11, sql/15, sql/16) in a throwaway Postgres 16 container, on top of just enough of Supabase
+Runs the desk's own SQL (sql/11, sql/15, sql/16, sql/17) in a throwaway Postgres 16 container, on top of just enough of Supabase
 (tests/sql/supabase_stub.sql): each call is made as a signed-in reviewer, through the same role and request
 settings Supabase uses. Needs Docker; skipped without it. Nothing reaches the project's database.
 """
@@ -48,7 +48,8 @@ def db():
         time.sleep(1)
         # sql/15 and sql/16 twice each: they must be safe to run again, in either order
         for f in ("tests/sql/supabase_stub.sql", "sql/11_desk_online.sql", "sql/15_desk_queue.sql", "sql/15_desk_queue.sql",
-                  "sql/16_desk_groups.sql", "sql/15_desk_queue.sql", "sql/16_desk_groups.sql"):
+                  "sql/16_desk_groups.sql", "sql/15_desk_queue.sql", "sql/16_desk_groups.sql",
+                  "sql/17_article_private.sql", "sql/17_article_private.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
         yield
@@ -247,3 +248,16 @@ def test_a_record_is_settled_when_every_proposal_has_a_final_decision_and_unsett
     assert settled() == "t"
     run_sql("update public.deck set card = jsonb_set(card, '{pids}', '[1, 2, 3]') where key = 'x';")   # tonight's publish
     assert settled() == "f" and call(C, "take_next", langs("en")) == "x"
+
+
+def test_the_pages_key_reads_no_article_and_no_feed(db):
+    """The public key in the desk's page could read every article: a policy from before this repository, and a grant."""
+    run_sql('grant select on public.article to anon, service_role; insert into public.article (id) values (1) on conflict do nothing;'
+            'drop policy if exists "read for all" on public.article;'
+            'create policy "read for all" on public.article for select to anon using (true);')
+    assert run_sql("set role anon; select count(*) from public.article;").splitlines()[-1] == "1"       # the hole, as it was
+    run_sql((ROOT / "sql" / "17_article_private.sql").read_text(encoding="utf-8"))
+    for role, table in (("anon", "article"), ("authenticated", "article"), ("anon", "rss_feeds"), ("authenticated", "rss_feeds")):
+        with pytest.raises(RuntimeError, match="permission denied"):
+            run_sql(f"set role {role}; select count(*) from public.{table};")
+    assert run_sql("set role service_role; select count(*) from public.article;").splitlines()[-1] == "1"   # the jobs still can
