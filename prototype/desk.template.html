@@ -219,6 +219,8 @@
   .pill.discard,.pill.noworth{background:#F8E1DE;color:#9A3B32} .pill.keep{background:#FBE8C8;color:#7A4E06}
   .donebtn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:.2rem .6rem;font-size:.82rem;font-weight:600;color:var(--ink)}
   .donebtn.on{background:var(--tick);border-color:var(--tick);color:#fff}
+  .sbtns{display:flex;gap:.35rem;justify-content:flex-end}
+  .people{width:100%;border-collapse:collapse;font-size:.92rem}.people th,.people td{text-align:right;padding:.4rem .6rem;border-top:1px solid var(--rule)}.people th:first-child,.people td:first-child{text-align:left}
   .empty{padding:1.2rem;color:var(--ink3);margin:0}
   .downs{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin-top:1rem}
   .downs .stamp{min-height:0;padding:.7rem 1.1rem}
@@ -639,18 +641,21 @@ const asProse = ch => {
 const sentences = t => String(t || "").split(/(?<=[.!?\u3002])\s+/).filter(Boolean);
 const asReplace = ch => ch.strategy === "APPEND" && SCALAR(ch.field) ? { ...ch, strategy: "REPLACE", verb: "Replace" } : ch;
 const modeOf = (st, k, ch) => st.mode[k] || (ch.strategy === "REPLACE" ? "replace" : "add");
-// A Chinese name confirmed against a record TTE holds only in English is a variant name TTE lacks. It is asked as a
-// change like any other, not added to the sheet unseen, and not asked at all when TTE already holds that name.
+// A Chinese name confirmed against a record TTE holds only in English is a non-English name TTE lacks. It is asked as
+// a change like any other, not added to the sheet unseen, and not asked at all when TTE already holds that name.
+// Called a non-English name, as the cataloguers call it, so only the record's names in another script are shown
+// beside it: an English variant ("LTA") is not one, and Replace would not remove it.
 const plainName = n => String(n || "").replace(/[\s()（）]/g, "");
+const nonLatin = n => /[^\u0000-\u024F\u1E00-\u1EFF\u2000-\u206F]/.test(n);
 let NPT_READY = !ONLINE;   // online, the variant names arrive with the search index, a moment after the deck
 function variantRow(c, o) {
   if (!o || !NPT_READY || !CJK.test(c.entity) || CJK.test(o.name)) return null;
   const held = (NPT[o.uid] || []).concat(o.npt ? [o.npt] : []);
   if (held.some(n => plainName(n) === plainName(c.entity))) return null;
   const zh = c.sources.find(s => langOf(s.link || "") === "zh") || c.sources[0] || {};
-  return { field: "Variant name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held)], result: c.entity, from: zh.link || "", variant: true };
+  return { field: "Non-English name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held.filter(nonLatin))], result: c.entity, from: zh.link || "", variant: true };
 }
-const rowsFor = (c, o) => o ? mergeRows((o.extra || []).concat(o.uid === c.picked ? c.changes : []).map(asReplace).map(asProse)).concat(variantRow(c, o) || []) : [];
+const rowsFor = (c, o) => o ? mergeRows((reopened(c) ? [] : (o.extra || [])).concat(o.uid === c.picked ? onlyNew(c, c.changes) : []).map(asReplace).map(asProse)).concat((!reopened(c) && variantRow(c, o)) || []) : [];
 const chosenOpt = (c, st) => ordered(c)[st.chosen != null ? st.chosen : st.cand];
 let NAMEIDX = null;
 const idxHas = v => { if (!NAMEIDX) NAMEIDX = new Set(INDEX.map(r => normVal(r[1]))); return NAMEIDX.has(normVal(v)); };
@@ -721,7 +726,7 @@ function who(c, st) {
       ${st.full && !o.thin ? `<div class="full">${(o.fields.length ? o.fields : [{ key: "", value: "Nothing recorded" }]).map(x => `<div><span class="k">${esc(x.key)}</span><span>${esc(x.value)}</span></div>`).join("")}</div>` : ""}
     </div>
   </section>
-  ${candRow(c, st, "Closest records:")}
+  ${candRow(c, st, "Records it could be:")}
   ${actions(["same", `Same record${nCh ? ` (${nCh} change${nCh > 1 ? "s" : ""})` : ""}`, nCh ? "" : "already up to date", "go"],
             ["discard", "No thanks", "discard this one", "red"],
             quiet(st))}`;
@@ -742,10 +747,10 @@ function create(c, st) {
       ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
       ${desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
       ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => `<div><span class="k">${esc((FACTS.find(f => f[0] === x.key) || [0, x.key])[1])}</span><span>${esc(gist(x.value, st.full ? 400 : 90))}</span></div>`).join("")}</div>` : ""}
-      ${nf.length > 5 || (desc && desc.length > 170) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show everything the article gave &#9662;"}</button>` : ""}
+      ${nf.length > 5 || (desc && desc.length > 170) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show more &#9662;"}</button>` : ""}
     </div>
   </section>
-  ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Closest records:")}
+  ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Records it could be:")}
   ${actions(["create", "Create a new record", "goes on the sheet", "go"], ["noworth", "Not worth a record", "nothing is created", "red"],
             quiet(st))}`;
 }
@@ -802,10 +807,10 @@ function change(c, st) {
         ${editing && st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}
 </div>`;
   } else {
-    // The variant name has the same Edit and Add / Replace as any list: the reviewer may correct the name, or replace
-    // a variant TTE holds that is wrong.
+    // The non-English name has the same Edit and Add / Replace as any list: the reviewer may correct the name, or
+    // replace one TTE holds that is wrong.
     const vn = vals.filter(v => v.trim()).join(" | ") || c.entity;
-    title = ch.variant ? (replace ? `Make ${vn} this record's only variant name?` : `Add ${vn} to this record as a variant name?`)
+    title = ch.variant ? (replace ? `Make ${vn} this record's only non-English name?` : `Add ${vn} to this record as a non-English name?`)
           : replace ? `Set ${fq(ch.field)} to this?` : ch.strategy === "INSERT_RELATION" ? `Link ${fq(ch.field)} to this record?` : `Add this to ${fq(ch.field)}?`;
     const rowsHtml = vals.map((v, i) => {
       const out = st.out[k + ":" + i], isNew = REL && !inTte(v), refs = refsOf(v);
@@ -816,7 +821,7 @@ function change(c, st) {
     const existing = ch.existing || [], keptVals = vals.filter((v, i) => v.trim() && !st.out[k + ":" + i]);
     const finalLine = (replace ? "" : existing.map(x => `<span class="old">${esc(x)}</span>`).join(" | ") + (existing.length && keptVals.length ? " | " : ""))
       + keptVals.map(v => `<span class="newv ${REL && !inTte(v) ? "nt" : ""}">${esc(v)}</span>`).join(" | ");
-    body = `<div class="row"><div class="tag">${ch.variant ? "Other names in TTE now" : "In TTE now"}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
+    body = `<div class="row"><div class="tag">${ch.variant ? "Non-English names in TTE now" : "In TTE now"}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
       <div class="arrow"><span>after you accept</span><i class="ln"></i><span class="seg2" role="group" aria-label="Add or replace"><button class="${replace ? "" : "on"}" data-act="mode" data-m="add">Add</button><button class="${replace ? "on" : ""}" data-act="mode" data-m="replace">Replace</button></span><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
       <div class="final">${finalLine || "<em>nothing</em>"}</div>
       <div class="row"><div class="tag">${replace ? "New value" : "Adding"}</div><div class="vrows">${rowsHtml}${editing && !replace ? `<button class="addchip" data-act="addval">+ Add</button>` : ""}</div></div>`;
@@ -858,7 +863,13 @@ function finish(c, kind) {
              found: !!(matched && o.thin && !o.cross), done: false });
   const x = LOG[LOG.length - 1];
   x.dropped = matched ? rowsFor(c, o).map(r => r.field).filter(f => !x.accepted.some(a => a.field === f)) : [];
-  if (sb) sendDecision(c, x);
+  if (QUEUE()) {
+    // a changed decision replaces the earlier one on the sheet
+    if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
+    DECIDED.add(c.key); S[c.key] = undefined; NOTICE = "";
+    sendDecision(c, x);
+    return;
+  }
   DECIDED.add(c.key); S[c.key] = undefined; NOTICE = "";
   LIST.splice(cur, 1);
   if (!LIST.length) allDone = true; else cur = Math.min(cur, LIST.length - 1);
@@ -879,8 +890,11 @@ try { langs = JSON.parse(localStorage.getItem("proto-langs") || "null"); } catch
 const readable = c => !langs || cardLangs(c).some(l => langs.includes(l));
 const LOG = [], DECIDED = new Set();
 const TAKEN = new Set();   // online: records another reviewer has decided or holds
-// a card is dealt to you if you can read it, nobody else holds it, and it is not already decided
-const available = c => (readable(c) || MINE.has(c.key)) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
+// a card is dealt to you if you can read it, nobody else holds it, and it is not already decided. Online the database
+// deals (take_next in sql/15_desk_queue.sql) and this only counts what is waiting, by the same rule: a record with a
+// proposal nobody has decided, or one a colleague kept for review, that nobody else holds.
+const available = c => QUEUE() ? (readable(c) || MINE.has(c.key)) && openFor(c) && !HELD.has(c.key)
+                               : (readable(c) || MINE.has(c.key)) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
 
 // ---- online: sign-in, the deck, holding a record, saving each decision -------------------
 // The same database calls as the first desk (src/export/desk_template.html), so the `reviews` rows, the sheets built
@@ -889,7 +903,6 @@ let sb = null, me = null, myName = "", testing = false, loading = "", NOTICE = "
 const MINE = new Set();     // records this reviewer held when the deck was fetched: they come back first
 const CLAIM = new Map();    // record key -> "asking" | true | false | "retry"
 let UNSENT = {};            // record key -> rows the table has not taken yet
-const LOST = new Set(["23505", "42501"]);   // the table already holds another reviewer's decision on it
 if (ONLINE && window.supabase) { try { sb = window.supabase.createClient(ONLINE.url, ONLINE.anonKey); } catch (e) { sb = null; } }
 const unsentKey = () => "desk2-unsent:" + (me ? me.id : "");
 const keepUnsent = () => { if (testing) return; try { localStorage.setItem(unsentKey(), JSON.stringify(UNSENT)); } catch (e) {} };
@@ -949,27 +962,18 @@ async function signedIn(user) {
   loadIndex();
   let rows, reviews, holds;
   try {
-    [rows, reviews, holds] = await Promise.all([pageAll("deck", "key,card", "key"), pageAll("reviews", "pid,card_key,reviewer,decision", "pid"),
+    [rows, reviews, holds] = await Promise.all([pageAll("deck", "key,card", "key"), pageAll("reviews", "pid,card_key,reviewer,verdict,decision,at", "pid"),
                                                 pageAll("claims", "card_key,reviewer,claimed_at", "card_key")]);
   } catch (e) { loading = "The records could not be fetched. Check the connection and reload the page."; return draw(); }
   CARDS.length = 0; rows.map(r => r.card).sort((a, b) => a.i - b.i).forEach(c => CARDS.push(c));
   const byKey = new Map(CARDS.map(c => [c.key, c]));
-  LOG.length = 0; DECIDED.clear(); TAKEN.clear(); TEAM = []; MINE.clear(); HELD.clear(); CLAIM.clear();
-  const seen = new Set(), others = new Set();
-  reviews.forEach(r => {
-    if (seen.has(r.reviewer + "|" + r.card_key)) return;   // one card settles several proposals: one decision
-    seen.add(r.reviewer + "|" + r.card_key);
-    const d = r.decision || {}, x = fromDecision(d, byKey.get(r.card_key));
-    if (r.reviewer === me.id) { LOG.push(x); DECIDED.add(r.card_key); }
-    else { TEAM.push(x); TAKEN.add(r.card_key); others.add(r.reviewer); }
-  });
-  LOG.sort((a, b) => a.when - b.when);
-  TEAM_N = Math.max(1, others.size);
-  holds.forEach(h => { if (h.reviewer === me.id) MINE.add(h.card_key); else HELD.set(h.card_key, h.claimed_at || ""); });
-  // Decisions made while the connection was down go up now; one someone else decided meanwhile is theirs.
+  takeIn(reviews, holds);
+  DEALT = null; DEAL = null; REDO.clear();
+  // Decisions made while the connection was down go up now. Each goes through decide(), which keeps it only if the
+  // record is still this reviewer's: one that went to a colleague meanwhile is theirs, and the reviewer is told.
   try { UNSENT = testing ? {} : JSON.parse(localStorage.getItem(unsentKey()) || "{}"); } catch (e) { UNSENT = {}; }
   Object.keys(UNSENT).forEach(key => {
-    if (TAKEN.has(key) || !byKey.has(key)) { delete UNSENT[key]; return; }
+    if (!byKey.has(key) || !Array.isArray(UNSENT[key])) { delete UNSENT[key]; return; }
     if (!DECIDED.has(key)) { const d = (UNSENT[key][0] || {}).decision; if (d) { LOG.push(fromDecision(d, byKey.get(key))); DECIDED.add(key); } }
   });
   loading = ""; PAGE = "home"; HOMENOTE = "";
@@ -980,9 +984,10 @@ async function signedIn(user) {
   try { welcomed = !!localStorage.getItem("desk2-welcomed"); localStorage.setItem("desk2-welcomed", "1"); } catch (e) {}
   if (!welcomed) welcome(); else if (!langs) settings();
 }
-// A record is shown only once the table says it is this reviewer's; it stays theirs until they decide it, with no expiry.
-// A refusal means someone else has it: the desk moves on and says so once.
+// A record is shown only once the table says it is this reviewer's. Online the database deals it already held, so
+// this only answers for the record dealt; the rest is the prototype's and a test account's local browsing.
 function claimed(c) {
+  if (QUEUE()) return DEALT === c.key && DEAL === null ? true : DEAL === "retry" ? "retry" : "asking";
   if (!sb || testing || DECIDED.has(c.key) || MINE.has(c.key)) return true;
   const s = CLAIM.get(c.key);
   if (s !== undefined) return s;
@@ -996,39 +1001,51 @@ function claimed(c) {
   }).catch(() => { CLAIM.set(c.key, "retry"); draw(); });
   return "asking";
 }
+// A decision goes up through decide(), with the next record handed over in the same call. Until the table has it, it is
+// kept in the browser too, so a closed tab or a dropped connection loses nothing.
 async function sendDecision(c, x) {
-  if (!sb || testing) return;
+  if (!QUEUE()) return;
   const d = toDecision(x, c);
-  UNSENT[c.key] = c.pids.map(pid => ({ pid, card_key: c.key, reviewer: me.id, verdict: d.verdict, decision: { ...d, pid } }));
+  UNSENT[c.key] = pidsToWrite(c).map(pid => ({ pid, verdict: d.verdict, decision: { ...d, pid } }));
   keepUnsent();
-  await flushUnsent();
+  DEAL = "saving"; DEALT = c.key; draw(true);
+  await sendNow(c.key, true);
 }
-// The table keeps one decision per proposal. A refusal because someone else's is already there is told, not hidden;
-// any other failure keeps the decision here and tries again with the next one.
-async function flushUnsent() {
-  for (const key of Object.keys(UNSENT)) {
-    let error = null;
-    try { ({ error } = await sb.from("reviews").upsert(UNSENT[key], { onConflict: "pid" })); } catch (e) { error = e || {}; }
-    if (error && !LOST.has(error.code)) continue;
-    delete UNSENT[key]; keepUnsent();
-    MINE.delete(key); CLAIM.delete(key);
-    Promise.resolve(sb.rpc("release_card", { key })).catch(() => {});
-    if (error) {
-      const x = LOG.find(y => y.key === key);
-      for (let i = LOG.length - 1; i >= 0; i--) if (LOG[i].key === key) LOG.splice(i, 1);
-      DECIDED.delete(key); TAKEN.add(key);
-      NOTICE = `Someone else had already decided ${x ? x.name : "a record"}, so your decision on it was not kept.`;
-    }
+// Send one record's decision. With `next`, the same call gives the record back and hands over the next one.
+// Refused when the record is no longer this reviewer's (they were away an hour and a colleague took it): the
+// decision is not kept, and they are told. Any other failure keeps it here, to send again.
+async function sendNow(key, next) {
+  const rows = UNSENT[key]; if (!rows || !QUEUE()) return true;
+  let out;
+  try {
+    const { data, error } = await sb.rpc("decide", { key, rows, langs: next ? (langs || ["en"]) : null, grp: group });
+    if (error) throw error;
+    out = data || {};
+  } catch (e) { if (next) { DEAL = "unsaved"; DEALT = key; draw(); } return false; }
+  delete UNSENT[key]; keepUnsent(); REDO.delete(key); MINE.delete(key);
+  const refused = new Set(out.refused || []), saved = rows.filter(r => !refused.has(r.pid));
+  const c = CARDS.find(y => y.key === key);
+  if (out.reason || (rows.length && !saved.length)) {
+    for (let i = LOG.length - 1; i >= 0; i--) if (LOG[i].key === key) LOG.splice(i, 1);
+    if (!(c && c.pids.some(pid => (REV.get(pid) || {}).reviewer === me.id))) DECIDED.delete(key);
+    NOTICE = `${c ? c.entity : "A record"} went to a colleague while you were away, so your decision on it was not kept.`;
+    if (next) { DEAL = null; DEALT = null; deal(); }
+    return true;
   }
-  if (PAGE === "review" || NOTICE) draw();
+  saved.forEach(r => REV.set(r.pid, { reviewer: me.id, card_key: key, verdict: r.verdict, decision: r.decision, at: new Date().toISOString() }));
+  if (next) setDealt(out.next || null); else if (PAGE === "review" || NOTICE) draw();
+  return true;
 }
-// "Done in TTE" goes back to the table with the decision it belongs to.
+async function flushUnsent() {
+  for (const key of Object.keys(UNSENT)) if (key !== DEALT || DEAL !== "unsaved") await sendNow(key, false);
+}
+// "Done in TTE": the reviewer has made their approved changes in TTE. After that the decision is fixed.
 function saveDone(x) {
-  if (!sb || testing) return;
+  if (!QUEUE()) return;
   const c = CARDS.find(y => y.key === x.key); if (!c) return;
-  const d = toDecision(x, c);
-  UNSENT[c.key] = c.pids.map(pid => ({ pid, card_key: c.key, reviewer: me.id, verdict: d.verdict, decision: { ...d, pid } }));
-  keepUnsent(); flushUnsent();
+  const pids = c.pids.filter(pid => (REV.get(pid) || {}).reviewer === me.id);
+  pids.forEach(pid => { const r = REV.get(pid); r.decision = { ...r.decision, done: !!x.done }; });
+  Promise.resolve(sb.rpc("mark_done", { pids, done: !!x.done })).catch(() => {});
 }
 function signInPage(message) {
   if ($("#veil")) $("#veil").remove();
@@ -1058,17 +1075,184 @@ async function startOnline() {
   if (user) signedIn(user); else signInPage();
 }
 
+// ---- the queue: the database deals each record (sql/15_desk_queue.sql; docs/load-balancing.md) -------------------
+// Online, with a real account, the page never chooses the next record. It asks the database, which gives one record
+// to one reviewer: the newest news first, in a language they read, of the type they chose, that nobody else holds
+// and that has something left to decide. They hold it alone until they decide it, stop, or leave it for an hour.
+const QUEUE = () => !!sb && !testing && !!me;
+const HOLD_MIN = 60, RENEW_MS = 3 * 60 * 1000;
+const REV = new Map();          // proposal id -> everyone's decision on it, {reviewer, card_key, verdict, decision, at}
+const REDO = new Set();         // records reopened to change one's own decision
+let DEALT = null, DEAL = null;  // the record dealt to this reviewer; DEAL: null | "asking" | "saving" | "unsaved" | "retry" | "none"
+let dealBusy = false, dealAgain = false, lastActive = Date.now(), lastRenew = Date.now(), lastFetch = 0;
+const live = since => !!since && Date.now() - new Date(since).getTime() < HOLD_MIN * 60000;
+const keptBy = r => (r && r.decision && r.decision.kept_by) || [];
+// A proposal is open for this reviewer when nobody has decided it, or a colleague kept it for review (never back to
+// whoever kept it); the database's open_for() is the same rule.
+const pidOpen = pid => { const r = REV.get(pid); return !r || (r.verdict === "unsure" && r.reviewer !== me.id && !keptBy(r).includes(me.id)); };
+const openFor = c => (c.pids || []).some(pidOpen);
+// Asked again: a record decided before that has new news since. Only what the new articles add is asked.
+const reopened = c => !!me && QUEUE() && !REDO.has(c.key) && (c.pids || []).some(pid => !pidOpen(pid)) && openFor(c);
+const onlyNew = (c, list) => {
+  if (!reopened(c)) return list;
+  const links = new Set((c.sources || []).filter(s => pidOpen(s.pid)).map(s => s.link));
+  return list.filter(ch => ((ch.supporters && ch.supporters.length) ? ch.supporters : [ch.from]).some(l => links.has(l)));
+};
+const pidsToWrite = c => (c.pids || []).filter(pid => pidOpen(pid) || (REDO.has(c.key) && (REV.get(pid) || {}).reviewer === me.id));
+const fits = c => !!c && (readable(c) || DEALT === c.key) && (group === "all" || groupOf(c) === group);
+// Everyone's decisions and holds, as read from the table: per proposal for the queue, per record for the pages.
+function takeIn(reviews, holds) {
+  const byKey = new Map(CARDS.map(c => [c.key, c]));
+  LOG.length = 0; DECIDED.clear(); TAKEN.clear(); TEAM = []; MINE.clear(); HELD.clear(); CLAIM.clear(); REV.clear();
+  const seen = new Set(), others = new Set();
+  reviews.forEach(r => {
+    REV.set(r.pid, { reviewer: r.reviewer, card_key: r.card_key, verdict: r.verdict || (r.decision || {}).verdict, decision: r.decision || {}, at: r.at });
+    if (seen.has(r.reviewer + "|" + r.card_key)) return;   // one card settles several proposals: one decision
+    seen.add(r.reviewer + "|" + r.card_key);
+    const x = fromDecision(r.decision || {}, byKey.get(r.card_key));
+    if (r.reviewer === me.id) { LOG.push(x); DECIDED.add(r.card_key); }
+    else { TEAM.push(x); TAKEN.add(r.card_key); others.add(r.reviewer); }
+  });
+  LOG.sort((a, b) => a.when - b.when);
+  TEAM_N = Math.max(1, others.size);
+  // a hold not renewed within the hour has lapsed: that record is back in the pile
+  holds.forEach(h => { if (h.reviewer === me.id) MINE.add(h.card_key); else if (live(h.claimed_at)) HELD.set(h.card_key, h.claimed_at || ""); });
+  lastFetch = Date.now();
+}
+// What colleagues have done since, for home's counts: at most once a minute.
+async function refreshTeam() {
+  if (!QUEUE() || Date.now() - lastFetch < 60000 || DEAL === "saving") return;
+  lastFetch = Date.now();
+  try {
+    const [reviews, holds] = await Promise.all([pageAll("reviews", "pid,card_key,reviewer,verdict,decision,at", "pid"), pageAll("claims", "card_key,reviewer,claimed_at", "card_key")]);
+    const keep = DEALT, logBefore = LOG.slice();
+    takeIn(reviews, holds);
+    if (keep) MINE.add(keep);
+    logBefore.forEach(x => { if (!LOG.some(y => y.key === x.key)) LOG.push(x); });   // decisions still on their way up
+    if (PAGE === "home") draw();
+  } catch (e) { /* the counts wait for the next look */ }
+}
+// Ask for the next record. One request at a time, the latest wish last: clicking types or languages quickly sends
+// one more at most, and the page always ends on the database's answer to the last click.
+async function deal() {
+  if (!QUEUE()) return;
+  if (dealBusy) { dealAgain = true; return; }
+  dealBusy = true; DEAL = "asking"; DEALT = null; draw(true);
+  let key = null, failed = false;
+  do {
+    dealAgain = false;
+    try {
+      const { data, error } = await sb.rpc("take_next", { langs: langs || ["en"], grp: group });
+      if (error) throw error;
+      key = data || null; failed = false;
+    } catch (e) { failed = true; }
+  } while (dealAgain);
+  dealBusy = false;
+  if (failed) { DEAL = "retry"; return draw(); }
+  setDealt(key);
+}
+function setDealt(key) {
+  MINE.clear(); DEALT = key; DEAL = key ? null : "none"; lastRenew = Date.now();
+  if (key) { MINE.add(key); HELD.delete(key); const c = CARDS.find(y => y.key === key); if (c && !S[key]) S[key] = fresh(c); }
+  if (!key && PAGE === "review") { PAGE = "home"; HOMENOTE = "Nothing is waiting for you just now: every record in your languages is decided or on a colleague's desk."; }
+  draw(true);
+}
+// Start, or come back: the record already yours, if it is still open and of the type chosen; otherwise the next.
+async function resumeOrDeal() {
+  if (!QUEUE()) return;
+  const mine = [...MINE].map(k => CARDS.find(c => c.key === k)).find(c => c && openFor(c) && (group === "all" || groupOf(c) === group));
+  if (mine) {
+    DEAL = "asking"; draw(true);
+    let ok = false;
+    try { const { data } = await sb.rpc("claim_card", { key: mine.key }); ok = !!data; } catch (e) {}
+    if (ok) return setDealt(mine.key);
+    DEAL = null;
+  }
+  deal();
+}
+// Change a decision of one's own: the record is taken back, if no colleague holds it, and decided again.
+async function redo(key) {
+  const c = CARDS.find(y => y.key === key);
+  const was = PAGE; PAGE = "review"; DEAL = "asking"; draw(true);
+  let ok = false;
+  try { const { data } = await sb.rpc("claim_card", { key }); ok = !!data; } catch (e) {}
+  if (!ok || !c) { DEAL = null; PAGE = was; NOTICE = `${c ? c.entity : "That record"} is on a colleague's desk just now. Try again later.`; return draw(); }
+  REDO.add(key); S[key] = fresh(c); PAGE = "review"; setDealt(key);
+}
+// The hold is renewed every three minutes while the reviewer is clicking or typing, so however slowly they work the
+// record stays theirs; an hour with neither lets it lapse. Coming back after that, they are told if it went to a
+// colleague, and given the next one.
+async function renewNow() {
+  if (!QUEUE() || !DEALT || DEAL !== null) return;
+  lastRenew = Date.now();
+  let ok = true;
+  try { const { data, error } = await sb.rpc("renew_card", { key: DEALT }); if (error) return; ok = !!data; } catch (e) { return; }
+  if (ok) return;
+  const c = card();
+  NOTICE = `${c ? c.entity : "The record"} went back to the pile while you were away, and a colleague has it now.`;
+  S[DEALT] = undefined; DEALT = null; MINE.clear(); REDO.clear();
+  if (PAGE === "review") deal(); else draw();
+}
+// Back after an hour or more: the first sign of the reviewer (the mouse moving, the tab or window coming back, a key)
+// checks the hold at once, so if the record went to a colleague the screen has already moved on, and says why,
+// before they press anything. A decision sent before that check answers is safe either way: decide() keeps it only
+// if the record is still theirs.
+const present = () => {
+  const away = Date.now() - lastActive; lastActive = Date.now();
+  if (away > HOLD_MIN * 60000) renewNow();
+};
+["pointerdown", "pointermove", "keydown", "input", "wheel", "touchstart"].forEach(t => document.addEventListener(t, present, { passive: true, capture: true }));
+window.addEventListener("focus", present);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") present(); });
+setInterval(() => { if (lastActive > lastRenew) renewNow(); if (DEAL === "unsaved" && DEALT) sendNow(DEALT, true); }, RENEW_MS);
+// What a record brought back says about why it is here.
+function cardNote(c) {
+  if (!QUEUE()) return "";
+  if (REDO.has(c.key)) return `<p class="notice">You are changing your decision on this record. What you decide now replaces it.</p>`;
+  const recs = (c.pids || []).map(pid => REV.get(pid)).filter(Boolean);
+  const names = list => [...new Set(list.map(r => (r.decision && r.decision.reviewer) || "a colleague"))].join(", ");
+  const kept = recs.filter(r => r.verdict === "unsure" && r.reviewer !== me.id);
+  const settled = recs.filter(r => r.verdict !== "unsure");
+  if (kept.length && !settled.length) return `<p class="notice">${esc(names(kept))} kept this for review: a second look is what is asked.</p>`;
+  if (settled.length) {
+    const last = settled.reduce((a, r) => (r.at || "") > (a.at || "") ? r : a);
+    const fresh = (c.sources || []).filter(s => pidOpen(s.pid)).length;
+    return `<p class="notice">Decided before by ${esc(names(settled))} on ${esc(dayStr(last.at || Date.now()))} (${esc(OUTCOME[kindOf(last.decision || {})] || "decided")}). `
+         + `New since: ${fresh} article${fresh === 1 ? "" : "s"}; only what ${fresh === 1 ? "it adds" : "they add"} is asked.</p>`;
+  }
+  return "";
+}
+// Each person's count, for fairness: the pile balances the work, and this shows who did how much of it.
+function perPerson() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const week = Date.now() - 7 * 864e5, who = new Map(), seen = new Set();
+  REV.forEach(r => {
+    const k = r.reviewer + "|" + r.card_key; if (seen.has(k)) return; seen.add(k);
+    const p = who.get(r.reviewer) || { name: (r.decision && r.decision.reviewer) || "a colleague", today: 0, week: 0, all: 0, kept: 0 };
+    const t = new Date(r.at || 0).getTime();
+    if (r.verdict === "unsure") p.kept++;
+    else { p.all++; if (t >= week) p.week++; if (t >= today.getTime()) p.today++; }
+    who.set(r.reviewer, p);
+  });
+  return [...who.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // ---- state and flow ------------------------------------------------------------
 let LIST = CARDS.map((_, i) => i), cur = 0, S = {};
 const readsSource = s => !langs || langs.includes(langOf((s || {}).link || ""));
-const firstReadable = c => Math.max(0, (c.sources || []).findIndex(readsSource));
+// On a record brought back by new news, the new article first: it is what is asked about.
+const firstReadable = c => {
+  const S = c.sources || [];
+  if (reopened(c)) { const n = S.findIndex(s => pidOpen(s.pid) && readsSource(s)); if (n >= 0) return n; }
+  return Math.max(0, S.findIndex(readsSource));
+};
 const fresh = c => ({ mode: {}, hist: [], t0: Date.now(), accepted: [], seen: 0, screen: c.isNew ? "create" : "who", cand: 0, chosen: null, ch: 0, src: firstReadable(c), csrc: {}, val: {}, text: {}, edit: {}, out: {},
                       extra: [], finding: false, query: "", full: false, descFull: false, exhausted: false, kind: "" });
 const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest); };
 const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
 const quiet = st => (st.hist.length ? [["back", "&larr; Back"]] : []).concat([["keep", "Not sure? Keep for review"], ["stopnow", "Stop for now"]]);
 const stOf = c => S[c.key] || (S[c.key] = fresh(c));
-const card = () => CARDS[LIST[cur]];
+const card = () => QUEUE() ? (DEALT ? CARDS.find(c => c.key === DEALT) || null : null) : CARDS[LIST[cur]];
 function srcFor(c, st, k, ch) {
   const link = ch.from || (c.newsFrom || {})[ch.field] || (c.sources[0] || {}).link;
   const fromIdx = Math.max(0, c.sources.findIndex(s => s.link === link));
@@ -1089,12 +1273,18 @@ const go = (st, screen, extra) => Object.assign(st, { screen, full: false, descF
 function act(a, el) {
   const i = el ? Number(el.dataset.i) : 0;
   if (a === "signin") { signIn(); return; }
-  if (a === "start") { PAGE = "review"; HOMENOTE = ""; allDone = false; return draw(true); }
-  if (a === "startgroup") { group = el.dataset.g; PAGE = "review"; HOMENOTE = ""; buildList($("#filter").value); return draw(true); }
+  if (a === "start") { PAGE = "review"; HOMENOTE = ""; allDone = false; if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
+  if (a === "startgroup") { group = el.dataset.g; PAGE = "review"; HOMENOTE = ""; buildList($("#filter").value); if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
+  if (a === "redeal") return deal();
+  if (a === "resend") { if (DEALT && DEAL === "unsaved") { DEAL = "saving"; draw(); sendNow(DEALT, true); } return; }
+  if (a === "redo") { const x = LOG[i]; if (x && !x.done && QUEUE()) redo(x.key); return; }
   if (a === "stopnow") {
     // The record on screen is let go, since nothing was decided on it: a colleague can take it.
     const c0 = card();
-    if (c0 && sb && !testing && !DECIDED.has(c0.key) && (MINE.has(c0.key) || CLAIM.get(c0.key) === true)) {
+    if (QUEUE()) {
+      if (DEALT && DEAL === null) Promise.resolve(sb.rpc("release_card", { key: DEALT })).catch(() => {});
+      if (DEAL !== "unsaved" && DEAL !== "saving") { MINE.clear(); DEALT = null; DEAL = null; REDO.clear(); }
+    } else if (c0 && sb && !testing && !DECIDED.has(c0.key) && (MINE.has(c0.key) || CLAIM.get(c0.key) === true)) {
       Promise.resolve(sb.rpc("release_card", { key: c0.key })).catch(() => {}); MINE.delete(c0.key); CLAIM.delete(c0.key);
     }
     const left = CARDS.filter(available).length;
@@ -1109,12 +1299,19 @@ function act(a, el) {
   if (a === "savelangs") {
     const picked = [...document.querySelectorAll("#veil .lang input:checked")].map(x => x.value); if (!picked.length) return;
     langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
-    $("#veil").remove(); buildList($("#filter").value); return draw(true);   // stays on the page it was opened from
+    $("#veil").remove(); buildList($("#filter").value);   // stays on the page it was opened from
+    if (QUEUE() && PAGE === "review" && !fits(card()) && DEAL !== "saving" && DEAL !== "unsaved") return deal();
+    return draw(true);
   }
   if (a === "view") { VIEW = el.dataset.v; return draw(); }
   if (a === "sample") { SAMPLE = !SAMPLE; _team = null; $("#samplebtn").classList.toggle("on", SAMPLE); buildList($("#filter").value); return draw(); }
   if (a === "rail") { $("#panel").classList.toggle("open"); return; }
-  if (a === "nav") { PAGE = el.dataset.nav; $("#panel").classList.remove("open"); if (document.activeElement) document.activeElement.blur(); return draw(true); }
+  if (a === "nav") {
+    PAGE = el.dataset.nav; $("#panel").classList.remove("open"); if (document.activeElement) document.activeElement.blur();
+    if (PAGE === "home") refreshTeam();
+    if (PAGE === "review" && QUEUE() && !card() && !DEAL) return resumeOrDeal();
+    return draw(true);
+  }
   if (a === "done") { LOG[i].done = !LOG[i].done; saveDone(LOG[i]); return draw(); }
   if (a === "release") { HELD.delete(el.dataset.k); buildList($("#filter").value); return draw(); }
   if (a === "dlchanges") return download("approved-changes.csv", changesRows(LOG));
@@ -1206,7 +1403,7 @@ function welcome() {
       <div class="fstep">${icon.news}<b>The news</b><span>CNA, The Straits Times and Lianhe Zaobao</span></div>
       <div class="fstep">${icon.ai}<b>The AI proposes</b><span>It spots people, organisations and places, and suggests updates to their records</span></div>
       <div class="fstep you"><em>You are here</em>${icon.you}<b>You decide</b><span>Accept, edit or leave out each change</span></div>
-      <div class="fstep">${icon.rec}<b>The sheet</b><span>Approved changes go on the sheet. TTE changes only when you make them</span></div>
+      <div class="fstep">${icon.rec}<b>The sheet</b><span>All decisions are exported to an Excel file for follow-up in TTE</span></div>
     </div>
     ${ONLINE ? `<p class="foot">Your decisions are saved as you go. Close the page whenever you like: the record you are on stays yours and comes back first next time. Nobody else is given a record you hold or have decided.</p>` : ""}
     <button class="go" data-act="closewelcome">Start checking</button></div>`;
@@ -1256,7 +1453,9 @@ function homeData() {
   const pending = Object.keys(UNSENT).length;
   const types = GROUPS.map(([k, label]) => [k, label, mine.filter(c => groupOf(c) === k).length]);
   const segs = [["you", you, "decided by you"], ["them", them, "decided by others"], ["held", held, "on someone else’s desk"], ["wait", waiting, "still to decide"]];
-  return { n, back, next, pending, types, segs, total: CARDS.length };
+  // What is still to decide but not in a language you read: the difference between the big number and "still to decide"
+  const other = Math.max(0, waiting - n);
+  return { n, back, next, pending, types, segs, other, total: CARDS.length };
 }
 const nameOf = c => c.entityEn && c.entityEn !== c.entity ? c.entityEn : c.entity;
 // Said only when something is wrong: nothing to say when everything is saved.
@@ -1264,7 +1463,8 @@ const warnNote = d => testing ? "Test account: nothing you do here is saved." : 
 // The line of the day, written by the model in the nightly publish; shown only on the day it was written.
 const dayLine = () => { const l = STATUS && STATUS.line; if (!l || !l.text) return ""; const t = new Date(), d = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; return l.date === d ? l.text : ""; };
 const startLabel = d => LOG.length || d.back ? "Continue" : "Start";
-const subLine = d => d.n ? (d.back ? `${d.back === 1 ? "One is" : d.back + " are"} on your desk from last time.` : "In the languages you read.")
+const otherLine = d => d.other ? ` ${d.other} more ${d.other === 1 ? "is" : "are"} only in other languages.` : "";
+const subLine = d => d.n ? (d.back ? `${d.back === 1 ? "One is" : d.back + " are"} on your desk from last time.` : "In the languages you read.") + otherLine(d)
                          : LOG.length ? "That was every record you can read. New ones arrive after each night’s run." : "New records arrive after each night’s run.";
 
 // A: minimal. One number, one button, the types as chips, and the team's progress as one thin line.
@@ -1283,7 +1483,7 @@ function homeMinimal(d) {
   ${d.n ? `<div class="chips">${d.types.filter(t => t[2]).map(([k, label, v]) => `<button data-act="startgroup" data-g="${k}">${label} <b>${v}</b></button>`).join("")}</div>` : ""}
   <div class="teamline">
     <div class="tl2" role="img" aria-label="${shown.map(s => s[1] + " " + s[2]).join(", ")}">${shown.map(([k, v, lab]) => `<i class="${k}" style="flex:${v}" data-tip="${v} ${lab}"></i>`).join("")}</div>
-    <p>${shown.filter(s => s[0] !== "wait").map(([k, v, lab]) => `<span><i class="sw ${k}"></i>${v} ${lab}</span>`).join("")}<span class="of">of ${d.total}</span></p>
+    <p>${shown.map(([k, v, lab]) => `<span><i class="sw ${k}"></i>${v} ${lab}</span>`).join("")}<span class="of">${d.total} in all</span></p>
   </div>
   <p class="minor">${ONLINE ? "Saved as you go. Stop whenever you like!" : `Prototype: decisions stay in this page until you close it.${SAMPLE ? " The team&rsquo;s figures are made-up sample data." : ""}`}</p>
 </div>`;
@@ -1295,7 +1495,7 @@ function sheetRows() {
   const q = SHEET.q.trim().toLowerCase();
   const rows = LOG.map((x, i) => [x, i]).reverse().filter(([x]) => (!SHEET.outcome || x.kind === SHEET.outcome) && (!SHEET.group || x.group === SHEET.group) && (!q || (x.name + " " + x.rec).toLowerCase().includes(q)));
   if (!rows.length) return `<p class="empty">${LOG.length ? "Nothing matches." : "Nothing yet. Your decisions will show up here."}</p>`;
-  return rows.map(([x, i]) => `<div class="srow"><div class="sname"><b>${esc(gist(x.name, 60))}</b><small>${esc(kind({ type: x.type }))}</small></div><span class="pill ${x.kind}">${OUTCOME[x.kind]}</span><div class="srec">${esc(x.rec)}</div><div class="swhen">${esc(dayStr(x.when))}</div>${x.kind === "approved" ? `<button class="donebtn ${x.done ? "on" : ""}" data-act="done" data-i="${i}">${x.done ? "&#10003; Done in TTE" : "Mark done in TTE"}</button>` : "<span></span>"}</div>`).join("");
+  return rows.map(([x, i]) => `<div class="srow"><div class="sname"><b>${esc(gist(x.name, 60))}</b><small>${esc(kind({ type: x.type }))}</small></div><span class="pill ${x.kind}">${OUTCOME[x.kind]}</span><div class="srec">${esc(x.rec)}</div><div class="swhen">${esc(dayStr(x.when))}</div><span class="sbtns">${x.kind === "approved" ? `<button class="donebtn ${x.done ? "on" : ""}" data-act="done" data-i="${i}">${x.done ? "&#10003; Done in TTE" : "Mark done in TTE"}</button>` : ""}${QUEUE() && !x.done ? `<button class="donebtn" data-act="redo" data-i="${i}" title="Take this record back and decide it again">Change</button>` : ""}</span></div>`).join("");
 }
 function sheetPage() {
   const n = k => LOG.filter(x => x.kind === k).length, acc = LOG.reduce((a, x) => a + x.accepted.length, 0);
@@ -1329,12 +1529,13 @@ function teamPage() {
   return `<div class="tiles">${tile(sum("decided"), "decided")}${tile(sum("waiting"), "waiting")}${tile(sum("held"), "on someone&rsquo;s desk")}${tile(sum("kept"), "kept for review")}</div>
   <section class="focus">${rows.map(r => `<div class="grp"><div class="top">${esc(r.name)}<span>${r.total} cards</span></div>${bar(r)}<div class="legend"><span><i class="sw" style="background:var(--tick)"></i>${r.decided} decided</span><span><i class="sw" style="background:var(--amber-line)"></i>${r.kept} kept</span><span><i class="sw" style="background:var(--accent)"></i>${r.held} on someone&rsquo;s desk</span><span><i class="sw" style="background:#E4DFD2"></i>${r.waiting} waiting</span></div></div>`).join("")}</section>
   <p class="minor">Waiting, by the language of their articles: Chinese ${zh}, English ${en}. A card with articles in both is counted in both.</p>
-  ${HELD.size ? `<h2 class="h2">On someone&rsquo;s desk</h2><section class="focus">${held}</section><p class="minor">A card stays on one person&rsquo;s desk until they decide it, so nobody else is dealt it. If someone is away, ${ONLINE ? "ask Ashwin to release it" : "release it here"}.</p>` : ""}
+  ${HELD.size ? `<h2 class="h2">On someone&rsquo;s desk</h2><section class="focus">${held}</section><p class="minor">${ONLINE ? "A record stays on one person&rsquo;s desk while they work on it, so nobody else is dealt it. Left for an hour, it goes back to the pile by itself." : "A card stays on one person&rsquo;s desk until they decide it, so nobody else is dealt it. If someone is away, release it here."}</p>` : ""}
   <p class="minor">This week: ${approved.length} records approved, ${approved.filter(x => x.done).length} of them done in TTE.</p>
   <h2 class="h2">The pipeline</h2>
   <section class="focus pipe"><div class="line"><span class="k">Cards last published</span><b>${PIPE.published}</b></div><div class="line"><span class="k">Newest news in the deck</span><b>${PIPE.news}</b></div>
     <div class="line"><span class="k">TTE dump loaded</span><b>${PIPE.dump}</b></div><div class="line"><span class="k">That run&rsquo;s steps</span><span class="stp">${PIPE.steps.map(([n, ok]) => `<span class="st ${ok ? "ok" : "bad"}">${ok ? "\u2713" : "\u2717"} ${n}${ok ? "" : " failed"}</span>`).join("")}</span></div></section>
-  <p class="minor">No one&rsquo;s individual numbers are shown here.</p>`;
+  ${ONLINE ? (() => { const P = perPerson(); return P.length ? `<h2 class="h2">Who decided how many</h2><section class="focus"><table class="people"><thead><tr><th>Reviewer</th><th>Today</th><th>Last 7 days</th><th>All</th><th>Kept for review</th></tr></thead><tbody>${P.map(p => `<tr><td>${esc(p.name)}</td><td>${p.today}</td><td>${p.week}</td><td>${p.all}</td><td>${p.kept}</td></tr>`).join("")}</tbody></table></section>
+  <p class="minor">Records decided, counted once however many proposals they carried. Everyone takes from one shared pile, newest news first, so anyone can do more.</p>` : ""; })() : `<p class="minor">No one&rsquo;s individual numbers are shown here.</p>`}`;
 }
 const sampleNote = () => SAMPLE ? `<p class="sample">Prototype: the team&rsquo;s figures are made-up sample data. Real numbers appear once the team starts.</p>` : "";
 function resultsPage() {
@@ -1387,8 +1588,9 @@ const changesRows = L => {
       (x.newsFields || []).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
       return;
     }
-    if (x.kind !== "approved" && x.kind !== "uptodate") return;
-    if (!x.accepted.length) rows.push([x.uid, ent, "(match confirmed)", x.rec, "", ...tail]);
+    // A record confirmed with nothing to change is no work in TTE: a "(match confirmed)" row put Chee Hong Tat on the
+    // sheet with nothing to do. It stays on the "every decision" sheet.
+    if (x.kind !== "approved") return;
     x.accepted.forEach(a => rows.push([x.uid, ent, a.field, a.current, a.proposed, a.link || x.link || "", REVIEWER, stampTime(x.when)]));
   });
   return rows;
@@ -1423,6 +1625,11 @@ function draw(top) {
               + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "");
   const wait = (h, p, b) => `<div class="done-card"><h2>${h}</h2>${p ? `<p>${p}</p>` : ""}${b || ""}</div>`;
   if (loading) $("#stage").innerHTML = wait(esc(loading));
+  else if (QUEUE() && PAGE === "review" && DEAL && DEAL !== "none") $("#stage").innerHTML =
+    DEAL === "asking" ? wait("Finding your next record&hellip;")
+    : DEAL === "saving" ? wait("Saving&hellip;")
+    : DEAL === "unsaved" ? wait("Not saved yet", "The connection dropped. Your decision is kept on this computer and goes up as soon as the connection is back.", `<button class="stamp go" data-act="resend"><b>Try again now</b></button>`)
+    : wait("The database did not answer", "Your decisions so far are saved. Check the connection, then try again.", `<button class="stamp go" data-act="redeal"><b>Try again</b></button>`);
   else if (PAGE === "home" || (PAGE === "review" && (!c || allDone))) { PAGE = "home"; navState(); $("#stage").innerHTML = homePage(); }
   else if (PAGE === "results") $("#stage").innerHTML = resultsPage();
   else if (PAGE === "analytics") $("#stage").innerHTML = analyticsPage();
@@ -1430,11 +1637,11 @@ function draw(top) {
   else if (!c || allDone) $("#stage").innerHTML = `<div class="done-card"><div class="bigtick">&#10003;</div><h2>${LOG.length ? "All done" : "Nothing waiting for you"}</h2><p>${LOG.length ? "That was every card you can read." : "No cards match your languages and the type you chose."}</p>${LOG.length && !ONLINE ? `<button class="stamp go" data-act="restart"><b>Start over</b><span>clears this session</span></button>` : ""}</div>`;
   else {
     const held = claimed(c);
-    if (held === true) $("#stage").innerHTML = lines + SCREEN[stOf(c).screen](c, stOf(c));
+    if (held === true) $("#stage").innerHTML = lines + cardNote(c) + SCREEN[stOf(c).screen](c, stOf(c));
     else if (held === "retry") $("#stage").innerHTML = wait("The database did not answer", "Your decisions so far are saved. Check the connection, then try again.", `<button class="stamp go" data-act="retryclaim"><b>Try again</b></button>`);
     else $("#stage").innerHTML = wait("Checking nobody else has this record&hellip;");
   }
-  const avail = CARDS.filter(available).length, pending = Object.keys(UNSENT).length;
+  const avail = CARDS.filter(c => available(c) && !(QUEUE() && DECIDED.has(c.key) && !openFor(c))).length, pending = Object.keys(UNSENT).length;
   $("#count").textContent = `${LOG.length} of ${LOG.length + avail} records reviewed`
     + (ONLINE && !testing && me ? (pending ? ` \u00b7 ${pending} not saved yet` : LOG.length ? " \u00b7 all saved" : "") : "");
   $("#pos").textContent = LIST.length ? `${cur + 1} / ${LIST.length}` : "0 / 0";
@@ -1459,7 +1666,13 @@ function buildList(filter) {
 }
 $("#jump").addEventListener("change", e => { cur = Number(e.target.value); draw(true); });
 $("#filter").addEventListener("change", e => { buildList(e.target.value); draw(true); });
-$("#group").addEventListener("change", e => { group = e.target.value; PAGE = "review"; buildList($("#filter").value); draw(true); });
+$("#group").addEventListener("change", e => {
+  group = e.target.value; PAGE = "review"; buildList($("#filter").value);
+  // online, a record of another type is given back as the next is taken, in one step: however fast the type is
+  // switched, this reviewer holds one record at most
+  if (QUEUE() && !fits(card()) && DEAL !== "saving" && DEAL !== "unsaved") return deal();
+  draw(true);
+});
 
 // every card, every screen, editing or not: a page that throws on one card should be found here, not by a reader
 function selftest() {

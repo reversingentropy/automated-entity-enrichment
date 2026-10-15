@@ -41,8 +41,12 @@ Run a check headless with Chrome's `--dump-dom` and read the `<pre id="selftest"
 
 The reviewers chose this desk, so it is now also the online desk: `python -m src.export --site DIR` builds it with
 `window.__ONLINE__` set (the first desk stays for `--package`). Online it signs the reviewer in, takes the deck from the
-`deck` table, holds each record through `claim_card` before showing it, writes every decision to `reviews` in the
-first desk's format (so `src/export/reviews.py` and the reminders read it unchanged) and releases the hold, keeps a
-decision it could not send and sends it with the next one, brings a held record back first, and lets a test account
-look without holding or saving anything. The team pages use everyone's real decisions and the published pipeline
+`deck` table, and asks the database for each record rather than choosing it (`take_next` in
+`sql/15_desk_queue.sql`: newest news first, one record held per person, a hold that lapses after an hour without
+clicking or typing). Every decision goes up through `decide`, in the first desk's format (so `src/export/reviews.py`
+and the reminders read it unchanged), which keeps it only from the person holding the record and hands over the next
+in the same call. A decision it could not send is kept and sent again; a record held when the reviewer stopped comes
+back first; "Not sure" sends a record to someone else; new news reopens a decided record for its new proposals only;
+a reviewer can change their own decision until it is done in TTE; and a test account looks without holding or
+saving anything. `docs/load-balancing.md` explains the queue for the team. The team pages use everyone's real decisions and the published pipeline
 status instead of the sample. `tests/test_desk2.py` runs every screen and the whole online flow in headless Chromium.
