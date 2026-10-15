@@ -999,6 +999,39 @@ def test_a_link_value_is_proposed_as_the_record_is_named():
     assert aw["adding"] == "President's Volunteerism & Philanthropy Awards (2025)"
 
 
+def test_a_link_value_is_english_once_and_new():
+    """Feedback 2: an award in Chinese the record already held in English, one affiliation
+    asked twice, and a Chinese award on the sheet. Each name once, in English, and only if new."""
+    from src.export.cards import Lookup, delta, named_as_tte, record_flags
+    awards = Lookup([["7", "Meritorious Service Medal", "AWARD", "", ""]], "AWARD")
+    # found through its gloss, so renamed; and the record holds it, so no change at all
+    msm = "功绩奖章 (Meritorious Service Medal) (2024)"
+    got = record_flags(msm, awards)[0]
+    assert got["uid"] == "7" and got["as"] == "Meritorious Service Medal"
+    ch = {"field": "Awards", "strategy": "APPEND", "existing": ["Meritorious Service Medal (2024)"], "adding": msm, "inTTE": [got]}
+    assert named_as_tte(ch) is False
+    # the article's fields against the record: already recorded, so nothing derived from it
+    assert delta({"Awards": msm}, {"Awards": "Meritorious Service Medal (2024)"})[0]["state"] == "same"
+    # a name TTE does not hold is offered in English, the Chinese kept as what the article wrote
+    sc = {"field": "Awards", "strategy": "APPEND", "existing": [], "adding": "高级律师 (Senior Counsel)",
+          "inTTE": record_flags("高级律师 (Senior Counsel)", awards)}
+    assert named_as_tte(sc) and sc["adding"] == "Senior Counsel" and sc["wrote"] == {"Senior Counsel": "高级律师 (Senior Counsel)"}
+    # two wordings of one record are one value, with every source behind it
+    lta, cna, zb = "Singapore. Land Transport Authority", "https://cna/1", "https://zaobao/2"
+    aff = {"field": "Affiliations(groupName)", "strategy": "APPEND", "existing": ["Singapore. Ministry of Home Affairs"],
+           "adding": f"Land Transport Authority | PSA International | {lta} | Ministry of Home Affairs",
+           "inTTE": [{"name": "Land Transport Authority", "uid": "1", "as": lta}, {"name": "PSA International", "uid": "2"},
+                     {"name": lta, "uid": "1"}, {"name": "Ministry of Home Affairs", "uid": "3", "as": "Singapore. Ministry of Home Affairs"}],
+           "perValue": [{"value": "Land Transport Authority", "sources": [cna]}, {"value": "PSA International", "sources": [zb]},
+                        {"value": lta, "sources": [zb]}, {"value": "Ministry of Home Affairs", "sources": [cna]}],
+           "saidBy": [{"value": "Land Transport Authority", "from": cna}, {"value": lta, "from": zb}]}
+    assert named_as_tte(aff)
+    assert aff["adding"] == f"{lta} | PSA International"          # once; and the ministry it already has is not asked
+    assert [p["value"] for p in aff["perValue"]] == [lta, "PSA International"]
+    assert aff["perValue"][0]["sources"] == [cna, zb]
+    assert [a["name"] for a in aff["inTTE"]].count(lta) == 1
+
+
 def test_job3_stores_a_link_value_as_tte_names_the_record():
     """The proposal already holds the value a cataloguer will type, with what the article wrote beside it."""
     from src.shared.names import name_link_values

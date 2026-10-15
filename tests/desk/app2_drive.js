@@ -1,16 +1,21 @@
-// Drives the second desk online against the stand-in: sign in, who is dealt what, holding a record, saving each
-// decision, the variant-name change, the reader's language first, a refused hold, a clash, a dropped connection,
-// and a test account. Writes one line, RESULT {...} or ERROR ..., into #selftest.
+// Drives the second desk online against the stand-in (app2_fake.js): sign in, home, the database dealing each
+// record, deciding with the next record handed over, kept for review, a hold that lapsed and went to a colleague,
+// a dropped connection, switching type and languages quickly, stopping, changing one's own decision, a decided
+// record brought back by new news, each person's count, and a test account. Writes one line, RESULT {...} or
+// ERROR ..., into #selftest.
 (async () => {
   const F = window.__FAKE__, out = {};
   const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
-  const until = async (f, n = 300) => { for (let i = 0; i < n; i++) { if (f()) return true; await tick(); } return false; };
+  const until = async (f, n = 400) => { for (let i = 0; i < n; i++) { if (f()) return true; await tick(); } return false; };
   const say = t => { const pre = document.querySelector("#selftest"); pre.hidden = false; pre.textContent = t; };
+  const stage = () => document.querySelector("#stage").innerHTML;
+  const settled = () => until(() => !dealBusy && DEAL !== "asking" && DEAL !== "saving");
+  const cOf = key => CARDS.find(c => c.key === key);
   const decideThrough = async () => {          // accept every change of the record on screen, or confirm it
     const k = card().key;
     if (stOf(card()).screen === "create") act("create"); else act("same");
-    for (let g = 0; g < 30 && !DECIDED.has(k); g++) act("accept");
-    await until(() => !UNSENT[k]);
+    for (let g = 0; g < 30 && DEALT === k && DEAL === null; g++) act("accept");
+    await settled();
     return k;
   };
   try {
@@ -19,87 +24,141 @@
     act("signin");
     out.loaded = await until(() => !loading && CARDS.length && NPT_READY);
     out.cards = CARDS.length;
-    // home first: how many are waiting, and one button to go on
-    out.homeFirst = PAGE === "home" && /records? waiting for you/.test(document.querySelector("#stage").innerHTML)
-                    && !!document.querySelector('[data-act="start"]') && !F.rpcs.some(r => r.startsWith("claim_card"));
-    // the line of the day: shown on the day it was written, never a stale one
+    // home first: how many are waiting, one button to go on, and nothing taken yet
+    out.homeFirst = PAGE === "home" && /records? waiting for you/.test(stage()) && !!document.querySelector('[data-act="start"]') && F.rpcs.length === 0;
     const t = new Date(), today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
     STATUS = { line: { date: today, text: "A quiet Saturday for the catalogue." } }; draw();
-    out.dayLineShown = document.querySelector("#stage").innerHTML.includes("A quiet Saturday for the catalogue.");
+    out.dayLineShown = stage().includes("A quiet Saturday for the catalogue.");
     STATUS.line.date = "2000-01-01"; draw();
-    out.staleLineHidden = !document.querySelector("#stage").innerHTML.includes("A quiet Saturday");
-    out.noAllSaved = !/all saved/i.test(document.querySelector("#stage").innerHTML);
-    // choosing languages from home stays on home, claiming nothing
+    out.staleLineHidden = !stage().includes("A quiet Saturday");
+    out.noAllSaved = !/all saved/i.test(stage());
     act("settings"); act("savelangs");
-    out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && !F.rpcs.some(r => r.startsWith("claim_card"));
-    act("start");
-    out.dealt = LIST.map(i => CARDS[i].key);
-    out.firstIsMine = card().key === F.mine;
-    out.othersNotDealt = !out.dealt.includes(F.theirs) && !out.dealt.includes(F.theirReview);
-    out.noClaimForHeld = !F.rpcs.some(r => r === "claim_card:" + F.mine);
-    // the variant name: asked for a Chinese name TTE lacks, not for one it holds
-    const cOf = key => CARDS.find(c => c.key === key);
-    out.variantAsked = rowsFor(cOf(F.mine), ordered(cOf(F.mine))[0]).some(r => r.variant);
+    out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && F.rpcs.length === 0;
+    // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
+    out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);
-    // and it can be corrected, or put in place of the names TTE has, like any list
-    const vc = cOf(F.mine), vrow = rowsFor(vc, ordered(vc)[0]).findIndex(r => r.variant);
+    const vc = cOf(F.mineKey), vrow = rowsFor(vc, ordered(vc)[0]).findIndex(r => r.variant);
     const vst = Object.assign(fresh(vc), { screen: "change", chosen: 0, ch: vrow }), vhtml = change(vc, vst);
-    out.variantEditable = /data-act="edit"/.test(vhtml) && /data-m="replace"/.test(vhtml) && /Other names in TTE now/.test(vhtml);
+    out.variantEditable = /data-act="edit"/.test(vhtml) && /data-m="replace"/.test(vhtml) && /Non-English names in TTE now/.test(vhtml);
     vst.val[vrow] = ["雪城 (edited)"]; vst.mode[vrow] = "replace";
     const vgot = acceptedOf(vc, vst, rowsFor(vc, ordered(vc)[0])[vrow], vrow);
-    out.variantEditSaved = vgot.field === "Variant name" && vgot.proposed === "雪城 (edited)";
-    // decide the held record: saved with the variant row, then let go
+    out.variantEditSaved = vgot.field === "Non-English name" && vgot.proposed === "雪城 (edited)";
+
+    // Start: the record already on this reviewer's desk comes back first, taken again by name
+    act("start"); await settled();
+    out.firstIsMine = DEALT === F.mineKey && F.rpcs.includes("claim_card:" + F.mineKey) && !F.rpcs.some(r => r.startsWith("take_next"));
+    // deciding it: saved through decide(), the record given back and the next handed over in the same call
     const k1 = await decideThrough();
-    const mine = F.upserts.filter(r => r.card_key === k1);
+    const mine = F.reviews.filter(r => r.card_key === k1);
     out.saved = mine.length === cOf(k1).pids.length && mine.every(r => r.reviewer === "u1" && r.verdict === "approve");
-    out.savedVariant = mine.length && (mine[0].decision.rows || []).some(r => r.field === "Variant name" && r.proposed.split(" | ").includes(cOf(k1).entity));
-    out.released = F.rpcs.includes("release_card:" + k1);
-    // the next record is shown only once it is held
-    await until(() => claimed(card()) === true);
-    out.claimedNext = F.rpcs.includes("claim_card:" + card().key);
-    // the record after it is refused: the desk moves on and says so
-    const k2 = card().key, k3 = CARDS[LIST[1]].key;
-    F.refuse.add(k3);
-    act("keep");
-    await until(() => !UNSENT[k2]);
-    out.keptSavedUnsure = F.upserts.some(r => r.card_key === k2 && r.verdict === "unsure");
-    await until(() => TAKEN.has(k3));
-    out.refusedSkipped = TAKEN.has(k3) && !LIST.map(i => CARDS[i].key).includes(k3) && /someone else/.test(NOTICE);
-    // a dropped connection keeps the decision and says it is not saved yet; it goes up on the next try
-    await until(() => claimed(card()) === true);
-    F.fail = true;
-    const k4 = card().key;
-    act("keep");
-    await tick(100);
-    out.unsentKept = !!UNSENT[k4] && /not saved yet/.test(document.querySelector("#count").textContent);
-    F.fail = false; await flushUnsent();
-    out.unsentSent = !UNSENT[k4] && F.upserts.some(r => r.card_key === k4);
-    // stop for now: the record on screen is let go, and home says what is left
-    await until(() => claimed(card()) === true);
-    const ks = card().key;
+    out.savedVariant = mine.length && (mine[0].decision.rows || []).some(r => r.field === "Non-English name" && r.proposed.split(" | ").includes(cOf(k1).entity));
+    out.oneCallPerRecord = F.rpcs.filter(r => r === "decide:" + k1).length === 1 && !F.rpcs.some(r => r.startsWith("release_card:" + k1));
+    out.nextDealt = !!DEALT && DEALT !== k1 && F.mine().length === 1 && F.mine()[0] === DEALT;
+    out.othersNeverDealt = DEALT !== F.theirs && DEALT !== F.theirReview && !F.direct;
+    // switching the type and the languages quickly: one record held at most, and the page shows the one the database gave
+    const sel = document.querySelector("#group"), groups = [...sel.options].map(o => o.value);
+    for (let r = 0; r < 3; r++) for (const g of groups) { sel.value = g; sel.dispatchEvent(new Event("change")); await tick(2); }
+    await settled();
+    out.oneHoldAfterTypes = F.mine().length <= 1 && (F.mine()[0] || null) === DEALT;
+    for (const ls of [["zh"], ["en"], ["en", "zh"], ["zh"], ["en", "zh"]]) {
+      act("settings"); document.querySelectorAll("#veil .lang input").forEach(x => { x.checked = ls.includes(x.value); }); act("savelangs"); await tick(2);
+    }
+    await settled();
+    out.oneHoldAfterLanguages = F.mine().length <= 1 && (F.mine()[0] || null) === DEALT;
+    sel.value = "all"; sel.dispatchEvent(new Event("change")); await settled();
+    // kept for review: saved as unsure, and never dealt back to the one who kept it
+    const k2 = DEALT;
+    act("keep"); await settled();
+    out.keptSavedUnsure = F.reviews.some(r => r.card_key === k2 && r.verdict === "unsure" && r.decision.kept_by.includes("u1"));
+    // a colleague's record kept for review is offered, with who kept it
+    const kc = cOf(F.keptByJo);
+    out.keptByColleagueOffered = openFor(kc) && /Jo kept this for review/.test(cardNote(kc));
+    // away an hour: the hold lapsed and a colleague took the record. The late decision is not kept, and they are told
+    const k3 = DEALT; F.steal(k3);
+    act("keep"); await settled(); await until(() => DEALT && DEALT !== k3);
+    out.lateDecisionRefused = !F.reviews.some(r => r.card_key === k3 && r.reviewer === "u1") && /went to a colleague while you were away/.test(NOTICE) && !LOG.some(x => x.key === k3) && DEALT !== k3;
+    // the same, found by the renewal rather than by a decision
+    const k4 = DEALT; F.steal(k4);
+    await renewNow(); await settled();
+    out.renewalFindsItGone = /went back to the pile/.test(NOTICE) && DEALT !== k4 && F.mine().length <= 1;
+    // a renewal keeps the record while the reviewer works
+    const k4b = DEALT; F.shift = 50 * 60000; await renewNow(); F.shift = 0;
+    out.renewalKeeps = DEALT === k4b && F.rpcs.includes("renew_card:" + k4b) && F.mine()[0] === k4b;
+    // three hours away, and nobody took the record: the first mouse movement renews the hold, and it is still theirs
+    const kb = DEALT; lastActive = Date.now() - 3 * 3600e3; F.shift = 3 * 3600e3;
+    document.dispatchEvent(new PointerEvent("pointermove")); await tick(80); F.shift = 0;
+    out.backAndStillMine = DEALT === kb && F.mine()[0] === kb && F.rpcs.filter(r => r === "renew_card:" + kb).length >= 2;
+    // three hours away, and a colleague took it: coming back to the window moves the screen on, and says why, before any click
+    const kt = DEALT; F.steal(kt); lastActive = Date.now() - 3 * 3600e3;
+    window.dispatchEvent(new Event("focus")); await tick(80); await settled();
+    out.backAndTakenToldFirst = DEALT !== kt && /went back to the pile while you were away/.test(NOTICE);
+    // (the colleague's other records go back, so there is still work for the checks below)
+    F.claims = F.claims.filter(h => h.reviewer !== "u2" || h.card_key === F.theirs);
+    if (!DEALT) { act("start"); await settled(); }
+    // a dropped connection: the decision is kept here and said to be unsaved; it goes up when the connection is back
+    const k5 = DEALT; F.fail = true;
+    act("keep"); await until(() => DEAL === "unsaved");
+    out.unsavedKept = !!UNSENT[k5] && /Not saved yet/.test(stage()) && F.mine()[0] === k5;
+    if (!out.unsavedKept) out.unsavedDetail = [k5, DEAL, DEALT, Object.keys(UNSENT), F.mine(), F.claims.map(h => h.card_key + ":" + h.reviewer)];
+    F.fail = false; act("resend"); await settled();
+    out.unsavedSent = !UNSENT[k5] && F.reviews.some(r => r.card_key === k5) && DEALT !== k5;
+    // stop for now: the record is given back, and home says what is left (Jo has finished, so there is one to take)
+    F.claims = F.claims.filter(h => h.reviewer !== "u2");
+    act("start"); await settled();
+    const ks = DEALT;
+    out.dealtAfterColleagueLeft = !!ks;
+    act("stopnow"); await until(() => F.mine().length === 0);
+    out.stopReleases = F.rpcs.includes("release_card:" + ks) && F.mine().length === 0 && PAGE === "home" && /still waiting/.test(stage());
+    if (!out.stopReleases) out.stopDetail = [ks, F.mine(), PAGE, HOMENOTE];
+    // change one's own decision: taken back by name, decided again, and the sheet keeps one line for it
+    const i1 = LOG.findIndex(x => x.key === k1);
+    act("redo", { dataset: { i: String(i1) } }); await until(() => DEALT === k1 && DEAL === null);
+    out.redoTaken = DEALT === k1 && /changing your decision/.test(stage());
+    act("discard"); await settled();
+    out.redoReplaced = F.reviews.filter(r => r.card_key === k1).every(r => r.verdict === "reject" && r.reviewer === "u1") && LOG.filter(x => x.key === k1).length === 1;
     act("stopnow");
-    out.stopReleases = F.rpcs.includes("release_card:" + ks) && PAGE === "home" && /still waiting/.test(document.querySelector("#stage").innerHTML);
-    act("start");
-    // someone else's decision already in the table: yours is not kept, and you are told
-    await until(() => claimed(card()) === true);
-    const k5 = card().key; F.conflict.add(k5);
-    act("keep");
-    await until(() => !UNSENT[k5]);
-    out.clashTold = !DECIDED.has(k5) && /already decided/.test(NOTICE) && !LOG.some(x => x.key === k5);
+    // new news about a record a colleague decided: it comes back for the new proposal only
+    const rc = F.deck.find(d => d.key === F.theirReview).card;
+    rc.pids.push(99999);
+    rc.sources.push({ pid: 99999, link: "https://www.zaobao.com/news/singapore/story20261231-1", date: "2026-12-31", article: "new", says: "", quote: "", original: "", name: rc.entity });
+    rc.changes.push({ ...F.newChange, from: "https://www.zaobao.com/news/singapore/story20261231-1", supporters: ["https://www.zaobao.com/news/singapore/story20261231-1"] });
+    CARDS.find(c => c.key === F.theirReview).pids = rc.pids.slice();
+    Object.assign(CARDS.find(c => c.key === F.theirReview), JSON.parse(JSON.stringify(rc)));
+    act("start"); await settled();
+    const back = card(), asked = back ? rowsFor(back, ordered(back)[0]) : [];
+    out.reopenedDealt = DEALT === F.theirReview;
+    out.onlyNewAsked = asked.length === 1 && asked[0].field === F.newChange.field;
+    out.reopenedNote = /Decided before by Jo/.test(stage());
+    out.reopenedShowsNewArticle = back && back.sources[stOf(back).src].pid === 99999;
+    act("stopnow");
+    // each person's count, for fairness
+    PAGE = "results"; VIEW = "team"; draw();
+    out.perPerson = /Who decided how many/.test(stage()) && /Glenn/.test(stage()) && /Jo/.test(stage());
+    PAGE = "home"; draw();
     // the reader's language first: an English reader sees the English article of a mixed card
     langs = ["en"];
     out.englishFirst = fresh(cOf(F.mixed)).src === cOf(F.mixed).sources.findIndex(s => !/zaobao/.test(s.link));
+    // Home's numbers add up to the total, and the big number plus the other languages is what is still to decide
+    PAGE = "home"; draw();
+    const hd = homeData(), still = hd.segs.find(s => s[0] === "wait")[1];
+    out.homeAddsUp = hd.segs.reduce((a, s) => a + s[1], 0) === hd.total && hd.n + hd.other === still && hd.other > 0
+      && new RegExp(`${hd.other} more (is|are) only in other languages`).test(stage()) && new RegExp(`${still} still to decide`).test(stage());
     langs = ["en", "zh"];
+    // a record confirmed with nothing to change is not on the changes sheet
+    out.noConfirmOnlyRows = changesRows([{ kind: "uptodate", uid: "1", entity: "X", accepted: [], when: new Date() }]).length === 1;
     // the sheet after a reload: earlier decisions come back from the table
-    F.reviews.push(...F.upserts);
     const before = LOG.length;
+    F.setUser({ id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} });
     await signedIn({ id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} });
     out.resumed = LOG.length === before && LOG.every(x => DECIDED.has(x.key));
+    if (!out.resumed) out.resumedDetail = [before, LOG.length, LOG.map(x => x.key + ":" + x.kind)];
     // a test account: looks, holds nothing, saves nothing
-    const nUp = F.upserts.length, nRpc = F.rpcs.length;
+    const nRev = F.reviews.length, nRpc = F.rpcs.length;
+    F.setUser({ id: "u9", email: "test@nlb.gov.sg", user_metadata: { name: "Tester" }, app_metadata: { test: true } });
     await signedIn({ id: "u9", email: "test@nlb.gov.sg", user_metadata: { name: "Tester" }, app_metadata: { test: true } });
     act("start"); act("keep"); await tick(100);
-    out.testWritesNothing = F.upserts.length === nUp && F.rpcs.length === nRpc && /Test account/.test(document.querySelector("#stage").innerHTML);
+    out.testWritesNothing = F.reviews.length === nRev && F.rpcs.length === nRpc && /Test account/.test(stage());
+    out.noDirectWrites = !F.direct;
     say("RESULT " + JSON.stringify(out));
   } catch (e) { say("ERROR " + (e && e.stack || e) + "\n" + JSON.stringify(out)); }
 })();

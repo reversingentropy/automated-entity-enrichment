@@ -73,18 +73,26 @@ def test_every_screen_of_every_card_draws(tmp_path):
 
 @needs_chrome
 def test_the_desk_online_holds_saves_and_shares_records(tmp_path):
+    from datetime import datetime, timedelta, timezone
     cards = FIXTURE["cards"]
     by = {c["key"]: c for c in cards}
+    ago = lambda minutes: (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
+    jo = lambda key, verdict: [{"pid": pid, "card_key": key, "reviewer": "u2", "verdict": verdict, "at": ago(600),
+                                "decision": {"verdict": verdict, "reviewer": "Jo", "rows": [], "at": ago(600),
+                                             "kept_by": ["u2"] if verdict == "unsure" else []}} for pid in by[key]["pids"]]
+    chee = by["uid:18581011"]
     fake = {
         "deck": [{"key": c["key"], "card": c} for c in cards],
-        # someone else decided the Singapore Institute of Technology, and holds Snow City; Clifford Centre is ours
-        "reviews": [{"pid": by["uid:18491949"]["pids"][0], "card_key": "uid:18491949", "reviewer": "u2",
-                     "decision": {"verdict": "approve", "reviewer": "Jo", "rows": [], "at": "2026-10-09T01:00:00Z"}}],
-        "claims": [{"card_key": "uid:18773908", "reviewer": "u2", "claimed_at": "2026-10-09T01:00:00Z"},
-                   {"card_key": "uid:20614903", "reviewer": "u1", "claimed_at": "2026-10-09T02:00:00Z"}],
+        # Jo decided the Singapore Institute of Technology, kept Isa'ad for review, and is working on Snow City;
+        # Clifford Centre was on this reviewer's desk when they last stopped
+        "reviews": jo("uid:18491949", "approve") + jo("uid:18696145", "unsure"),
+        "claims": [{"card_key": "uid:18773908", "reviewer": "u2", "claimed_at": ago(10)},
+                   {"card_key": "uid:20614903", "reviewer": "u1", "claimed_at": ago(5)}],
         "desk": {"index": FIXTURE["index"], "npt": FIXTURE["npt"],
                  "status": {"published": "2026-10-09T04:52:00Z", "newest_news": "2026-10-08", "tte_dump": "TTE-DELTA", "steps": {}}},
-        "mine": "uid:20614903", "theirs": "uid:18773908", "theirReview": "uid:18491949", "mixed": "uid:18338504",
+        "mineKey": "uid:20614903", "theirs": "uid:18773908", "theirReview": "uid:18491949", "keptByJo": "uid:18696145",
+        "mixed": "uid:18338504",
+        "newChange": next(ch for ch in chee["changes"] if ch["field"] == "Affiliations(groupName)"),
     }
     page = online_page(TEMPLATE.read_text(encoding="utf-8"), "https://example.supabase.co", "anon")
     setup = ("<script>window.__FAKE__ = " + blob(fake) + ";"
