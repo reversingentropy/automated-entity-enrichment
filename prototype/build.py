@@ -14,6 +14,7 @@ publish; --out writes somewhere other than the default file.
 
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,8 +41,11 @@ def main():
         desk = json.loads(client.storage.from_("desk").download("desk.json"))
     cards = sorted(cards, key=lambda c: c["i"])
     index = [[r[0], r[1], r[2], r[3], (r[4] or "")[:70]] for r in desk["index"]]
+    # Only holds still live: one not renewed for an hour has lapsed (sql/15_desk_queue.sql), and a stale one
+    # from September showed in every file as "1 on someone else's desk".
+    since = (datetime.now(timezone.utc) - timedelta(minutes=60)).isoformat()
     held = [{"key": r["card_key"], "since": r["claimed_at"][:16]}
-            for r in client.from_("claims").select("card_key,claimed_at").execute().data]
+            for r in client.from_("claims").select("card_key,claimed_at").gt("claimed_at", since).execute().data]
 
     review = "--review" in sys.argv
     page = (ROOT / "prototype" / "desk.template.html").read_text(encoding="utf-8")

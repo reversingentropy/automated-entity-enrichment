@@ -882,9 +882,13 @@ const LANG_NAMES = { en: "English", zh: "Chinese", ms: "Malay", ta: "Tamil" };
 const LANG_TAG = { en: "EN", zh: "中", ms: "BM", ta: "த" };
 const langOf = link => /zaobao/.test(link) ? "zh" : /beritaharian/.test(link) ? "ms" : /tamilmurasu/.test(link) ? "ta" : "en";
 const cardLangs = c => [...new Set((c.sources || []).map(s => langOf(s.link || "")))];
-const GROUPS = [["people", "People", t => t === "PERSON"], ["organisations", "Organisations", t => t === "ORGANISATION"],
-                ["legal acts", "Legal acts", t => t === "LEGAL_ACT"], ["everything else", "Everything else", () => true]];
-const groupOf = c => GROUPS.find(g => g[2](c.type))[0];
+// Updating a record and creating one are kept apart, as the reviewers asked: every new record is one group, and the
+// rest go by type. Only people and organisations are groups of their own: of 100 decisions on existing records over
+// five weeks, 44 were people, 43 organisations, and every other type 1 to 5. The same keys as card_group() in
+// sql/16_desk_groups.sql, which deals the records; a fixed order, so the chips never move.
+const GROUPS = [["people", "People", c => !c.isNew && c.type === "PERSON"], ["organisations", "Organisations", c => !c.isNew && c.type === "ORGANISATION"],
+                ["other changes", "Other vocab changes", c => !c.isNew], ["new records", "Create new records", () => true]];
+const groupOf = c => GROUPS.find(g => g[2](c))[0];
 let langs = null, group = "all", PAGE = "home";
 try { langs = JSON.parse(localStorage.getItem("proto-langs") || "null"); } catch (e) {}
 const readable = c => !langs || cardLangs(c).some(l => langs.includes(l));
@@ -937,7 +941,7 @@ const kindOf = d => d.kind || (d.verdict === "unsure" ? "keep" : d.verdict === "
 function fromDecision(d, c) {
   const k = kindOf(d);
   return { ctype: d.ctype || (c ? c.type : ""), key: c ? c.key : d.card_key, entity: c ? c.entity : d.entity, entityEn: c ? c.entityEn : "", newsFields: c ? c.newsFields : [],
-           title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "everything else",
+           title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "other changes",
            kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
            secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
            seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], link: d.link || "", found: !!d.foundBySearch,
@@ -1502,7 +1506,7 @@ function sheetPage() {
   return `<div class="tiles">${tile(n("approved"), "records to amend")}${tile(n("created"), "records to create")}${tile(acc, "changes accepted")}${tile(LOG.length ? fmtSecs(median(LOG.map(x => x.secs))) : "\u2014", "median time per record")}</div>
   <p class="minor">${n("uptodate")} nothing to change &middot; ${n("discard")} discarded &middot; ${n("noworth")} not worth a record &middot; ${n("keep")} kept for review &middot; ${LOG.filter(x => x.found).length} found by searching</p>
   <div class="filters"><select id="fo" aria-label="Outcome"><option value="">Every outcome</option>${Object.entries(OUTCOME).map(([k, v]) => `<option value="${k}" ${SHEET.outcome === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-    <select id="fg" aria-label="Type"><option value="">Every type</option>${GROUPS.map(([k, v]) => `<option value="${k}" ${SHEET.group === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    <select id="fg" aria-label="Group"><option value="">Every group</option>${GROUPS.map(([k, v]) => `<option value="${k}" ${SHEET.group === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     <input id="sq" type="search" placeholder="Search by name" value="${esc(SHEET.q)}"></div>
   <section class="focus sheet" id="srows">${sheetRows()}</section>`;
 }
@@ -1655,7 +1659,7 @@ function fillJump() {
 }
 function fillGroups() {
   const base = CARDS.filter(available);
-  $("#group").innerHTML = `<option value="all">All types (${base.length})</option>` + GROUPS.map(([k, n]) => `<option value="${k}">${n} (${base.filter(c => groupOf(c) === k).length})</option>`).join("");
+  $("#group").innerHTML = `<option value="all">All records (${base.length})</option>` + GROUPS.map(([k, n]) => `<option value="${k}">${n} (${base.filter(c => groupOf(c) === k).length})</option>`).join("");
   $("#group").value = group;
 }
 function buildList(filter) {
