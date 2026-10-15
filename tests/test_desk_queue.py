@@ -1,7 +1,7 @@
 """
-The desk's queue (sql/15_desk_queue.sql) in a real Postgres: who is given which record, for how long, and who may decide it.
+The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql) in a real Postgres: who is given which record, for how long, and who may decide it.
 
-Runs the desk's own SQL (sql/11, sql/15) in a throwaway Postgres 16 container, on top of just enough of Supabase
+Runs the desk's own SQL (sql/11, sql/15, sql/16) in a throwaway Postgres 16 container, on top of just enough of Supabase
 (tests/sql/supabase_stub.sql): each call is made as a signed-in reviewer, through the same role and request
 settings Supabase uses. Needs Docker; skipped without it. Nothing reaches the project's database.
 """
@@ -46,8 +46,9 @@ def db():
                 break
             time.sleep(1)
         time.sleep(1)
-        # sql/15 twice: it must be safe to run again
-        for f in ("tests/sql/supabase_stub.sql", "sql/11_desk_online.sql", "sql/15_desk_queue.sql", "sql/15_desk_queue.sql"):
+        # sql/15 and sql/16 twice each: they must be safe to run again, in either order
+        for f in ("tests/sql/supabase_stub.sql", "sql/11_desk_online.sql", "sql/15_desk_queue.sql", "sql/15_desk_queue.sql",
+                  "sql/16_desk_groups.sql", "sql/15_desk_queue.sql", "sql/16_desk_groups.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
         yield
@@ -82,11 +83,11 @@ def lit(text: str) -> str:
 
 
 def deck(*cards):
-    """Fresh deck, no holds, no decisions. Each card: (key, type, date, language, pids)."""
+    """Fresh deck, no holds, no decisions. Each card: (key, type, date, language, pids), and True for a new record."""
     rows = []
-    for i, (key, kind, date, lang, pids) in enumerate(cards):
+    for i, (key, kind, date, lang, pids, *new) in enumerate(cards):
         link = "https://www.zaobao.com/news/singapore/story1" if lang == "zh" else "https://www.straitstimes.com/singapore/a"
-        card = {"key": key, "i": i, "pids": pids, "sources": [{"link": link, "date": date}]}
+        card = {"key": key, "i": i, "pids": pids, "sources": [{"link": link, "date": date}], "isNew": bool(new and new[0])}
         rows.append(f"({lit(key)}, {lit(kind)}, {lit(key)}, {lit(json.dumps(card))}::jsonb)")
     run_sql("truncate public.claims, public.reviews; delete from public.deck;"
             "insert into public.deck (key, type, entity, card) values " + ",".join(rows) + ";")
@@ -111,6 +112,19 @@ def test_the_next_record_is_the_newest_in_your_languages_and_type_and_you_hold_o
         call(A, "take_next", langs("en", "zh"))
         call(A, "take_next", langs("en"), "'organisations'")
     assert list(holds().values()) == [A]
+
+
+def test_updating_and_creating_are_separate_groups(db):
+    """A new person is under "new records", not "people"; a change to a building is one of the "other changes"."""
+    deck(("p", "PERSON", "2026-10-12", "en", [1]), ("p-new", "PERSON", "2026-10-13", "en", [2], True),
+         ("b", "FACILITY", "2026-10-11", "en", [3]), ("act-new", "LEGAL_ACT", "2026-10-10", "en", [4], True))
+    assert dict(line.split("|") for line in run_sql("select key, grp from public.deck order by key;").splitlines()) == \
+        {"act-new": "new records", "b": "other changes", "p": "people", "p-new": "new records"}
+    assert call(A, "take_next", langs("en"), "'people'") == "p"             # the newer new person is not offered
+    assert call(A, "take_next", langs("en"), "'other changes'") == "b"
+    assert call(A, "take_next", langs("en"), "'new records'") == "p-new"
+    assert call(B, "take_next", langs("en"), "'new records'") == "act-new"
+    assert call(C, "take_next", langs("en"), "'new records'") is None
 
 
 def test_two_reviewers_asking_at_the_same_instant_get_different_records(db):
