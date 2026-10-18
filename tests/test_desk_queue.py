@@ -274,4 +274,4 @@ def test_the_malay_and_tamil_feeds_are_added_once_and_keep_only_singapore_links(
                      'https://www.tamilmurasu.com.sg/singapore/c', 'https://www.tamilmurasu.com.sg/community/d',
                      'https://www.tamilmurasu.com.sg/india/e']) u
         where f.keep is not null and u ~ f.keep;""").splitlines()[-1]
-    assert kept == "community,singapore,singapura"
+    assert kept == "singapura,community,singapore"   # by link: Berita Harian first; malaysia and india left out

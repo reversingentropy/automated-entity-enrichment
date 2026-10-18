@@ -64,10 +64,12 @@ def main(argv: list[str] | None = None) -> int:
             continue
 
         total_found += parsed["after_filter"]
+        kept = (f"{parsed['after_filter']} in the sections its pattern keeps" if feed.get("keep")
+                else f"{parsed['after_filter']} with a url")
         if args.dry_run:
             copies = find_copies(parsed["articles"], known or [], uses=title_uses)
             print(f"  {label}: {parsed['mode']}, {parsed['items_found']} item(s), "
-                  f"{parsed['after_filter']} with a url. Dry run: would insert those not already stored, "
+                  f"{kept}. Dry run: would insert those not already stored, "
                   f"{len(copies)} of them as the same story as one stored.")
             for url, (original, why) in copies.items():
                 print(f"      {url}\n        same story as {original}: {why}")
@@ -87,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
             # "::warning::" puts the line on the run's page in GitHub Actions.
             print(f"::warning::{label}: every article in the feed was new, so some published since the last run may have "
                   f"dropped off it unread. Ingest more often if this keeps happening.")
-        print(f"  {label}: {parsed['mode']}, {parsed['after_filter']} article(s) in the feed, "
+        print(f"  {label}: {parsed['mode']}, {parsed['items_found']} item(s), {kept}, "
               f"{result['inserted']} new" + (f", {result['copies']} of them a story already stored (not queued)." if result["copies"] else "."))
 
     verb = "Would find" if args.dry_run else "Found"
