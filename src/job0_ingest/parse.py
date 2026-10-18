@@ -5,8 +5,8 @@ Ported from the Supabase Edge Function this job replaces (`rss-ingest-v5`),
 kept behaviourally equivalent rather than redesigned: same language
 detection, same "read description on both RSS and Atom, ignore Atom's
 `summary`/`content`" simplification, same first-link-with-an-href rule for
-Atom. Only the three feeds in `rss_feeds` are RSS in practice, so the Atom
-branch exists for a feed type we do not currently receive.
+Atom. Every feed in `rss_feeds` is RSS in practice, so the Atom branch
+exists for a feed type we do not currently receive.
 """
 
 import re
@@ -39,7 +39,12 @@ def strip_tags(html: str) -> str | None:
 
 
 def detect_language(feed_url: str) -> str:
-    """'chinese' for Zaobao (however it's mirrored), 'english' otherwise."""
+    """
+    'chinese' for Zaobao (however it's mirrored), 'english' otherwise.
+
+    Only the description's unwrapping depends on it: Berita Harian and Tamil
+    Murasu send a plain description, so they take the 'english' path too.
+    """
     return "chinese" if "zaobao" in feed_url.lower() else "english"
 
 
@@ -120,7 +125,7 @@ def _atom_entry(entry: ET.Element, language: str) -> dict:
             "category": None, "pubDate": parse_pubdate(pub_raw)}
 
 
-def parse_feed(xml_text: str, feed_url: str) -> dict:
+def parse_feed(xml_text: str, feed_url: str, keep: str | None = None) -> dict:
     """
     One feed's articles, plus how it was read.
 
@@ -128,6 +133,11 @@ def parse_feed(xml_text: str, feed_url: str) -> dict:
     "after_filter": int, "articles": [...]}. Never raises on a document it
     does not recognise; an unparseable one propagates from ET.fromstring, for
     the caller to catch alongside the fetch itself.
+
+    `keep` is the feed's `rss_feeds.keep`: a pattern an article's link must
+    contain to be kept. Berita Harian and Tamil Murasu publish one feed for
+    every section and none for Singapore alone, so theirs keeps the Singapore
+    sections by path; the other feeds are Singapore-only already and have none.
     """
     language = detect_language(feed_url)
     root = ET.fromstring(xml_text)
@@ -145,6 +155,7 @@ def parse_feed(xml_text: str, feed_url: str) -> dict:
     else:
         return {"mode": "unknown", "items_found": 0, "after_filter": 0, "articles": []}
 
-    filtered = [a for a in articles if a["url"]]
+    pattern = re.compile(keep) if keep else None
+    filtered = [a for a in articles if a["url"] and (pattern is None or pattern.search(a["url"]))]
     return {"mode": mode, "items_found": len(items), "after_filter": len(filtered),
             "articles": filtered}

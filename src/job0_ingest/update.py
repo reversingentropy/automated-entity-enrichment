@@ -12,8 +12,9 @@ RECENT = timedelta(days=7)
 
 
 def fetch_feeds() -> list[dict]:
-    """Every configured feed, in the order `rss_feeds.id` gives them."""
-    return (get_client().from_("rss_feeds").select("id, source, url")
+    """Every configured feed, in the order `rss_feeds.id` gives them, with its link pattern once sql/18 has added one."""
+    columns = "id, source, url" + (", keep" if column_exists("rss_feeds", "keep") else "")
+    return (get_client().from_("rss_feeds").select(columns)
             .order("id").execute().data or [])
 
 

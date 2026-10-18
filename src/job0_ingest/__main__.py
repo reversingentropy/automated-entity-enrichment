@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             response = httpx.get(feed["url"], headers=HEADERS, timeout=TIMEOUT)
             response.raise_for_status()
-            parsed = parse_feed(response.text, feed["url"])
+            parsed = parse_feed(response.text, feed["url"], feed.get("keep"))
         except Exception as exc:
             print(f"  {label}: FAILED to fetch/parse, skipped -- {exc}")
             failed += 1
