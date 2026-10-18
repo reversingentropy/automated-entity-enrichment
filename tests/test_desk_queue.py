@@ -1,5 +1,5 @@
 """
-The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql) and what the page's key can reach (sql/17) in a real Postgres: who is given which record, for how long, and who may decide it.
+The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql), what the page's key can reach (sql/17) and the feeds (sql/18) in a real Postgres: who is given which record, for how long, and who may decide it.
 
 Runs the desk's own SQL (sql/11, sql/15, sql/16, sql/17) in a throwaway Postgres 16 container, on top of just enough of Supabase
 (tests/sql/supabase_stub.sql): each call is made as a signed-in reviewer, through the same role and request
@@ -49,7 +49,8 @@ def db():
         # sql/15 and sql/16 twice each: they must be safe to run again, in either order
         for f in ("tests/sql/supabase_stub.sql", "sql/11_desk_online.sql", "sql/15_desk_queue.sql", "sql/15_desk_queue.sql",
                   "sql/16_desk_groups.sql", "sql/15_desk_queue.sql", "sql/16_desk_groups.sql",
-                  "sql/17_article_private.sql", "sql/17_article_private.sql"):
+                  "sql/17_article_private.sql", "sql/17_article_private.sql",
+                  "sql/18_malay_tamil_feeds.sql", "sql/18_malay_tamil_feeds.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
         yield
@@ -261,3 +262,16 @@ def test_the_pages_key_reads_no_article_and_no_feed(db):
         with pytest.raises(RuntimeError, match="permission denied"):
             run_sql(f"set role {role}; select count(*) from public.{table};")
     assert run_sql("set role service_role; select count(*) from public.article;").splitlines()[-1] == "1"   # the jobs still can
+
+
+def test_the_malay_and_tamil_feeds_are_added_once_and_keep_only_singapore_links(db):
+    """sql/18, run twice by the fixture: two feeds after the three, each with the pattern Job 0 filters its links by."""
+    feeds = run_sql("select id || '|' || source || '|' || coalesce(keep, '-') from public.rss_feeds order by id;").splitlines()
+    assert feeds == ["1|Channel News Asia|-", "2|Straits Times|-", "3|Lianhe Zaobao|-",
+                     "4|Berita Harian|\\.sg/singapura/", "5|Tamil Murasu|\\.sg/(singapore|community)/"]
+    kept = run_sql("""select string_agg(split_part(u, '/', 4), ',' order by u) from public.rss_feeds f,
+        unnest(array['https://www.beritaharian.sg/singapura/a', 'https://www.beritaharian.sg/malaysia/b',
+                     'https://www.tamilmurasu.com.sg/singapore/c', 'https://www.tamilmurasu.com.sg/community/d',
+                     'https://www.tamilmurasu.com.sg/india/e']) u
+        where f.keep is not null and u ~ f.keep;""").splitlines()[-1]
+    assert kept == "community,singapore,singapura"

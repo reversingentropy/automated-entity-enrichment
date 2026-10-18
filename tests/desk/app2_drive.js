@@ -32,7 +32,9 @@
     STATUS.line.date = "2000-01-01"; draw();
     out.staleLineHidden = !stage().includes("A quiet Saturday");
     out.noAllSaved = !/all saved/i.test(stage());
-    act("settings"); act("savelangs");
+    act("settings");
+    out.allFourLanguagesOffered = [...document.querySelectorAll("#veil .lang input")].map(x => x.value).join() === "en,zh,ms,ta";
+    act("savelangs");
     out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && F.rpcs.length === 0;
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);

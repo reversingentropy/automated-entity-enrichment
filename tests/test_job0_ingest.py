@@ -121,6 +121,41 @@ def test_unrecognised_document_yields_no_articles():
     assert result == {"mode": "unknown", "items_found": 0, "after_filter": 0, "articles": []}
 
 
+BERITA_HARIAN_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>Masjid baru dibuka di Tengah</title>
+      <link>https://www.beritaharian.sg/singapura/masjid-baru-dibuka-di-tengah</link>
+      <category>Singapura</category>
+      <description>Masjid itu dibuka secara rasmi hari ini.</description>
+      <pubDate>Sun, 18 Oct 2026 13:00:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>Pilihan raya di Malaysia</title>
+      <link>https://www.beritaharian.sg/malaysia/pilihan-raya-di-malaysia</link>
+      <category>Malaysia</category>
+      <description>Bukan berita Singapura.</description>
+      <pubDate>Sun, 18 Oct 2026 12:00:00 +0800</pubDate>
+    </item>
+  </channel>
+</rss>
+"""
+
+
+def test_a_feed_of_every_section_keeps_only_the_links_its_pattern_names():
+    # Berita Harian and Tamil Murasu have one feed for every section and none for Singapore alone.
+    result = parse_feed(BERITA_HARIAN_RSS, "https://www.beritaharian.sg/rss.xml", r"\.sg/singapura/")
+    assert result["items_found"] == 2 and result["after_filter"] == 1
+    assert [a["url"] for a in result["articles"]] == ["https://www.beritaharian.sg/singapura/masjid-baru-dibuka-di-tengah"]
+    assert result["articles"][0]["description"] == "Masjid itu dibuka secara rasmi hari ini."
+
+
+def test_a_feed_with_no_pattern_keeps_every_article():
+    assert parse_feed(BERITA_HARIAN_RSS, "https://www.beritaharian.sg/rss.xml")["after_filter"] == 2
+    assert parse_feed(BERITA_HARIAN_RSS, "https://www.beritaharian.sg/rss.xml", None)["after_filter"] == 2
+
+
 def test_strip_tags_returns_none_for_tags_only():
     assert strip_tags("<div></div>") is None
 
@@ -309,6 +344,25 @@ def test_one_failed_write_does_not_stop_the_feeds_after_it(monkeypatch):
 def test_all_feeds_ok_exits_clean(monkeypatch):
     insert = lambda articles, known=None: {"attempted": len(articles), "inserted": 0, "copies": 0, "error": None}
     assert _run_main(monkeypatch, _ok, insert) == 0
+
+
+def test_each_feed_is_filtered_by_its_own_pattern(monkeypatch):
+    import src.job0_ingest.__main__ as m
+    feeds = [{"id": 1, "source": "ST", "url": "https://st.example/rss"},
+             {"id": 4, "source": "Berita Harian", "url": "https://www.beritaharian.sg/rss.xml", "keep": r"\.sg/singapura/"}]
+    monkeypatch.setattr(m, "fetch_feeds", lambda: feeds)
+    monkeypatch.setattr(m, "recent_articles", lambda: [])
+    monkeypatch.setattr(m.httpx, "get", lambda url, headers=None, timeout=None: type(
+        "R", (), {"text": BERITA_HARIAN_RSS, "raise_for_status": lambda self: None})())
+    written = []
+
+    def insert(articles, known=None):
+        written.append([a["url"].split("/")[3] for a in articles])
+        return {"attempted": len(articles), "inserted": 0, "copies": 0, "error": None}
+
+    monkeypatch.setattr(m, "insert_new_articles", insert)
+    assert m.main([]) == 0
+    assert written == [["singapura", "malaysia"], ["singapura"]]
 
 
 def test_a_feed_with_nothing_seen_before_is_flagged(monkeypatch, capsys):

@@ -21,4 +21,10 @@ create table public.extracted_entities (id bigint primary key);
 create table public.entities (uid text primary key);
 create table public.tte_imports (id bigint primary key);
 create table public.candidate_matches (id bigint primary key);
-create table public.rss_feeds (id bigint primary key);
+-- The live table's columns, and its three feeds, as sql/18 finds them.
+create table public.rss_feeds (id bigint primary key, created_at timestamptz not null default now(),
+                               source text not null, url text not null, category text not null);
+insert into public.rss_feeds (id, source, url, category) values
+  (1, 'Channel News Asia', 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416', 'Singapore'),
+  (2, 'Straits Times', 'https://www.straitstimes.com/news/singapore/rss.xml', 'Singapore'),
+  (3, 'Lianhe Zaobao', 'https://rsshub.rss3.workers.dev/zaobao/znews/singapore', 'Singapore');
