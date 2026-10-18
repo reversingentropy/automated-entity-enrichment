@@ -1526,13 +1526,13 @@ function teamPage() {
   });
   const sum = f => rows.reduce((a, r) => a + r[f], 0);
   const waiting = CARDS.filter(c => !HELD.has(c.key) && !doneKeys.has(c.key));
-  const zh = waiting.filter(c => cardLangs(c).includes("zh")).length, en = waiting.filter(c => cardLangs(c).includes("en")).length;
+  const byLang = Object.entries(LANG_NAMES).map(([l, n]) => [n, waiting.filter(c => cardLangs(c).includes(l)).length]).filter(([, k]) => k);
   const bar = r => { const p = v => (r.total ? v / r.total * 100 : 0) + "%"; return `<div class="stack"><i class="d" style="width:${p(r.decided)}"></i><i class="k" style="width:${p(r.kept)}"></i><i class="h" style="width:${p(r.held)}"></i></div>`; };
   const held = [...HELD.entries()].map(([key, since]) => { const c = CARDS.find(x => x.key === key); return `<div class="heldrow"><span><b>${esc(c ? c.entity : key)}</b> &middot; on someone&rsquo;s desk since ${esc(dayStr(since))}</span>${ONLINE ? "" : `<button class="donebtn" data-act="release" data-k="${esc(key)}">Release</button>`}</div>`; }).join("");
   const approved = ALL.filter(x => x.kind === "approved");
   return `<div class="tiles">${tile(sum("decided"), "decided")}${tile(sum("waiting"), "waiting")}${tile(sum("held"), "on someone&rsquo;s desk")}${tile(sum("kept"), "kept for review")}</div>
   <section class="focus">${rows.map(r => `<div class="grp"><div class="top">${esc(r.name)}<span>${r.total} cards</span></div>${bar(r)}<div class="legend"><span><i class="sw" style="background:var(--tick)"></i>${r.decided} decided</span><span><i class="sw" style="background:var(--amber-line)"></i>${r.kept} kept</span><span><i class="sw" style="background:var(--accent)"></i>${r.held} on someone&rsquo;s desk</span><span><i class="sw" style="background:#E4DFD2"></i>${r.waiting} waiting</span></div></div>`).join("")}</section>
-  <p class="minor">Waiting, by the language of their articles: Chinese ${zh}, English ${en}. A card with articles in both is counted in both.</p>
+  ${byLang.length ? `<p class="minor">Waiting, by the language of their articles: ${byLang.map(([n, k]) => `${n} ${k}`).join(", ")}. A card with articles in more than one is counted in each.</p>` : ""}
   ${HELD.size ? `<h2 class="h2">On someone&rsquo;s desk</h2><section class="focus">${held}</section><p class="minor">${ONLINE ? "A record stays on one person&rsquo;s desk while they work on it, so nobody else is dealt it. Left for an hour, it goes back to the pile by itself." : "A card stays on one person&rsquo;s desk until they decide it, so nobody else is dealt it. If someone is away, release it here."}</p>` : ""}
   <p class="minor">This week: ${approved.length} records approved, ${approved.filter(x => x.done).length} of them done in TTE.</p>
   <h2 class="h2">The pipeline</h2>
@@ -1612,7 +1612,7 @@ function settings() {
   const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
   v.innerHTML = `<div class="welcome small" role="dialog" aria-label="Languages"><h2>Which languages do you read?</h2>
     <p class="sub">You are only given cards with an article in a language you read. You choose once; change it any time from the menu at the top.</p>
-    <div class="langs">${Object.entries(LANG_NAMES).filter(([l]) => count(l) || chosen.has(l)).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} cards waiting</small></label>`).join("")}</div>
+    <div class="langs">${Object.entries(LANG_NAMES).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} cards waiting</small></label>`).join("")}</div>
     <button class="go" data-act="savelangs">Done</button></div>`;
   document.body.appendChild(v);
 }
