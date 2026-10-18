@@ -16,7 +16,7 @@ file an issue against it.
 | Supabase Auth | reviewer accounts, created by hand, no self-signup. Sign-up is a dashboard switch (Authentication, "Allow new users to sign up"), not something the SQL can set; every signed-in account is a reviewer, so it must be off | the desk page |
 | Gemini API | 3 independent prompts: relevance, extraction, resolution | Jobs 1-3 |
 | The desk page | two templates: the first desk (`src/export/desk_template.html`), still built as a zip, and the second (`prototype/desk.template.html`), the online desk: a static page with the anon key baked in, served by Cloudflare Workers from `dist/` on every push | Postgres + Storage, direct from the browser |
-| RSS ingestion | `src/job0_ingest`, Job 0: reads every feed in `rss_feeds` and inserts the articles it has not stored; a story already stored at another address is kept as a copy marked judged (`duplicate_of`). Replaces the Supabase Edge Function `rss-ingest-v5`, whose cron job has to be switched off by hand | the feeds (HTTP), Postgres, before Job 1 runs |
+| RSS ingestion | `src/job0_ingest`, Job 0: reads every feed in `rss_feeds` (CNA, the Straits Times, Zaobao, and from `sql/18` Berita Harian and Tamil Murasu, whose all-section feeds are cut to their Singapore sections by `rss_feeds.keep`) and inserts the articles it has not stored; a story already stored at another address is kept as a copy marked judged (`duplicate_of`). Replaces the Supabase Edge Function `rss-ingest-v5`, whose cron job has to be switched off by hand | the feeds (HTTP), Postgres, before Job 1 runs |
 
 ## System diagram
 
@@ -216,7 +216,8 @@ Everything in this section is a real, current limitation, not a hedge:
   organisation rename should actually be expressed is an open policy
   question (see the README's "Known and unfinished" list).
 - RSS ingestion is now Job 0, in this repository. The `rss_feeds` table it
-  reads is created by no script in `sql/`, and the Supabase Edge Function it
+  reads is created by no script in `sql/` (`sql/18` only adds a column and
+  two rows), and the Supabase Edge Function it
   replaces has to be switched off by hand: left running, it resets `relevant`
   and `processed_extraction` on every article still in a feed.
 - The live schema differs from `sql/` (checked 2026-09-30). `article.relevant`

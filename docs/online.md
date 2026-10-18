@@ -24,7 +24,8 @@ laptop, and would run unchanged from a static host later.
    finds by search. Then `sql/14` to `sql/17`: duplicate articles, the
    desk's queue, its four groups, and `article` and `rss_feeds` closed to
    the page's key (they had a policy and a grant from before this
-   repository). Every file is safe to re-run.
+   repository). Then `sql/18`: the Malay and Tamil feeds. Every file is
+   safe to re-run.
 
 2. **Turn sign-ups off**: Authentication > Sign In / Providers > "Allow new
    users to sign up" off. Accounts are made by hand. This matters more than
