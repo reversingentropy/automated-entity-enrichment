@@ -29,7 +29,7 @@ seconds_between_articles = 5
 
 [resolution]
 # The highest-stakes judgement: a wrong match corrupts an authority record.
-models = ["gemini-3.8-flash"]
+models = ["gemini-3.5-flash-lite"]
 thinking = "high"
 seconds_between_articles = 5
 # Articles per request. One keeps each decision in a small context; raise it
