@@ -45,4 +45,4 @@ thinking = "high"
 [notify]
 # The daily email ends with a link to the desk. Put its address here once it
 # is hosted (e.g. https://tte-desk.pages.dev); empty leaves the link out.
-desk_url = "https://tte-desk.nair-ashwin1994.workers.dev/"
+desk_url = "https://automated-entity-enrichment.nair-ashwin1994.workers.dev/"
