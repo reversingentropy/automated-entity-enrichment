@@ -56,6 +56,11 @@
     out.dateEditedYearWritten = acceptedOf(dc, dst, drows[dk], dk).some(a => a.field === "Year Started (yyyy)" && a.current === "2026" && a.proposed === "2025");
     const born = rowsFor(dc, Object.assign({}, dOpt, { extra: [{ field: "Birth Year (yyyy)", strategy: "REPLACE", adding: "1974", existing: ["1973"] }], dates: {} }));
     out.birthDateOneChange = born.length >= 1 && born[0].field === "Date of birth" && born[0].existing[0] === "1973";
+    const ev = rowsFor(dc, Object.assign({}, dOpt, { extra: [{ field: "Day", strategy: "REPLACE", adding: "17", existing: [] }, { field: "Month", strategy: "APPEND", adding: "11", existing: ["10"] }], dates: { Year: "2026" } }));
+    const evAt = ev.findIndex(r => r.date);
+    Object.assign(dst, { ch: evAt }); dst.val = {}; dst.edit = {};
+    out.eventDateOneChange = ev.filter(r => r.date).length === 1 && ev[evAt].field === "Event date" && ev[evAt].existing[0] === "Oct 2026"
+      && acceptedOf(dc, dst, ev[evAt], evAt).filter(a => a.proposed !== a.current).map(a => `${a.field}:${a.current}>${a.proposed}`).join() === "Day:>17,Month:10>11";
     dOpt.extra = keepExtra; dOpt.dates = keepDates; S[dc.key] = keepS;
     out.fieldNamed = fieldLabel("Day Started (dd)") === "Day started" && fieldLabel("Description") === "Description" && fieldLabel("Affiliations(groupName)") === "Affiliations";
     out.sourceDateHasYear = /2026/.test(dayOf("2026-09-16"));
@@ -181,6 +186,28 @@
     await signedIn({ id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} });
     out.resumed = LOG.length === before && LOG.every(x => DECIDED.has(x.key));
     if (!out.resumed) out.resumedDetail = [before, LOG.length, LOG.map(x => x.key + ":" + x.kind)];
+    // the languages decide what is offered: a record held from before, in a language no longer chosen, is given back
+    // rather than offered first; a type with nothing in those languages cannot be picked; and one picked anyway sends
+    // the reviewer home saying so, where Continue deals any type rather than asking for that one again
+    const u1 = { id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} };
+    const zhOnly = CARDS.find(c => cardLangs(c).join() === "zh" && openFor(c) && !HELD.has(c.key));
+    out.zhOnlyOpen = !!zhOnly;
+    if (zhOnly) {
+      F.claims = F.claims.filter(h => h.reviewer !== "u1").concat([{ card_key: zhOnly.key, reviewer: "u1", claimed_at: new Date().toISOString() }]);
+      await signedIn(u1);
+      act("start"); await settled();
+      const heldZh = DEALT === zhOnly.key;
+      act("nav", { dataset: { nav: "home" } });
+      act("settings"); document.querySelectorAll("#veil .lang input").forEach(x => { x.checked = x.value === "en"; }); act("savelangs"); await tick(20);
+      out.otherLanguageGivenBack = heldZh && !F.mine().includes(zhOnly.key) && !DEALT && homeData().next !== zhOnly && !stage().includes(esc(gist(nameOf(zhOnly), 40)));
+      act("start"); await settled();
+      out.emptyTypeNotOffered = [...sel.options].find(o => o.value === "organisations").disabled && !CARDS.some(c => available(c) && groupOf(c) === "organisations");
+      sel.value = "organisations"; sel.dispatchEvent(new Event("change")); await settled();
+      out.emptyTypeSaysSo = PAGE === "home" && /Nothing under Organisations/.test(stage()) && group === "all";
+      act("start"); await settled();
+      out.continueAfterEmptyType = F.rpcs.filter(r => r.startsWith("take_next")).pop() === "take_next:all" && group === "all" && (!DEALT || readable(card()));
+      act("stopnow"); langs = ["en", "zh"];
+    }
     // a test account: looks, holds nothing, saves nothing
     const nRev = F.reviews.length, nRpc = F.rpcs.length;
     F.setUser({ id: "u9", email: "test@nlb.gov.sg", user_metadata: { name: "Tester" }, app_metadata: { test: true } });

@@ -773,11 +773,12 @@ const fieldLabel = f => { const n = fq(f).replace(/^the /, ""); return n.charAt(
 // accepting the day without the month makes a date no source gives. So the parts of one date are one change: the
 // whole date as TTE holds it, and as it would be, with the parts the news does not give kept from TTE, in grey.
 // Accepted, each part that changes is still written as its own field, as TTE stores it.
-const DATE_PART = /^(?:(Day|Month|Year) (Started|Ended|Completed)|(Birth|Death) (Day|Month|Year)) \((?:dd|mm|yyyy)\)$/;
+// An event's date is plain "Day", "Month" and "Year".
+const DATE_PART = /^(?:(Day|Month|Year) (Started|Ended|Completed)|(Birth|Death) (Day|Month|Year)) \((?:dd|mm|yyyy)\)$|^(Day|Month|Year)$/;
 const PARTS = ["Day", "Month", "Year"], PART_FMT = { Day: "dd", Month: "mm", Year: "yyyy" };
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DATE_NAME = { Started: "Date started", Ended: "Date ended", Completed: "Date completed", Birth: "Date of birth", Death: "Date of death" };
-const partField = (d, p) => d.born ? `${d.which} ${p} (${PART_FMT[p]})` : `${p} ${d.which} (${PART_FMT[p]})`;
+const DATE_NAME = { Started: "Date started", Ended: "Date ended", Completed: "Date completed", Birth: "Date of birth", Death: "Date of death", Event: "Event date" };
+const partField = (d, p) => d.which === "Event" ? p : d.born ? `${d.which} ${p} (${PART_FMT[p]})` : `${p} ${d.which} (${PART_FMT[p]})`;
 const showPart = (p, v) => !v ? "" : p === "Day" ? String(+v || v) : p === "Month" ? (MON[+v - 1] || v) : v;
 const showDate = parts => PARTS.map(p => showPart(p, parts[p])).filter(Boolean).join(" ");
 function mergeDates(rows, o, c) {
@@ -785,10 +786,10 @@ function mergeDates(rows, o, c) {
   rows.forEach(ch => {
     const m = DATE_PART.exec(ch.field || "");
     if (!m || ch.diff) { out.push(ch); return; }
-    const which = m[2] || m[3], part = m[1] || m[4];
+    const which = m[2] || m[3] || "Event", part = m[1] || m[4] || m[5];
     if (!at.has(which)) {
       at.set(which, out.length);
-      out.push({ field: DATE_NAME[which], strategy: "REPLACE", verb: "Replace", date: { which, born: !m[2], held: {}, news: {} },
+      out.push({ field: DATE_NAME[which], strategy: "REPLACE", verb: "Replace", date: { which, born: !!m[3], held: {}, news: {} },
                  supporters: [], saidBy: [], from: ch.from || (c.newsFrom || {})[ch.field] });
     }
     const d = out[at.get(which)];
@@ -961,8 +962,9 @@ const LOG = [], DECIDED = new Set();
 const TAKEN = new Set();   // online: records another reviewer has decided or holds
 // a card is dealt to you if you can read it, nobody else holds it, and it is not already decided. Online the database
 // deals (take_next in sql/15_desk_queue.sql) and this only counts what is waiting, by the same rule: a record with a
-// proposal nobody has decided, or one a colleague kept for review, that nobody else holds.
-const available = c => QUEUE() ? (readable(c) || MINE.has(c.key)) && openFor(c) && !HELD.has(c.key)
+// proposal nobody has decided, or one a colleague kept for review, that nobody else holds. One you hold counts only
+// in a language you read: after choosing Tamil, an English record from before is not what home offers.
+const available = c => QUEUE() ? readable(c) && openFor(c) && !HELD.has(c.key)
                                : (readable(c) || MINE.has(c.key)) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
 
 // ---- online: sign-in, the deck, holding a record, saving each decision -------------------
@@ -1168,7 +1170,7 @@ const onlyNew = (c, list) => {
   return list.filter(ch => ((ch.supporters && ch.supporters.length) ? ch.supporters : [ch.from]).some(l => links.has(l)));
 };
 const pidsToWrite = c => (c.pids || []).filter(pid => pidOpen(pid) || (REDO.has(c.key) && (REV.get(pid) || {}).reviewer === me.id));
-const fits = c => !!c && (readable(c) || DEALT === c.key) && (group === "all" || groupOf(c) === group);
+const fits = c => !!c && (readable(c) || REDO.has(c.key)) && (group === "all" || groupOf(c) === group);
 // Everyone's decisions and holds, as read from the table: per proposal for the queue, per record for the pages.
 function takeIn(reviews, holds) {
   const byKey = new Map(CARDS.map(c => [c.key, c]));
@@ -1223,13 +1225,18 @@ async function deal() {
 function setDealt(key) {
   MINE.clear(); DEALT = key; DEAL = key ? null : "none"; lastRenew = Date.now();
   if (key) { MINE.add(key); HELD.delete(key); const c = CARDS.find(y => y.key === key); if (c && !S[key]) S[key] = fresh(c); }
-  if (!key && PAGE === "review") { PAGE = "home"; HOMENOTE = "Nothing is waiting for you just now: every record in your languages is decided or on a colleague's desk."; }
+  if (!key && PAGE === "review") {
+    const g = GROUPS.find(x => x[0] === group);
+    PAGE = "home"; HOMENOTE = g ? `Nothing under ${g[1]} is waiting for you just now, in the languages you read.`
+                                : "Nothing is waiting for you just now: every record in your languages is decided or on a colleague's desk.";
+    group = "all"; fillGroups();
+  }
   draw(true);
 }
 // Start, or come back: the record already yours, if it is still open and of the type chosen; otherwise the next.
 async function resumeOrDeal() {
   if (!QUEUE()) return;
-  const mine = [...MINE].map(k => CARDS.find(c => c.key === k)).find(c => c && openFor(c) && (group === "all" || groupOf(c) === group));
+  const mine = [...MINE].map(k => CARDS.find(c => c.key === k)).find(c => c && openFor(c) && fits(c));
   if (mine) {
     DEAL = "asking"; draw(true);
     let ok = false;
@@ -1346,7 +1353,8 @@ const go = (st, screen, extra) => Object.assign(st, { screen, full: false, descF
 function act(a, el) {
   const i = el ? Number(el.dataset.i) : 0;
   if (a === "signin") { signIn(); return; }
-  if (a === "start") { PAGE = "review"; HOMENOTE = ""; allDone = false; if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
+  // home's big button is for every type, as its number counts every type; a chip is for one
+  if (a === "start") { group = "all"; PAGE = "review"; HOMENOTE = ""; allDone = false; buildList($("#filter").value); if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
   if (a === "startgroup") { group = el.dataset.g; PAGE = "review"; HOMENOTE = ""; buildList($("#filter").value); if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
   if (a === "redeal") return deal();
   if (a === "resend") { if (DEALT && DEAL === "unsaved") { DEAL = "saving"; draw(); sendNow(DEALT, true); } return; }
@@ -1374,6 +1382,8 @@ function act(a, el) {
     langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
     $("#veil").remove(); buildList($("#filter").value);   // stays on the page it was opened from
     if (QUEUE() && PAGE === "review" && !fits(card()) && DEAL !== "saving" && DEAL !== "unsaved") return deal();
+    // away from the record (home, results), one no longer in a language read is given back, so home offers one that is
+    if (QUEUE() && DEALT && DEAL === null && !fits(card())) { Promise.resolve(sb.rpc("release_card", { key: DEALT })).catch(() => {}); MINE.clear(); DEALT = null; }
     return draw(true);
   }
   if (a === "view") { VIEW = el.dataset.v; return draw(); }
@@ -1729,7 +1739,9 @@ function fillJump() {
 }
 function fillGroups() {
   const base = CARDS.filter(available);
-  $("#group").innerHTML = `<option value="all">All records (${base.length})</option>` + GROUPS.map(([k, n]) => `<option value="${k}">${n} (${base.filter(c => groupOf(c) === k).length})</option>`).join("");
+  // a type with nothing in your languages cannot be picked: picking it would only send you home
+  $("#group").innerHTML = `<option value="all">All records (${base.length})</option>` + GROUPS.map(([k, n]) => { const v = base.filter(c => groupOf(c) === k).length;
+    return `<option value="${k}" ${v || k === group ? "" : "disabled"}>${n} (${v})</option>`; }).join("");
   $("#group").value = group;
 }
 function buildList(filter) {

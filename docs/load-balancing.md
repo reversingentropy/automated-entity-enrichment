@@ -88,7 +88,9 @@ the record, refuses to replace a colleague's decision, and lets you change only 
 
 **Does clicking the languages or types over and over break anything?** No. Each click gives back the record
 held before taking the next, so one record at most is held. The page waits for the database's answer to the
-last click (rule 4).
+last click (rule 4). A record you hold that is not in your new languages is given back, even from home, so home
+never offers it. A group with nothing in your languages cannot be picked. Home's **Continue** is for every group,
+as its number counts every group; to work on one group, press its chip.
 
 **Is it slower?** No. Moving to the next record is one call to the database (rule 7). From Singapore that call
 takes about 0.3 seconds. The records themselves are already loaded when you sign in.

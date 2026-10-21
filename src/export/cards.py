@@ -28,7 +28,7 @@ from src.shared.pagination import fetch_all
 from src.shared.supabase_client import column_exists, get_client
 
 CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿]")
-DATE_PART = re.compile(r"\((?:dd|mm|yyyy)\)$")
+DATE_PART = re.compile(r"\((?:dd|mm|yyyy)\)$|^(?:Day|Month|Year)$")  # an event's date has no suffix
 LATIN = re.compile(r"^[\x00-\x7F\u00C0-\u024F\s.,'’()-]+$")
 
 # Fields worth showing when asking "is this the same entity", most
