@@ -36,6 +36,29 @@
     out.allFourLanguagesOffered = [...document.querySelectorAll("#veil .lang input")].map(x => x.value).join() === "en,zh,ms,ta";
     act("savelangs");
     out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && F.rpcs.length === 0;
+    // Feedback 3: a date's day, month and year are one change, TTE's parts kept in grey; accepted, each part that
+    // changes is its own field on the sheet
+    const dc = CARDS.find(x => !x.isNew && ordered(x).length && !reopened(x) && x.picked !== ordered(x)[0].uid) || CARDS.find(x => !x.isNew && ordered(x).length);
+    const dOpt = ordered(dc)[0], keepExtra = dOpt.extra, keepDates = dOpt.dates, keepS = S[dc.key];
+    dOpt.extra = [{ field: "Day Started (dd)", strategy: "REPLACE", adding: "16", existing: ["01"] }, { field: "Month Started (mm)", strategy: "APPEND", adding: "9", existing: ["07"] }];
+    dOpt.dates = { "Day Started (dd)": "01", "Month Started (mm)": "07", "Year Started (yyyy)": "2026" };
+    S[dc.key] = undefined;
+    const dst = stOf(dc), drows = rowsFor(dc, dOpt), dk = drows.findIndex(r => r.date);
+    out.dateIsOneChange = drows.filter(r => r.date).length === 1 && !drows.some(r => /\((dd|mm|yyyy)\)$/.test(r.field));
+    Object.assign(dst, { screen: "change", chosen: 0, cand: 0, ch: dk });
+    const dhtml = change(dc, dst);
+    out.dateShownWhole = /Set date started to this\?/.test(dhtml) && /Date started in TTE now/.test(dhtml) && /<s>1 Jul 2026<\/s>/.test(dhtml)
+      && /class="newv">16<\/span> <span class="newv">Sep<\/span> <span class="old" title="Kept from TTE[^"]*">2026<\/span>/.test(dhtml) && /leave date started as it is/.test(dhtml);
+    const sheet = acceptedOf(dc, dst, drows[dk], dk).filter(a => a.proposed !== a.current).map(a => `${a.field}:${a.current}>${a.proposed}`).join();
+    out.dateAcceptWritesParts = sheet === "Day Started (dd):01>16,Month Started (mm):07>09";
+    dst.edit[dk] = true; out.dateEditBoxes = (change(dc, dst).match(/class="din"/g) || []).length === 3;
+    dateOf(dst, dk, drows[dk]).Year = "2025";
+    out.dateEditedYearWritten = acceptedOf(dc, dst, drows[dk], dk).some(a => a.field === "Year Started (yyyy)" && a.current === "2026" && a.proposed === "2025");
+    const born = rowsFor(dc, Object.assign({}, dOpt, { extra: [{ field: "Birth Year (yyyy)", strategy: "REPLACE", adding: "1974", existing: ["1973"] }], dates: {} }));
+    out.birthDateOneChange = born.length >= 1 && born[0].field === "Date of birth" && born[0].existing[0] === "1973";
+    dOpt.extra = keepExtra; dOpt.dates = keepDates; S[dc.key] = keepS;
+    out.fieldNamed = fieldLabel("Day Started (dd)") === "Day started" && fieldLabel("Description") === "Description" && fieldLabel("Affiliations(groupName)") === "Affiliations";
+    out.sourceDateHasYear = /2026/.test(dayOf("2026-09-16"));
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);

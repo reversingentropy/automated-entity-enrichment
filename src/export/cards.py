@@ -28,6 +28,7 @@ from src.shared.pagination import fetch_all
 from src.shared.supabase_client import column_exists, get_client
 
 CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿]")
+DATE_PART = re.compile(r"\((?:dd|mm|yyyy)\)$")
 LATIN = re.compile(r"^[\x00-\x7F\u00C0-\u024F\s.,'’()-]+$")
 
 # Fields worth showing when asking "is this the same entity", most
@@ -975,6 +976,11 @@ def build_cards(include_new: bool = True, backfill: bool = False,
             "fields": identifying(record.get("fields")),
             "similarity": round(similarity, 2) if similarity is not None else None,
         }
+        # A date is three fields, day, month and year, each proposed on its own. The desk shows a proposed day with
+        # the whole date it makes, as TTE holds it now, so it needs the parts no proposal touches too.
+        dates = {k: v for k, v in (record.get("fields") or {}).items() if v and DATE_PART.search(k)}
+        if dates:
+            option["dates"] = dates
         # Reached through the extractor's English rendering of a non-Latin
         # name, which is a guess: the card says so.
         if via and original and via != original and not LATIN.match(original):

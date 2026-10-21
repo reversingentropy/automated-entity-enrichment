@@ -162,12 +162,15 @@ def figure3() -> Path:
     label_w = 26
     col_w = (WIDTH - label_w) / 3
     head_h = 12
+    # Relevance is the one stage set for precision: it passes only changes to authority records, and its misses are
+    # never seen, so they are measured on a labelled sample of rejects (Section 6) instead (the paper, 21 Oct 2026).
     rows = [
         ("What goes wrong", [["A relevant story", "is rejected."], ["The wrong record", "is chosen."], ["Existing text is removed", "or overwritten."]], NAVY, 11.5),
         ("What it costs", [["Invisible loss: the update", "never reaches anyone."], ["Misattribution: correct", "facts on the wrong record."],
                            ["Information loss: valid", "text is destroyed."]], RED, 11.5),
-        ("Design response", [["Favour recall: a low", "threshold, noise accepted", "early."], ["Verify identity: evidence", "and key fields first."],
-                             ["Make changes inspectable:", "show the difference, flag", "deletions, one change", "per screen."]], TEAL, 21),
+        ("Design response", [["High precision: pass only", "changes to authority", "records; a labelled sample", "of rejects measures", "the misses."],
+                             ["Verify identity: evidence", "and key fields first."],
+                             ["Make changes inspectable:", "show the difference, flag", "deletions, one change", "per screen."]], TEAL, 25),
     ]
     heads = [("1  Relevance", "article selection"), ("2  Identity", "entity resolution"), ("3  Editing", "field updates")]
     H = head_h + sum(r[3] for r in rows) + 15

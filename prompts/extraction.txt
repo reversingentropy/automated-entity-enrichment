@@ -81,6 +81,14 @@ counted from the publication date, never from today. Awards are written
 determined from the article and its date, leave the year field out rather
 than guess.
 
+START AND END DATES. "Started" is when the entity itself began: was founded,
+formed, opened or took effect; "Ended" is when it closed, dissolved or was
+repealed. The date of something else the entity did -- a programme it rolled
+out, an event it held, an announcement it made -- is neither. Fill a start or
+end date, or write "established on" in a description, only when the article
+says the entity began or ended on that date. An agency launching courses "on
+Wednesday (Sep 16)" was not established on 16 September.
+
 ANNOUNCED APPOINTMENTS. A person named to a post that starts after the
 article ("will take over from 1 September", "appointed with effect from
 January") is an entity to extract now, and so is the person leaving it: the

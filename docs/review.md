@@ -124,6 +124,20 @@ record that held it in English, and one affiliation asked twice. The labels are 
 wording*; the desk metaphor's own words ("pencil it in", "pending tray",
 "look further back") cost the first reviewer time and are gone.
 
+Each change is decided on its own: *No change* says which field it leaves
+alone ("leave date started as it is"), because "leave the record as it is" read
+as all or nothing. The field's name heads the value as TTE holds it. A date's
+day, month and year are one change, shown whole: "Set date started to this?",
+1 Jul 2026 struck through, then 16 Sep 2026 with the parts from the news in
+green and the part kept from TTE in grey. *Edit* gives a box for each part.
+Accepted, each part that changes is still its own TTE field on the sheet (Day
+Started (dd), Month Started (mm)); the card builder gives each candidate its
+date fields so the parts the news leaves out can be shown. Article dates carry
+their year. The third round of feedback met "Set day started to this? 01 → 16"
+with "which field is this?", and the date was wrong: the model had taken the
+day an agency launched some courses for the day it was set up, which the
+extraction prompt now rules out (START AND END DATES).
+
 When the CSVs come back:
 
 ```bash

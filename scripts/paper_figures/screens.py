@@ -6,7 +6,9 @@ Figure 2: the review desk the team chose (prototype/desk.template.html), on the 
 Builds the desk from the published deck (prototype/build.py, reading the database only), opens Gerard Ee's card on
 its three screens (same record?, the new affiliation, the description), takes each at twice the resolution, crops it
 to the desk's own column, and lays the three out as one figure with (a), (b), (c) and a few numbered callouts.
-Nothing is mocked up: the article, the TTE record and the proposed changes are the real ones.
+Nothing is mocked up: the article, the TTE record and the proposed changes are the real ones. The page shot is the
+one built on 12 Oct 2026 (work/desk.html, kept so the figure does not move with the desk); a key field that matches
+read "Accountant in both" then and reads "Accountant" since 21 Oct, so the probe makes that one change to the old page.
 """
 
 import json
@@ -33,6 +35,9 @@ PROBE = """<script>setTimeout(() => {
   draw(true);
   const box = el => { if (!el) return null; const r = el.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; };
   const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  // The desk since 21 Oct 2026: a key field that matches reads "Accountant", no longer "Accountant in both".
+  if (screen === "who") { const w = document.createTreeWalker(q("#stage"), NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) if (/ in both$/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/ in both$/, ""); }
   const out = { stage: box(q("#stage")), h1: box(q("#stage h1")), focus: box(q("#stage .focus")),
                 actions: box(qa("#stage .stamp, #stage .stamps, #stage .acts").pop() || null),
                 news: box(q("#stage .news, #stage .newsblock, #stage .clip")), rec: box(q("#stage .rec, #stage .record, #stage .card")),
@@ -84,7 +89,7 @@ def crop(png: Path, rects: dict, bottom_key: str, pad: int = 14) -> Path:
 # is shown once, in (a); (b) and (c) keep the question and the change itself, and a dashed rule marks where the
 # repeated article was cut out.
 PANELS = [
-    ("a", "who", [(61, 486)], "Identity first: the article's sentence beside the TTE record"),
+    ("a", "who", [(61, 486)], "Identify first: the article's sentence alongside the TTE record"),
     ("b", "Affiliations(groupName)", [(61, 128), (250, 476)], "One change per screen: the affiliations in TTE now, and after accepting"),
     ("c", "Description", [(61, 128), (388, 602)], "The description: the added clause in green, what it replaces struck through"),
 ]

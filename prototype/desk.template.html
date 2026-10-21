@@ -130,6 +130,9 @@
   .final .old{color:var(--ink2)}
   .final .newv{background:var(--add-bg);color:var(--add);border-radius:5px;padding:.05rem .35rem;font-weight:650}
   .final .newv.nt{background:var(--amber-bg);color:var(--amber)}
+  .dparts{display:flex;gap:.6rem;flex-wrap:wrap} .dparts label{display:grid;gap:.2rem;font-size:.75rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+  .dparts .din{font:inherit;font-size:1rem;font-weight:600;color:var(--ink);background:#fff;border:1.5px solid var(--ink3);border-radius:6px;padding:.3rem .5rem;width:4.5rem}
+  .dparts label:last-child .din{width:5.5rem}
   .seg2{display:inline-flex;background:#E9E5D9;border-radius:8px;padding:.15rem}
   .seg2 button{border:none;background:none;border-radius:6px;padding:.22rem .7rem;font-size:.84rem;font-weight:650;color:var(--ink2);letter-spacing:0;text-transform:none}
   .seg2 button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,25,40,.18)}
@@ -454,7 +457,8 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, ch => ({ "&": "&a
 const CJK = /[㐀-鿿]/;
 const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"]];
 const outletOf = link => (OUTLET.find(([k]) => (link || "").includes(k)) || [0, "News"])[1];
-const dayOf = d => { const t = new Date(d); return isNaN(t) ? (d || "") : t.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+// With the year: "16 Sept" alone left a reviewer guessing which year a date in the article meant (Feedback 3).
+const dayOf = d => { const t = new Date(d); return isNaN(t) ? (d || "") : t.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
 const kind = c => c.type.toLowerCase().replace(/_/g, " ");
 const fieldMap = pairs => { const m = {}; (pairs || []).forEach(f => { if (f.key) m[f.key] = f.value; }); return m; };
 const splitVals = v => String(v || "").split(" | ").map(x => x.trim()).filter(Boolean);
@@ -543,7 +547,7 @@ function checks(c, o) {
       return;
     }
     const shared = n.filter(x => r.some(y => sameVal(x, y)));
-    if (shared.length) found.push({ w: 2, k: "ok", label: "✓ " + label, text: esc(shared.slice(0, 2).join(", ")) + (shared.length > 2 ? " +" + (shared.length - 2) : "") + " in both" });
+    if (shared.length) found.push({ w: 2, k: "ok", label: "✓ " + label, text: esc(shared.slice(0, 2).join(", ")) + (shared.length > 2 ? " +" + (shared.length - 2) : "") });
     else if (SINGLE.has(key)) found.push({ w: 4, k: "bad", label: "✗ " + label, text: "article " + esc(n[0]) + " &nbsp;≠&nbsp; TTE " + esc(r[0]) });
     else found.push({ w: 1, k: "none", label: "– " + label, text: "article: " + esc(gist(n.join(", "), 50)) + "<small>TTE: " + esc(gist(r.join(", "), 50)) + "</small>" });
   });
@@ -655,7 +659,7 @@ function variantRow(c, o) {
   const zh = c.sources.find(s => langOf(s.link || "") === "zh") || c.sources[0] || {};
   return { field: "Non-English name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held.filter(nonLatin))], result: c.entity, from: zh.link || "", variant: true };
 }
-const rowsFor = (c, o) => o ? mergeRows((reopened(c) ? [] : (o.extra || [])).concat(o.uid === c.picked ? onlyNew(c, c.changes) : []).map(asReplace).map(asProse)).concat((!reopened(c) && variantRow(c, o)) || []) : [];
+const rowsFor = (c, o) => o ? mergeDates(mergeRows((reopened(c) ? [] : (o.extra || [])).concat(o.uid === c.picked ? onlyNew(c, c.changes) : []).map(asReplace).map(asProse)), o, c).concat((!reopened(c) && variantRow(c, o)) || []) : [];
 const chosenOpt = (c, st) => ordered(c)[st.chosen != null ? st.chosen : st.cand];
 let NAMEIDX = null;
 const idxHas = v => { if (!NAMEIDX) NAMEIDX = new Set(INDEX.map(r => normVal(r[1]))); return NAMEIDX.has(normVal(v)); };
@@ -761,6 +765,51 @@ const FIELD_Q = { "Description": "the description", "Title": "the title", "Affil
                   "Parent Organisation": "the parent organisation", "Achievements": "the achievements", "Year Ended (yyyy)": "the year ended",
                   "Month Ended (mm)": "the month ended", "Day Ended (dd)": "the day ended", "Death Day (dd)": "the day of death", "Child": "the children" };
 const fq = f => FIELD_Q[f] || f.replace(/\s*\(.*\)$/, "").toLowerCase();
+// The field's name where the value is read, not only in the question above it: "01 → 16" under "In TTE now" left a
+// reviewer asking which field it was (Feedback 3).
+const fieldLabel = f => { const n = fq(f).replace(/^the /, ""); return n.charAt(0).toUpperCase() + n.slice(1); };
+// A date is three TTE fields, day, month and year, and the builder proposes each on its own. Asked one at a time,
+// "Set day started to this? 01 → 16" said neither which date it was nor that the month came next (Feedback 3), and
+// accepting the day without the month makes a date no source gives. So the parts of one date are one change: the
+// whole date as TTE holds it, and as it would be, with the parts the news does not give kept from TTE, in grey.
+// Accepted, each part that changes is still written as its own field, as TTE stores it.
+const DATE_PART = /^(?:(Day|Month|Year) (Started|Ended|Completed)|(Birth|Death) (Day|Month|Year)) \((?:dd|mm|yyyy)\)$/;
+const PARTS = ["Day", "Month", "Year"], PART_FMT = { Day: "dd", Month: "mm", Year: "yyyy" };
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DATE_NAME = { Started: "Date started", Ended: "Date ended", Completed: "Date completed", Birth: "Date of birth", Death: "Date of death" };
+const partField = (d, p) => d.born ? `${d.which} ${p} (${PART_FMT[p]})` : `${p} ${d.which} (${PART_FMT[p]})`;
+const showPart = (p, v) => !v ? "" : p === "Day" ? String(+v || v) : p === "Month" ? (MON[+v - 1] || v) : v;
+const showDate = parts => PARTS.map(p => showPart(p, parts[p])).filter(Boolean).join(" ");
+function mergeDates(rows, o, c) {
+  const out = [], at = new Map();
+  rows.forEach(ch => {
+    const m = DATE_PART.exec(ch.field || "");
+    if (!m || ch.diff) { out.push(ch); return; }
+    const which = m[2] || m[3], part = m[1] || m[4];
+    if (!at.has(which)) {
+      at.set(which, out.length);
+      out.push({ field: DATE_NAME[which], strategy: "REPLACE", verb: "Replace", date: { which, born: !m[2], held: {}, news: {} },
+                 supporters: [], saidBy: [], from: ch.from || (c.newsFrom || {})[ch.field] });
+    }
+    const d = out[at.get(which)];
+    d.date.news[part] = splitVals(ch.adding).filter(v => v.trim()).pop() || "";
+    d.date.held[part] = (ch.existing || []).slice(-1)[0] || "";
+    d.supporters = [...new Set([...d.supporters, ...(ch.supporters || [])])];
+    if (ch.quotes) d.quotes = { ...ch.quotes, ...(d.quotes || {}) };
+    d.saidBy = d.saidBy.concat((ch.saidBy || []).map(x => ({ ...x, part })));
+    d.split = d.split || !!ch.conflict;
+  });
+  out.forEach(d => {
+    if (!d.date) return;
+    // the parts no proposal touches, as TTE holds them (o.dates, from the card builder)
+    PARTS.forEach(p => { if (!d.date.held[p]) d.date.held[p] = (o.dates || {})[partField(d.date, p)] || ((o.fields || []).find(x => x.key === partField(d.date, p)) || {}).value || ""; });
+    d.existing = showDate(d.date.held) ? [showDate(d.date.held)] : [];
+  });
+  return out;
+}
+// The date on screen: TTE's parts, the news's over them, then whatever the reviewer typed.
+const dateOf = (st, k, ch) => st.val[k] || (st.val[k] = { ...ch.date.held, ...ch.date.news });
+const fromTTE = (ch, now, p) => !(p in ch.date.news) && now[p] === ch.date.held[p];
 
 function diffHtml(diff, full) {
   return diff.map((d, i) => {
@@ -787,7 +836,7 @@ function change(c, st) {
   const { sup, si } = srcFor(c, st, k, ch);
   const editing = !!st.edit[k];
   const isText = !!ch.diff;
-  const vals = isText ? [] : valsOf(st, k, ch);
+  const vals = isText ? [] : ch.date ? Object.entries(ch.date.news).map(([p, v]) => showPart(p, v)) : valsOf(st, k, ch);
   const after = isText ? (st.text[k] != null ? st.text[k] : ch.result) : "";
   const REL = Array.isArray(ch.inTTE), linked = new Set((ch.inTTE || []).filter(x => x.uid).map(x => x.name));
   const inTte = v => linked.has(v) || idxHas(v);
@@ -799,13 +848,29 @@ function change(c, st) {
   if (isText) {
     title = ch.diff.some(d => d.op === "out") ? `Rewrite ${fq(ch.field)} like this?` : `Add this to ${fq(ch.field)}?`;
     const long = was.length > 260 || ch.diff.some(d => d.op === "same" && d.text.length > 260);
-    body = `<div class="row"><div class="tag">In TTE now</div><div class="desc fade">${st.descFull ? esc(was) : (was.length > 260 ? `<span class="gap">… </span>${esc(tail(was, 220))}` : esc(was) || "<em>no description</em>")}</div></div>
+    body = `<div class="row"><div class="tag">${esc(fieldLabel(ch.field))} in TTE now</div><div class="desc fade">${st.descFull ? esc(was) : (was.length > 260 ? `<span class="gap">… </span>${esc(tail(was, 220))}` : esc(was) || "<em>no description</em>")}</div></div>
       <div class="arrow"><span>after you accept</span><i class="ln"></i><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
       <div class="row">${editing ? `<textarea class="dta" aria-label="The text after you accept">${esc(after)}</textarea>`
                                   : `<div class="desc">${st.text[k] != null ? sentDiff(was, after) : diffHtml(ch.diff, st.descFull)}</div>`}
         ${!editing && long && st.text[k] == null ? `<button class="more" data-act="descfull">${st.descFull ? "Show less &#9652;" : "Show all of it &#9662;"}</button>` : ""}
         ${editing && st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}
 </div>`;
+  } else if (ch.date) {
+    const now = dateOf(st, k, ch);
+    title = `Set ${fq(ch.field)} to this?`;
+    const shown = PARTS.filter(p => now[p]).map(p => fromTTE(ch, now, p)
+      ? `<span class="old" title="Kept from TTE: the news does not give it">${esc(showPart(p, now[p]))}</span>`
+      : `<span class="newv">${esc(showPart(p, now[p]))}</span>`).join(" ");
+    body = `<div class="row"><div class="tag">${esc(fieldLabel(ch.field))} in TTE now</div><div class="was">${ch.existing.length ? `<s>${esc(ch.existing[0])}</s>` : "<em>none recorded</em>"}</div></div>
+      <div class="arrow"><span>after you accept</span><i class="ln"></i><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+      ${editing ? `<div class="dparts">${PARTS.map(p => `<label>${p.toLowerCase()}<input class="din" data-p="${p}" value="${esc(now[p] || "")}" inputmode="numeric" placeholder="${PART_FMT[p]}" maxlength="${p === "Year" ? 4 : 2}"></label>`).join("")}</div>`
+                : `<div class="final">${shown || "<em>no date</em>"}</div>`}`;
+    if (ch.split) {
+      // sources that disagree: each one's date, its parts over TTE's
+      const by = new Map(); ch.saidBy.forEach(x => { if (!by.has(x.from)) by.set(x.from, {}); by.get(x.from)[x.part] = x.value; });
+      const said = [...by.entries()].map(([from, parts]) => `<b>${esc(showDate({ ...ch.date.held, ...parts }))}</b> <span>${srcIdxOf(c, [from]).map(r => "\u00b7" + (r + 1)).join(" ")}</span>`);
+      if (said.length > 1) body = `<div class="note">The sources disagree: ${said.join(", ")}. Edit the date to the one you trust.</div>` + body;
+    }
   } else {
     // The non-English name has the same Edit and Add / Replace as any list: the reviewer may correct the name, or
     // replace one TTE holds that is wrong.
@@ -821,7 +886,7 @@ function change(c, st) {
     const existing = ch.existing || [], keptVals = vals.filter((v, i) => v.trim() && !st.out[k + ":" + i]);
     const finalLine = (replace ? "" : existing.map(x => `<span class="old">${esc(x)}</span>`).join(" | ") + (existing.length && keptVals.length ? " | " : ""))
       + keptVals.map(v => `<span class="newv ${REL && !inTte(v) ? "nt" : ""}">${esc(v)}</span>`).join(" | ");
-    body = `<div class="row"><div class="tag">${ch.variant ? "Non-English names in TTE now" : "In TTE now"}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
+    body = `<div class="row"><div class="tag">${ch.variant ? "Non-English names in TTE now" : `${esc(fieldLabel(ch.field))} in TTE now`}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
       <div class="arrow"><span>after you accept</span><i class="ln"></i><span class="seg2" role="group" aria-label="Add or replace"><button class="${replace ? "" : "on"}" data-act="mode" data-m="add">Add</button><button class="${replace ? "on" : ""}" data-act="mode" data-m="replace">Replace</button></span><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
       <div class="final">${finalLine || "<em>nothing</em>"}</div>
       <div class="row"><div class="tag">${replace ? "New value" : "Adding"}</div><div class="vrows">${rowsHtml}${editing && !replace ? `<button class="addchip" data-act="addval">+ Add</button>` : ""}</div></div>`;
@@ -830,7 +895,7 @@ function change(c, st) {
   const warnLong = nSent > 5 ? `<div class="note">Achievements are meant to be 3 to 5 sentences; this will be ${nSent}.</div>` : "";
   const warn = warnLong + (ch.overEdit ? `<div class="warn">This rewrite drops most of the current description: only ${Math.round((ch.kept || 0) * 100)}% of it survives.</div>` : "");
   let conflict = "";
-  if (ch.conflict && (ch.saidBy || []).length) {
+  if (ch.conflict && !ch.date && (ch.saidBy || []).length) {
     const seen = new Map(); (ch.saidBy || []).filter(x => (ch.confVals || []).includes(x.value)).forEach(x => { if (!seen.has(x.value)) seen.set(x.value, []); seen.get(x.value).push(x.from); });
     const opts = [...seen.entries()], held = opts.filter(([v]) => vals.includes(v)).length;
     conflict = `<div class="note">The sources disagree. Keep the one you trust, or both:<div class="picks">${opts.map(([v, links], j) => `<button class="pick ${held === 1 && vals.includes(v) ? "on" : ""}" data-act="pick" data-j="${j}">${esc(v)} <span>${srcIdxOf(c, links).map(r => "·" + (r + 1)).join(" ")}</span></button>`).join("")}<button class="pick ${held === opts.length ? "on" : ""}" data-act="pickboth">Keep both</button></div></div>`;
@@ -845,7 +910,7 @@ function change(c, st) {
     <div class="ba">${warn}${conflict}${body}${tools}</div>
   </section>
   ${actions(["accept", "Accept", k + 1 < n ? `change ${k + 1} of ${n}` : `change ${k + 1} of ${n}, the last`, "go"],
-            ["nochange", "No change", "leave the record as it is", "grey"], quiet(st))}`;
+            ["nochange", "No change", ch.variant ? "leave its names as they are" : `leave ${esc(fq(ch.field))} as it is`, "grey"], quiet(st))}`;
 }
 
 const SCREEN = { who, create, change };
@@ -862,7 +927,7 @@ function finish(c, kind) {
              secs: Math.max(1, Math.round((Date.now() - st.t0) / 1000)), accepted: st.accepted.slice(), seen: st.seen, link: (c.sources[st.src || 0] || {}).link || "",
              found: !!(matched && o.thin && !o.cross), done: false });
   const x = LOG[LOG.length - 1];
-  x.dropped = matched ? rowsFor(c, o).map(r => r.field).filter(f => !x.accepted.some(a => a.field === f)) : [];
+  x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1269,6 +1334,10 @@ function srcFor(c, st, k, ch) {
 const acceptedOf = (c, st, ch, k) => {
   const src = c.sources[srcFor(c, st, k, ch).si] || {}, base = { field: ch.field, link: src.link || "", title: src.article || "", says: src.says || "" };
   if (ch.diff) return { ...base, current: ch.diff.filter(d => d.op !== "in").map(d => d.text).join(" "), proposed: st.text[k] != null ? st.text[k] : ch.result };
+  if (ch.date) {
+    const now = dateOf(st, k, ch), stored = (p, v) => { v = String(v || "").trim(); return p !== "Year" && /^\d$/.test(v) ? "0" + v : v; };
+    return PARTS.map(p => ({ ...base, field: partField(ch.date, p), current: ch.date.held[p] || "", proposed: now[p] === ch.date.held[p] ? ch.date.held[p] : stored(p, now[p]) }));
+  }
   const kept = valsOf(st, k, ch).filter((v, i) => v.trim() && !st.out[k + ":" + i]), existing = ch.existing || [];
   return { ...base, current: existing.join(" | "), proposed: modeOf(st, k, ch) === "replace" ? kept.join(" | ") : existing.concat(kept).join(" | ") };
 };
@@ -1360,7 +1429,7 @@ function act(a, el) {
   if (a === "newrec") { go(st, "create", { exhausted: true }); return draw(); }
   if (a === "accept" || a === "nochange") {
     st.seen++;
-    if (a === "accept") { const row = rowsFor(c, chosenOpt(c, st))[k]; const got = acceptedOf(c, st, row, k); if (got.proposed !== got.current) st.accepted.push(got); } if (k + 1 < rowsFor(c, chosenOpt(c, st)).length) { go(st, "change", { ch: k + 1 }); return draw(); } return finish(c, "approved"); }
+    if (a === "accept") { const row = rowsFor(c, chosenOpt(c, st))[k]; [].concat(acceptedOf(c, st, row, k)).forEach(got => { if (got.proposed !== got.current) st.accepted.push(got); }); } if (k + 1 < rowsFor(c, chosenOpt(c, st)).length) { go(st, "change", { ch: k + 1 }); return draw(); } return finish(c, "approved"); }
   if (a === "create") return finish(c, "created");
   if (a === "noworth") return finish(c, "noworth");
   if (a === "keep") return finish(c, "keep");
@@ -1382,6 +1451,7 @@ document.addEventListener("input", e => {
   if (t.id === "sq") { SHEET.q = t.value; $("#srows").innerHTML = sheetRows(); return; }
   if (!c) return;
   if (t.id === "q") { st.query = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); }
+  else if (t.classList.contains("din")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; dateOf(st, k, ch)[t.dataset.p] = t.value.trim(); }
   else if (t.classList.contains("cin")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; valsOf(st, k, ch)[Number(t.dataset.i)] = t.value; }
   else if (t.classList.contains("dta")) st.text[k] = t.value;
 });
@@ -1612,7 +1682,7 @@ function settings() {
   const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
   v.innerHTML = `<div class="welcome small" role="dialog" aria-label="Languages"><h2>Which languages do you read?</h2>
     <p class="sub">You are only given cards with an article in a language you read. You choose once; change it any time from the menu at the top.</p>
-    <div class="langs">${Object.entries(LANG_NAMES).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} cards waiting</small></label>`).join("")}</div>
+    <div class="langs">${Object.entries(LANG_NAMES).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} ${count(l) === 1 ? "card" : "cards"} waiting</small></label>`).join("")}</div>
     <button class="go" data-act="savelangs">Done</button></div>`;
   document.body.appendChild(v);
 }
