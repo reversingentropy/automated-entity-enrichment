@@ -187,14 +187,14 @@ language sql stable security definer set search_path = public as $$
          count(*)::int,
          count(*) filter (where i.ord <= public.eval_shared())::int,
          count(*) filter (where i.ord <= public.eval_shared() and exists (
-           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid())))::int,
+           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid()))::int,
          count(*) filter (where exists (
-           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid())))::int,
+           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid()))::int,
          count(*) filter (where i.ord > public.eval_shared() and exists (
-           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item)))::int,
+           select 1 from public.eval_labels l where l.task = i.task and l.item = i.item))::int,
          count(*) filter (where exists (
            select 1 from public.eval_holds h where h.task = i.task and h.item = i.item
-                                             and h.labeller <> auth.uid() and public.hold_live(h.held_at))))::int,
+                                             and h.labeller <> auth.uid() and public.hold_live(h.held_at)))::int,
          (select count(distinct l.labeller) from public.eval_labels l where l.task = i.task)::int
   from public.eval_items i
   where public.is_evaluator()
