@@ -49,6 +49,7 @@ The online desk:
   python -m src.export --accounts            # list them
   python -m src.export --reset-password EMAIL  # a new password, printed once
   python -m src.export --mark-test EMAIL     # an existing account can look but not write
+  python -m src.export --mark-evaluator EMAIL  # give it the Evaluation page (--unmark-evaluator takes it away)
   python -m src.export --holds               # which card each reviewer has on their desk
   python -m src.export --release EMAIL       # put someone's held card back in the pile
 """
@@ -96,6 +97,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="give an account a new password, printed once")
     parser.add_argument("--mark-test", metavar="EMAIL",
                         help="make an existing account a test account: it can look but not write")
+    parser.add_argument("--mark-evaluator", metavar="EMAIL",
+                        help="give an existing account the desk's Evaluation page, to label the evaluation's sheets")
+    parser.add_argument("--unmark-evaluator", metavar="EMAIL",
+                        help="take the Evaluation page away from an account")
     parser.add_argument("--holds", action="store_true",
                         help="which card each reviewer has on their desk")
     parser.add_argument("--release", metavar="EMAIL",
@@ -209,6 +214,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{args.mark_test} is now a test account: it can look at the desk, and nothing it does is saved.")
         return 0
 
+    if args.mark_evaluator or args.unmark_evaluator:
+        from src.export.accounts import mark_evaluator
+        email = args.mark_evaluator or args.unmark_evaluator
+        try:
+            mark_evaluator(email, on=bool(args.mark_evaluator))
+        except ValueError as e:
+            print(e)
+            return 1
+        print(f"{email} {'now has' if args.mark_evaluator else 'no longer has'} the Evaluation page, "
+              "from their next sign-in (sign out and in again if they are signed in now).")
+        return 0
+
     if args.holds:
         from src.export.accounts import holds
         rows = holds()
@@ -245,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
             print("No accounts yet.")
             return 0
         for r in rows:
-            print(f"{r['email']:40} {r['name']:24} {'test' if r['test'] else '':5} "
+            print(f"{r['email']:40} {r['name']:24} {'test' if r['test'] else '':5} {'evaluator' if r['evaluator'] else '':10}"
                   f"last sign-in {str(r['last_sign_in'])[:16] or 'never'}")
         return 0
 

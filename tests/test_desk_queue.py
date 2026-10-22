@@ -1,5 +1,5 @@
 """
-The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql), what the page's key can reach (sql/17) and the feeds (sql/18) in a real Postgres: who is given which record, for how long, and who may decide it.
+The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql), what the page's key can reach (sql/17), the feeds (sql/18) and the evaluation's labelling (sql/19) in a real Postgres: who is given which record, for how long, and who may decide it.
 
 Runs the desk's own SQL (sql/11, sql/15, sql/16, sql/17) in a throwaway Postgres 16 container, on top of just enough of Supabase
 (tests/sql/supabase_stub.sql): each call is made as a signed-in reviewer, through the same role and request
@@ -50,7 +50,8 @@ def db():
         for f in ("tests/sql/supabase_stub.sql", "sql/11_desk_online.sql", "sql/15_desk_queue.sql", "sql/15_desk_queue.sql",
                   "sql/16_desk_groups.sql", "sql/15_desk_queue.sql", "sql/16_desk_groups.sql",
                   "sql/17_article_private.sql", "sql/17_article_private.sql",
-                  "sql/18_malay_tamil_feeds.sql", "sql/18_malay_tamil_feeds.sql"):
+                  "sql/18_malay_tamil_feeds.sql", "sql/18_malay_tamil_feeds.sql",
+                  "sql/19_evaluation.sql", "sql/19_evaluation.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
         yield
@@ -58,10 +59,11 @@ def db():
         subprocess.run([DOCKER, "rm", "-f", NAME], capture_output=True)
 
 
-def run_sql(sql: str, user: str | None = None, test: bool = False) -> str:
+def run_sql(sql: str, user: str | None = None, test: bool = False, evaluator: bool = False) -> str:
     """Run SQL as the database owner, or, given a user, as that signed-in reviewer."""
     if user:
-        claims = json.dumps({"sub": user, "role": "authenticated", "app_metadata": {"test": True} if test else {}})
+        meta = {**({"test": True} if test else {}), **({"evaluator": True} if evaluator else {})}
+        claims = json.dumps({"sub": user, "role": "authenticated", "app_metadata": meta})
         sql = (f"begin; set local role authenticated; set local request.jwt.claims to '{claims}';\n{sql}\ncommit;")
     done = subprocess.run([DOCKER, "exec", "-i", NAME, "psql", "-U", "postgres", "-tAq", "-v", "ON_ERROR_STOP=1"],
                           input=sql, capture_output=True, text=True, timeout=120)
@@ -70,9 +72,9 @@ def run_sql(sql: str, user: str | None = None, test: bool = False) -> str:
     return done.stdout.strip()
 
 
-def call(user: str, fn: str, *args, test: bool = False):
+def call(user: str, fn: str, *args, test: bool = False, evaluator: bool = False):
     """One of the desk's functions, as a reviewer; the result as Python."""
-    out = run_sql(f"select to_jsonb({fn}({', '.join(args)}));", user, test)
+    out = run_sql(f"select to_jsonb({fn}({', '.join(args)}));", user, test, evaluator)
     return json.loads(out) if out else None
 
 
@@ -275,3 +277,83 @@ def test_the_malay_and_tamil_feeds_are_added_once_and_keep_only_singapore_links(
                      'https://www.tamilmurasu.com.sg/india/e']) u
         where f.keep is not null and u ~ f.keep;""").splitlines()[-1]
     assert kept == "singapura,community,singapore"   # by link: Berita Harian first; malaysia and india left out
+
+
+def sheet(task: str, n: int, lang_of=lambda i: "en"):
+    """A fresh sheet of n rows for one task, no labels, no holds."""
+    run_sql("truncate public.eval_labels, public.eval_holds; delete from public.eval_items;"
+            "insert into public.eval_items (task, item, ord, lang, body) values "
+            + ",".join(f"({lit(task)}, 'r{i}', {i}, {lit(lang_of(i))}, '{{}}'::jsonb)" for i in range(1, n + 1)) + ";")
+
+
+def ev(user: str, fn: str, *args, test: bool = False):
+    return call(user, fn, *args, test=test, evaluator=True)
+
+
+def save(user: str, item: str, test: bool = False) -> bool:
+    return ev(user, "eval_save", "'relevance'", lit(item), lit('{"relevant": true}') + "::jsonb", "5", test=test)
+
+
+def test_only_an_evaluator_reads_the_rows_and_nobody_reads_the_labels(db):
+    sheet("relevance", 3)
+    assert run_sql("select count(*) from public.eval_items;", A) == "0"                            # a reviewer: nothing
+    assert run_sql("select count(*) from public.eval_items;", A, evaluator=True) == "3"
+    assert call(A, "eval_take", "'relevance'") is None and not call(A, "eval_save", "'relevance'", "'r1'", "'{}'::jsonb")
+    assert save(A, "r1")
+    for who in ({}, {"evaluator": True}):
+        with pytest.raises(RuntimeError, match="permission denied"):
+            run_sql("select count(*) from public.eval_labels;", A, **who)
+    assert run_sql("set role service_role; select count(*) from public.eval_labels;").splitlines()[-1] == "1"
+
+
+def test_everyone_labels_the_shared_rows_and_the_rest_are_dealt_once(db):
+    sheet("relevance", 53)
+    for user in (A, B):                                                       # rows 1 to 50: everyone, in order
+        for n in range(1, 51):
+            got = ev(user, "eval_take", "'relevance'")
+            assert got == f"r{n}", (user, n, got)
+            assert save(user, got)
+    a, b = ev(A, "eval_take", "'relevance'"), ev(B, "eval_take", "'relevance'")
+    assert {a, b} == {"r51", "r52"}                                           # past them: one row, one labeller
+    assert not save(B, a)                                                     # A holds it
+    assert save(A, a) and not save(B, a)                                      # and now A has labelled it
+    assert ev(A, "eval_take", "'relevance'") == "r53"
+    assert ev(C, "eval_take", "'relevance'") == "r1"                         # a newcomer starts on the shared rows
+    assert save(A, a)                                                         # changing one's own label is fine
+
+
+def test_a_labeller_is_given_rows_in_their_languages_and_a_lapsed_hold_goes_back(db):
+    sheet("relevance", 55, lambda i: "zh" if i % 2 else "en")
+    assert ev(A, "eval_take", "'relevance'", langs("en")) == "r2"
+    for n in range(2, 51, 2):
+        save(A, f"r{n}")
+    got = ev(A, "eval_take", "'relevance'", langs("en"))
+    assert got == "r52"
+    run_sql("update public.eval_holds set held_at = now() - interval '2 hours';")
+    assert ev(B, "eval_take", "'relevance'", langs("zh")) == "r1"
+    for n in range(1, 51, 2):
+        save(B, f"r{n}")
+    assert ev(C, "eval_take", "'relevance'", langs("en")) == "r2"
+    for n in range(2, 51, 2):
+        save(C, f"r{n}")
+    assert ev(C, "eval_take", "'relevance'", langs("en")) == "r52"           # A's hold lapsed: back in the pile
+
+
+def test_a_test_account_is_given_nothing_and_saves_nothing(db):
+    sheet("relevance", 3)
+    assert ev(TESTER, "eval_take", "'relevance'", test=True) is None
+    assert not save(TESTER, "r1", test=True)
+    assert run_sql("set role service_role; select count(*) from public.eval_labels;").splitlines()[-1] == "0"
+
+
+def test_progress_counts_without_saying_whose_label_says_what(db):
+    sheet("relevance", 52)
+    save(A, "r1"); save(B, "r1"); save(B, "r2")
+    ev(B, "eval_take", "'relevance'")                                         # B is on r3, a shared row: no hold
+    for n in range(3, 51):
+        save(B, f"r{n}")
+    ev(B, "eval_take", "'relevance'")                                         # B holds r51
+    got = json.loads(run_sql("select coalesce(jsonb_agg(p), '[]') from public.eval_progress() p;", A, evaluator=True))
+    assert got == [{"task": "relevance", "lang": "en", "total": 52, "shared": 50, "shared_mine": 1, "mine": 1,
+                    "labelled": 0, "held": 1, "labellers": 2}]
+    assert run_sql("select count(*) from public.eval_progress();", A) == "0"  # a reviewer: nothing

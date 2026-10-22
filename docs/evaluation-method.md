@@ -38,6 +38,56 @@ Common rules, all three sheets:
   score.
 - The window, the sampling and the labelling rule are written down here
   and in the paper.
+- **The labelling rules are the AI's own instructions**, in plain words:
+  [labelling-guide.md](labelling-guide.md), written from each stage's
+  prompt and recording which version of it. A labeller judges whether the
+  AI did what it was told, so a disagreement is the AI's error, not a
+  difference over what the task is. The tests stop when a prompt changes
+  until the guide has been checked against it.
+
+### Labelling on the desk
+
+The three sheets can be labelled on the desk's **Evaluation** page instead
+of in Excel. The rows and the rules are the same; only the place changes.
+
+- **Who sees it.** Only accounts marked as evaluators
+  (`python -m src.export --mark-evaluator EMAIL`, then sign out and in
+  again). Reviewers never see the page, and the database refuses them its
+  rows (`sql/19_evaluation.sql`).
+- **No answers on the page.** For relevance and matching, the page holds
+  what the labeller is shown and nothing of the model's answer: those stay
+  in the key files (`data/eval/*-key.json`) on the PC that scores.
+  Extraction shows the names the model found, since those are what is
+  graded.
+- **Relevance:** one click, Yes or No (keys Y and N). **Matching:** Same,
+  Different or Can't tell (Y, N, ?). **Extraction:** per name, OK, Wrong
+  or Not worth a record; for an OK name, tap any detail that is wrong;
+  then select a name in the article it missed and add it, or press Nothing
+  missed. Back goes to the last row and replaces its label.
+- **Shared out by the database.** Rows 1 to 50 of each sheet go to every
+  labeller, for the agreement. The rest are dealt one at a time, like the
+  desk's records: a row nobody has labelled and nobody else holds, held
+  for an hour. Nobody splits the sheet by hand, and no row is done twice.
+  Rows go only to someone who reads their language.
+- **Private labels.** Labels save as they are given, into `eval_labels`,
+  which no account can read. The page learns only how far along each
+  sheet is.
+- **A test account** marked as an evaluator can try the page; nothing it
+  labels is saved.
+
+The page also shows the last scored report and, from the desk's own
+decisions, the share of changes accepted by field, by language and by
+week.
+
+```bash
+python -m src.eval online publish   # the sheets' rows to the page; fetches the 60 extraction articles once, 10 s apart
+python -m src.eval online pull      # the labels back as data/eval/returned/<sheet>-<name>.xlsx
+python -m src.eval online results   # score them, and put the report on the page
+```
+
+`pull` writes the same returned sheets the Excel route produces, so
+`python -m src.eval score` reads either. Test accounts' labels are left
+out.
 
 ### Q1. Relevance (Job 1)
 
@@ -62,11 +112,14 @@ misses and guess the rest):
   the TTE index, where misses hide; **examples only**, excluded from the
   recall estimate, and the report says so.
 
-**Labelling rule.** *Worth a look* means: the article names a person,
-organisation, place, event, award, programme or legal act that Singapore's
-name authority file holds or should hold, **and** reports a fact that
-would change or create its record: an appointment, an award, a death, a
-rename, a merger, a founding. A mention alone is `n`.
+**Labelling rule** (from `prompts/relevance.txt`; in full in the
+[guide](labelling-guide.md#relevance)). Yes when the headline and summary
+report a concrete change, made or announced, to a specific named Singapore
+person, organisation, building, place, event, programme or law: a death,
+an appointment or departure (announced counts), a named award, a founding,
+merger, closure or rename, an opening, a law passed. No for commentary,
+people only mentioned or quoted, reactions, routine operations, pop-ups,
+court cases, foreign brands and branches, and plans not yet in effect.
 
 **Test.** Against the model's verdict: precision = yeses the labeller also
 marked `y` ÷ all model yeses; recall = model yeses among the labeller's
@@ -114,9 +167,14 @@ Chinese names, namesakes), and where the desk's design comes from.
 **Sampling.** 100 pairs the model matched, 100 pairs it rejected or left
 out (the best candidate it was shown), random within the window.
 
-**Labelling rule.** `y` when the evidence and the record describe one
-person or thing; `n` when they describe two; `?` when the sheet does not
-carry enough to say. `?` is an honest answer and is counted, not dropped.
+**Labelling rule** (from `prompts/resolution.txt`; in full in the
+[guide](labelling-guide.md#matching)). `y` when the evidence and the record
+describe one person or thing: the name fits, something beyond the name
+agrees (employer, post, profession, field) and nothing contradicts it; `n`
+when the details point elsewhere, since a shared name alone proves nothing;
+`?` when the sheet does not carry enough to say. `?` is an honest answer
+and is counted, not dropped. Only identity is judged, not whether the record
+needs updating.
 
 **Test.** Precision = model matches labelled `y` ÷ model matches; recall =
 model matches among all pairs labelled `y` ÷ all `y`. The `?` rate is
@@ -163,10 +221,16 @@ plus blank rows to add what was missed:
 **Sampling.** 60 relevant articles in the window: 30 English, 30 Chinese,
 random. About 150 to 200 entities.
 
-**Labelling rule.** `ok` when the entity is what the article names and
-would belong in the authority file; a field is wrong when the article
-contradicts it or does not support it. *Missed* means a subject of the
-article, or a named party to the reported fact, with no extracted row.
+**Labelling rule** (from `prompts/extraction.txt`, `fields_brief.txt` and
+`notability.txt`; in full in the [guide](labelling-guide.md#extraction)).
+`ok` when the entity is a specific named Singapore entity of the right type
+that the article gives a new fact about; `wrong` when it is not in the
+article, not Singaporean, has nothing new of its own, is unnamed or has the
+wrong type; `not_worth` when it has a new fact but is not notable enough
+for a record. A field is wrong when the article does not support it, it is
+in the wrong field (a post as Occupation, a designation as an Award), its
+date is wrong, or it is not in English. *Missed* means a named Singapore
+entity with a new fact of its own and no extracted row.
 
 **Test.** Precision = `ok` ÷ extracted; recall = `ok` ÷ (`ok` + missed);
 F1. Field error rate per field. By language and type.

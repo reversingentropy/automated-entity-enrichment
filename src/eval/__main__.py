@@ -20,6 +20,12 @@ The labelled sheets the team fills in are built here too, and need no model:
   python -m src.eval sheets                      # all five, from August 2026
   python -m src.eval sheets --window 2026-07     # another month
   python -m src.eval score data/eval/returned    # the marked sheets, scored
+
+Or labelled on the desk's Evaluation page (src/eval/online.py):
+
+  python -m src.eval online publish              # the sheets' rows to the page
+  python -m src.eval online pull                 # the labels back as returned sheets
+  python -m src.eval online results              # scored, and the report on the page
 """
 
 import argparse
@@ -100,6 +106,9 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "sheets":
         return sheets(argv[1:])
+    if argv and argv[0] == "online":
+        from src.eval.online import main as online
+        return online(argv[1:])
     if argv and argv[0] == "score":
         from src.eval.score import report
         rest = argv[1:]

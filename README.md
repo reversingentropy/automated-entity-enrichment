@@ -176,10 +176,13 @@ python -m src.job3_resolution [--limit N] [--dry-run]   # proposals per article'
 python -m src.job3_resolution --requeue-stale [--dry-run]   # after a TTE import
 python -m src.load_tte [--source local] [--dry-run]     # the authority file, from the bucket
 python -m src.eval [--case edge-] [--show]              # the resolution prompt on frozen cases
+python -m src.eval online publish                       # the evaluation's sheets to the desk's Evaluation page
+python -m src.eval online pull                          # their labels back as returned sheets; `online results` scores them
 python -m src.export --package data/dist/tte-desk.zip   # the review desk, as a file
 python -m src.export --publish                          # the deck to the database, nightly
 python -m src.export --site data/dist/site              # the online desk's page, served locally
 python -m src.export --requests                         # who has asked for an account
+python -m src.export --mark-evaluator EMAIL             # give an account the Evaluation page
 python -m src.export --reviews data/reviews/            # collect what they decided (or --reviews table)
 python -m src.export --weekly                           # the week's approved changes, as the reviewers' Excel file
 python -m src.export --notify [--print-only]            # the daily email, only to reviewers with something to do

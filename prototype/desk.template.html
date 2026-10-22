@@ -400,6 +400,67 @@
   :is(.tl2,.teamline) .held{background:repeating-linear-gradient(135deg,#7A859B 0 2px,#fff 2px 5px);box-shadow:inset 0 0 0 1px #7A859B}
   [data-tip]{position:relative}
   [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font:600 .78rem/1.3 system-ui,sans-serif;padding:.3rem .55rem;border-radius:6px;white-space:nowrap;z-index:5;pointer-events:none}
+
+  /* the Evaluation page: the three labelled sheets, for evaluators only */
+  .evtask{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem 1rem;align-items:center;padding:1rem 1.3rem;border-top:1px solid var(--rule)}
+  .evtask:first-child{border-top:none}
+  .evtask h3{margin:0;font-size:1.05rem}
+  .evtask p{margin:.1rem 0 0;color:var(--ink2);font-size:.9rem}
+  .evtask .evbar{grid-column:1/-1;display:grid;gap:.3rem}
+  .evbar .track i.d{background:var(--tick)} .evbar .track i.h{background:var(--amber-line)}
+  .evbar small{color:var(--ink3);font-size:.84rem}
+  .evgo{background:var(--ink);color:#fff;border:none;border-radius:10px;padding:.55rem 1.1rem;font-weight:700}
+  .evgo[disabled]{opacity:.4;cursor:default}
+  .evhead{display:flex;justify-content:space-between;align-items:center;gap:.5rem 1rem;flex-wrap:wrap;margin:1rem 0 .6rem;color:var(--ink2);font-size:.92rem}
+  .evhead b{color:var(--ink)}
+  .evq{font-size:1.2rem;font-weight:750;margin:1.1rem 0 .2rem}
+  .evq+.minor{margin-top:0}
+  .evtrio{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+  .stamp.was{outline:3px solid var(--accent);outline-offset:2px}
+  .stamp[disabled]{opacity:.45;cursor:default;box-shadow:none}
+  .evdesc{margin:.55rem 0 0;color:var(--news-soft);overflow-wrap:anywhere}
+  .evrec{margin:.3rem 0 0;display:grid;gap:.3rem;font-size:.92rem}
+  .evrec div{display:grid;grid-template-columns:9rem 1fr;gap:.6rem;overflow-wrap:anywhere}
+  .evrec .k{color:var(--ink3);font-weight:600}
+  .evext{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:1rem;align-items:start}
+  .evtext{max-height:72vh;overflow:auto;white-space:pre-wrap;font:1.02rem/1.6 Newsreader,Georgia,serif;padding:1rem 1.2rem;background:var(--news);color:var(--news-ink);border-radius:12px;border:1px solid var(--rule);overflow-wrap:anywhere}
+  .evtext h2{font:700 1.15rem/1.35 "Inter",system-ui,sans-serif;margin:0 0 .6rem;white-space:normal}
+  .evnames{display:grid;gap:.75rem}
+  .evname{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:.8rem 1rem;display:grid;gap:.5rem}
+  .evname .hint{margin:0;color:var(--ink3);font-size:.86rem}
+  .evname .tr{margin:0}
+  .ev3{display:flex;gap:.4rem;flex-wrap:wrap}
+  .ev3 button,.evchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:.25rem .8rem;font-size:.88rem;font-weight:650;color:var(--ink)}
+  .ev3 button.on.ok{background:var(--go);border-color:var(--go);color:#fff}
+  .ev3 button.on.wrong{background:var(--no);border-color:var(--no);color:#fff}
+  .ev3 button.on.not_worth{background:var(--grey);border-color:var(--grey);color:#fff}
+  .ev3 button[disabled],.evchip[disabled]{opacity:.45;cursor:default}
+  .evchips{display:flex;flex-wrap:wrap;gap:.35rem}
+  .evchip{font-weight:500;text-align:left;max-width:100%;overflow-wrap:anywhere;border-radius:8px}
+  .evchip b{font-weight:700;margin-right:.3rem}
+  .evchip.bad{background:var(--del-bg);border-color:var(--del);color:var(--del);text-decoration:line-through}
+  .evchip.miss{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+  .evname textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.5rem .7rem}
+  .evreport{margin:0;padding:1rem 1.2rem;white-space:pre-wrap;font:.84rem/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-x:auto}
+  .evacc{width:100%;border-collapse:collapse;font-size:.92rem}
+  .evacc th,.evacc td{text-align:right;padding:.4rem .6rem;border-top:1px solid var(--rule);white-space:nowrap}
+  .evacc th:first-child,.evacc td:first-child{text-align:left;white-space:normal}
+  .evacc td small{color:var(--ink3);font-size:.8rem;margin-left:.25rem}
+  .evscroll{overflow-x:auto}
+  .evguide{font-size:.95rem;line-height:1.55;color:var(--ink)}
+  .evguide h2{font-size:1.25rem;margin:1.3rem 0 .4rem}
+  .evguide h2:first-child{margin-top:0}
+  .evguide h3{font-size:1rem;margin:1rem 0 .3rem}
+  .evguide p{margin:.35rem 0}
+  .evguide ul{margin:.3rem 0;padding-left:1.2rem;display:grid;gap:.25rem}
+  .evguide ul ul{margin-top:.25rem}
+  .evguide .evnote{margin-top:.9rem;padding-top:.6rem;border-top:1px solid var(--rule);color:var(--ink2)}
+  .evread{padding:1.2rem 1.4rem}
+  .evsrc{margin-top:1rem!important;color:var(--ink3);font-size:.84rem}
+  .evguidebox{max-width:40rem;max-height:88vh;overflow:auto}
+  .evguidebox h2{font-size:1.25rem;margin:0 0 .6rem}
+  .evguidebox .go{margin-top:1rem}
+  @media (max-width:42rem){.evtrio{grid-template-columns:1fr}.evext{grid-template-columns:1fr}.evtext{max-height:45vh}.evrec div{grid-template-columns:1fr}.evtask{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -430,6 +491,7 @@
       <button class="navi" data-nav="results" title="Results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span>Results</span></button>
       <button class="navi" data-nav="analytics" title="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Analytics</span></button>
       <button class="navi" data-nav="downloads" title="Downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><span>Downloads</span></button>
+      <button class="navi" data-nav="evaluation" id="evalnav" hidden title="Evaluation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9zM7 5.5H5.5V20h13V5.5H17M8.5 13l2.5 2.5 4.5-5"/></svg><span>Evaluation</span></button>
     </nav>
     <div class="sidefoot"><button data-act="signout" id="signout" hidden title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></svg><span>Sign out</span></button><button data-act="settings" title="Languages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><span>Languages</span></button><button data-act="help" title="How this works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></svg><span>How this works</span></button></div>
   </div></aside>
@@ -1027,7 +1089,7 @@ function toDecision(x, c) {
 async function signedIn(user) {
   me = user; testing = !!(user.app_metadata && user.app_metadata.test);
   myName = (user.user_metadata && user.user_metadata.name) || (user.email || "").split("@")[0] || "reviewer";
-  SAMPLE = false; _team = null;
+  SAMPLE = false; _team = null; evReset();
   const v = $("#veil"); if (v) v.remove();
   loading = "Fetching the records…"; draw();
   loadIndex();
@@ -1394,6 +1456,7 @@ function act(a, el) {
     PAGE = el.dataset.nav; $("#panel").classList.remove("open"); if (document.activeElement) document.activeElement.blur();
     if (PAGE === "home") refreshTeam();
     if (PAGE === "review" && QUEUE() && !card() && !DEAL) return resumeOrDeal();
+    if (PAGE === "evaluation" && !EV.task) evLoad();
     return draw(true);
   }
   if (a === "done") { LOG[i].done = !LOG[i].done; saveDone(LOG[i]); return draw(); }
@@ -1406,6 +1469,7 @@ function act(a, el) {
   if (a === "prev") { allDone = false; cur = Math.max(0, cur - 1); return draw(true); }
   if (a === "next") { allDone = false; cur = Math.min(LIST.length - 1, cur + 1); return draw(true); }
   if (a === "phone") { $("#wrap").classList.toggle("phone"); $("#phone").classList.toggle("on"); return; }
+  if (a.startsWith("ev-")) return void evAct(a, el);
   const c = card(); if (!c) return;
   const st = stOf(c), k = st.ch;
   if (PUSH.has(a)) st.hist.push(snapOf(st));
@@ -1459,6 +1523,13 @@ document.addEventListener("change", e => {
 });
 document.addEventListener("input", e => {
   const t = e.target, c = card(), st = c ? stOf(c) : null, k = st ? st.ch : 0;
+  if (t.id === "evmisstxt" && EV.label) {   // an article whose text could not be fetched: the missed names typed in
+    EV.label.missed = t.value.split("\n").map(x => x.trim()).filter(Boolean); EV.label.none = false;
+    const sv = $('[data-act="ev-save"]'), no = $('[data-act="ev-none"]');
+    if (sv) { sv.disabled = !evReady(); sv.querySelector("span").textContent = evTodo(); }
+    if (no) { no.disabled = EV.label.missed.length > 0; no.classList.remove("on"); }
+    return;
+  }
   if (t.id === "sq") { SHEET.q = t.value; $("#srows").innerHTML = sheetRows(); return; }
   if (!c) return;
   if (t.id === "q") { st.query = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); }
@@ -1469,6 +1540,12 @@ document.addEventListener("input", e => {
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { const v = $("#veil"); if (v && !v.querySelector(".signin")) v.remove(); }
   if (["SELECT", "INPUT", "TEXTAREA"].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+  if (PAGE === "evaluation") {
+    if ($("#veil") || EV.guide) return;
+    const k = e.key.toLowerCase(), v = EV.task === "relevance" ? { y: "y", n: "n" }[k] : EV.task === "matching" ? { y: "Y", n: "N", "?": "?" }[k] : null;
+    if (v) act(EV.task === "relevance" ? "ev-rel" : "ev-same", { dataset: { v } });
+    return;
+  }
   if (e.key === "Backspace" && PAGE === "review") { e.preventDefault(); act("back"); return; }
   if (e.key === "ArrowRight") act("next"); else if (e.key === "ArrowLeft") act("prev");
 });
@@ -1697,12 +1774,270 @@ function settings() {
     <button class="go" data-act="savelangs">Done</button></div>`;
   document.body.appendChild(v);
 }
+// ---- evaluation: the three labelled sheets, labelled here instead of in Excel (sql/19_evaluation.sql, src/eval/online.py) ----
+// Only for an account marked as an evaluator; reviewers never see the page. The rows of relevance and matching carry
+// nothing of the AI's answer, so a labeller cannot see what they are grading; extraction shows what the AI found, since
+// that is what is graded. Rows 1 to 50 go to every labeller, for agreement; the rest are dealt by the database, one
+// labeller each. Scoring needs the answers, so it happens on the PC that holds them (python -m src.eval online results),
+// and only its report comes back here.
+const isEvaluator = () => !!(me && me.app_metadata && me.app_metadata.evaluator);
+const EV_SHARED = 50;
+const EV_TASKS = {
+  relevance: { name: "Relevance", ask: "Does this report a fact that would change or create a TTE record?" },
+  extraction: { name: "Extraction", ask: "Did the AI find the right names, with the right details?" },
+  matching: { name: "Matching", ask: "Is the one in the news the same as this TTE record?" },
+};
+const EV_VERDICTS = [["ok", "OK"], ["wrong", "Wrong"], ["not_worth", "Not worth a record"]];
+// The labelling guide (docs/labelling-guide.md, read by src/eval/guide.py), put in by the site build: per sheet, the
+// rules the AI was given, in plain words, and the version of each prompt they were written from.
+const EV_GUIDE = /*__EVAL_GUIDE__*/{};
+// Shown each time a sheet is chosen, to accept before the first row; a click away on every row after.
+const evSources = t => { const xs = (EV_GUIDE[t] || {}).sources || [];
+  return xs.length ? `<p class="evsrc">The rules the AI was given, from ${xs.map(([f, v]) => `<code>${esc(f)}</code> (version ${esc(v)})`).join(", ")}.</p>` : ""; };
+const evGuideHtml = t => `<div class="evguide">${EV_GUIDE[t].html}${EV_GUIDE.general ? `<div class="evnote">${EV_GUIDE.general.html}</div>` : ""}${evSources(t)}</div>`;
+function evGuideVeil(t) {
+  if ($("#veil") || !EV_GUIDE[t]) return;
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
+  v.innerHTML = `<div class="welcome evguidebox" role="dialog" aria-label="The rules: ${esc(EV_TASKS[t].name)}"><h2>${esc(EV_TASKS[t].name)}: the rules</h2>${evGuideHtml(t)}
+    <button class="go" data-act="ev-guide-close">Close</button></div>`;
+  document.body.appendChild(v);
+  v.querySelector(".go").focus({ preventScroll: true });   // read from the top; Enter or Escape still closes it
+}
+const EV = { task: null, guide: false, items: {}, item: null, label: null, at: 0, back: [], progress: null, report: undefined, error: "", busy: false, sel: "", done: new Set() };
+const evReset = () => Object.assign(EV, { task: null, guide: false, items: {}, item: null, label: null, back: [], progress: null, report: undefined, error: "", busy: false, sel: "", done: new Set() });
+
+// How far along each sheet is, and the last scored report: read each time the page opens.
+async function evLoad() {
+  if (!sb || !isEvaluator()) return;
+  EV.error = "";
+  try { const { data, error } = await sb.rpc("eval_progress"); if (error) throw error; EV.progress = data || []; }
+  catch (e) { EV.progress = null; EV.error = "The evaluation could not be read. Check the connection, and that sql/19_evaluation.sql has been run."; }
+  try { const { data, error } = await sb.from("eval_results").select("at,report").order("id", { ascending: false }).range(0, 0); if (error) throw error; EV.report = (data || [])[0] || null; }
+  catch (e) { EV.report = null; }
+  if (PAGE === "evaluation") draw();
+}
+// One sheet's rows, fetched once a session.
+async function evRows(task) {
+  if (EV.items[task]) return EV.items[task];
+  const m = new Map();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from("eval_items").select("item,ord,lang,body").eq("task", task).order("ord").range(from, from + 999);
+    if (error) throw error;
+    (data || []).forEach(r => m.set(r.item, r));
+    if (!data || data.length < 1000) break;
+  }
+  return (EV.items[task] = m);
+}
+const evFresh = (task, r) => task !== "extraction" ? {}
+  : { names: Object.fromEntries(r.body.names.map(n => [n.entity, { verdict: "", wrong_fields: [] }])), missed: [], none: false };
+const evTodo = () => {
+  if (!EV.item || EV.task !== "extraction" || evReady()) return "";
+  const n = Object.values(EV.label.names).filter(g => !g.verdict).length;
+  return n ? `${n} name${n === 1 ? "" : "s"} still to mark` : "Say who it missed, or that it missed nobody";
+};
+const evReady = () => !!EV.item && (EV.task !== "extraction" ? Object.keys(EV.label || {}).length > 0
+  : Object.values(EV.label.names).every(n => n.verdict) && (EV.label.none || EV.label.missed.length > 0));
+// The next row for this labeller. A test account walks the rows here: the database gives it nothing and keeps nothing.
+async function evNext() {
+  const task = EV.task;
+  EV.busy = true; EV.item = null; EV.error = ""; draw(true);
+  try {
+    const rows = await evRows(task), L = langs || ["en"];
+    let key = null;
+    if (testing) key = ([...rows.values()].filter(r => L.includes(r.lang) && !EV.done.has(task + "|" + r.item)).sort((a, b) => a.ord - b.ord)[0] || {}).item || null;
+    else { const { data, error } = await sb.rpc("eval_take", { task, langs: L }); if (error) throw error; key = data || null; }
+    const r = key ? rows.get(key) : null;
+    Object.assign(EV, { item: r || null, label: r ? evFresh(task, r) : null, at: Date.now(), sel: "" });
+  } catch (e) { EV.error = "The database did not answer. Check the connection, then try again."; }
+  EV.busy = false; draw(true);
+}
+async function evSave() {
+  const task = EV.task, r = EV.item;
+  if (!r || EV.busy || !evReady()) return;
+  const label = task === "extraction" ? { names: EV.label.names, missed: EV.label.missed } : EV.label;
+  const seconds = Math.round((Date.now() - EV.at) / 1000);
+  EV.busy = true; NOTICE = ""; draw();
+  let ok = true;
+  if (!testing) {
+    try { const { data, error } = await sb.rpc("eval_save", { task, item: r.item, label, seconds }); if (error) throw error; ok = !!data; }
+    catch (e) { EV.busy = false; EV.error = "Not saved: the connection dropped. Your answer is still here."; return draw(); }
+  }
+  EV.done.add(task + "|" + r.item);
+  if (ok) EV.back.push({ r, label: JSON.parse(JSON.stringify(EV.label)) });
+  else NOTICE = "A colleague labelled that row first, so yours was not kept. Here is the next one.";
+  EV.busy = false;
+  return evNext();
+}
+function evAct(a, el) {
+  if (a === "ev-start") {
+    EV.task = el.dataset.t; EV.back = []; NOTICE = "";
+    if (EV_GUIDE[EV.task]) { EV.guide = true; draw(true); return true; }   // the rules first, then the rows
+    evNext(); return true;
+  }
+  if (a === "ev-guide-done") { EV.guide = false; evNext(); return true; }
+  if (a === "ev-guide") { evGuideVeil((el && el.dataset.t) || EV.task); return true; }
+  if (a === "ev-guide-close") { const v = $("#veil"); if (v) v.remove(); return true; }
+  if (a === "ev-stop") {
+    if (sb && !testing) Promise.resolve(sb.rpc("eval_release")).catch(() => {});
+    Object.assign(EV, { task: null, guide: false, item: null, label: null, back: [], error: "" }); NOTICE = ""; evLoad(); draw(true); return true;
+  }
+  if (a === "ev-retry") { evNext(); return true; }
+  if (a === "ev-back") {
+    const b = EV.back.pop();
+    if (b) { Object.assign(EV, { item: b.r, label: b.label, at: Date.now(), sel: "", error: "" }); EV.done.delete(EV.task + "|" + b.r.item); NOTICE = ""; }
+    draw(true); return true;
+  }
+  if (!EV.item || EV.busy) return a.startsWith("ev-");
+  const L = EV.label, names = (EV.item.body.names || []), n = names[Number(el && el.dataset.i)];
+  if (a === "ev-rel") { EV.label = { relevant: el.dataset.v === "y" }; evSave(); return true; }
+  if (a === "ev-same") { EV.label = { same: el.dataset.v }; evSave(); return true; }
+  if (a === "ev-save") { evSave(); return true; }
+  if (a === "ev-verdict" && n) { const g = L.names[n.entity]; g.verdict = el.dataset.v; if (g.verdict !== "ok") g.wrong_fields = []; draw(); return true; }
+  if (a === "ev-field" && n) {
+    const [k, v] = n.fields[Number(el.dataset.j)] || [], f = k || gist(v, 40), g = L.names[n.entity];
+    g.wrong_fields = g.wrong_fields.includes(f) ? g.wrong_fields.filter(x => x !== f) : g.wrong_fields.concat([f]); draw(); return true;
+  }
+  if (a === "ev-none") { if (!L.missed.length) L.none = !L.none; draw(); return true; }
+  if (a === "ev-addmiss") {
+    const t = EV.sel.trim();
+    if (t && !L.missed.includes(t)) L.missed.push(t);
+    L.none = false; EV.sel = ""; try { window.getSelection().removeAllRanges(); } catch (e) {}
+    draw(); return true;
+  }
+  if (a === "ev-unmiss") { L.missed.splice(Number(el.dataset.i), 1); draw(); return true; }
+  return a.startsWith("ev-");
+}
+// The names the AI found, highlighted where they appear; the longest first, so a short name inside a long one does not split it.
+const evMark = (text, names) => {
+  const h = esc(text), ns = [...new Set(names.filter(x => x && x.length > 1).map(esc))].sort((a, b) => b.length - a.length);
+  return ns.length ? h.replace(new RegExp(ns.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g"), m => `<mark>${m}</mark>`) : h;
+};
+// One sheet's counts in the languages this labeller reads.
+function evSum(task) {
+  const L = langs || ["en"], all = (EV.progress || []).filter(p => p.task === task), mine = all.filter(p => L.includes(p.lang));
+  const add = (rs, f) => rs.reduce((a, p) => a + (p[f] || 0), 0);
+  const s = { total: add(all, "total"), shared: add(mine, "shared"), sharedMine: add(mine, "shared_mine"), rest: add(mine, "total") - add(mine, "shared"),
+              labelled: add(mine, "labelled"), held: add(mine, "held"), mine: add(all, "mine"), other: add(all, "total") - add(mine, "total"),
+              labellers: Math.max(0, ...all.map(p => p.labellers || 0)) };
+  s.left = s.shared - s.sharedMine + Math.max(0, s.rest - s.labelled - s.held);
+  return s;
+}
+// Of the changes reviewers were shown on the desk, the share they accepted: by field, by language, by week. Read from the
+// decisions already loaded for Results, so it costs nothing to fetch. A date's day, month and year count as one change.
+function evAcceptance() {
+  const xs = everyone().filter(x => !x.sample && (x.accepted.length || (x.dropped || []).length));
+  if (!xs.length) return `<p class="minor">No changes decided on the desk yet.</p>`;
+  const fam = f => { const m = DATE_PART.exec(f); return m ? DATE_NAME[m[2] || m[3] || "Event"] : fieldLabel(f); };
+  const by = new Map(), seen = new Set(), week = new Map();
+  xs.forEach(x => {
+    const l = langOf(x.link || (x.accepted[0] || {}).link || ""), got = new Map();
+    x.accepted.forEach(a => got.set(fam(a.field), true));
+    (x.dropped || []).forEach(f => { if (!got.has(fam(f))) got.set(fam(f), false); });
+    const d = new Date(x.when), mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), wk = mon.toDateString();
+    if (!week.has(wk)) week.set(wk, [mon, 0, 0]);
+    got.forEach((ok, f) => {
+      if (!by.has(f)) by.set(f, {});
+      const c = by.get(f);
+      [l, "all"].forEach(k => { c[k] = c[k] || [0, 0]; c[k][1]++; if (ok) c[k][0]++; });
+      seen.add(l); week.get(wk)[2]++; if (ok) week.get(wk)[1]++;
+    });
+  });
+  const cols = Object.keys(LANG_NAMES).filter(l => seen.has(l));
+  const cell = v => v ? `${Math.round(v[0] / v[1] * 100)}%<small>of ${v[1]}</small>` : "—";
+  const rows = [...by.entries()].sort((a, b) => b[1].all[1] - a[1].all[1]);
+  const weeks = [...week.values()].sort((a, b) => b[0] - a[0]).slice(0, 8);
+  return `<div class="evscroll"><table class="evacc"><thead><tr><th>Field</th><th>All</th>${cols.map(l => `<th>${LANG_NAMES[l]}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(([f, c]) => `<tr><td>${esc(f)}</td><td>${cell(c.all)}</td>${cols.map(l => `<td>${cell(c[l])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+  <div class="evscroll"><table class="evacc"><thead><tr><th>Week starting</th><th>Changes shown</th><th>Accepted</th></tr></thead>
+    <tbody>${weeks.map(([d, ok, n]) => `<tr><td>${esc(dayOf(d))}</td><td>${n}</td><td>${n ? Math.round(ok / n * 100) + "%" : "—"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function evOverview() {
+  const tasks = Object.entries(EV_TASKS).map(([t, T]) => {
+    const s = evSum(t), done = s.sharedMine + s.labelled, of = Math.max(1, s.shared + s.rest);
+    const btn = !s.total ? "" : `<button class="evgo" data-act="ev-start" data-t="${t}" ${s.left ? "" : "disabled"}>${s.left ? (s.mine ? "Continue" : "Start") : "Done"}</button>`;
+    return `<div class="evtask"><div><h3>${T.name}</h3><p>${T.ask}</p></div>${btn}
+      <div class="evbar">${s.total ? `<div class="track"><i class="d" style="width:${done / of * 100}%"></i><i class="h" style="width:${s.held / of * 100}%"></i></div>
+        <small>Everyone&rsquo;s ${EV_SHARED}: you have done ${s.sharedMine} of the ${s.shared} in your languages.${s.rest ? ` The other ${s.rest}: ${s.labelled} labelled${s.held ? `, ${s.held} on a colleague&rsquo;s screen` : ""}.` : ""}${s.other ? ` ${s.other} ${s.other === 1 ? "is" : "are"} only in languages you do not read.` : ""}${s.labellers ? ` ${s.labellers} labeller${s.labellers === 1 ? "" : "s"} so far.` : ""}</small>`
+        : `<small>Not on the page yet: run <code>python -m src.eval online publish</code>.</small>`}</div></div>`;
+  }).join("");
+  const rep = EV.report === undefined ? `<p class="minor">Loading&hellip;</p>`
+    : EV.report ? `<p class="minor">Scored ${esc(dayOf(EV.report.at))}, from the labels pulled to the PC that holds the AI&rsquo;s answers.</p><section class="focus"><pre class="evreport">${esc(EV.report.report)}</pre></section>`
+    : `<p class="minor">Not scored yet. Once the sheets are labelled, run <code>python -m src.eval online pull</code>, then <code>python -m src.eval online results</code>.</p>`;
+  return `<div class="phead"><h1>Evaluation</h1></div>
+  <p class="minor">Only evaluators see this page. For relevance and matching, the AI&rsquo;s answers are kept off it, so you cannot see what you are grading.</p>
+  ${testing ? `<p class="notice test">Test account: try anything you like. Nothing you label is saved.</p>` : ""}${EV.error ? `<p class="notice">${esc(EV.error)}</p>` : ""}
+  <h2 class="h2">Label the sheets</h2>
+  <section class="focus">${EV.progress === null && !EV.error ? `<p class="empty">Loading&hellip;</p>` : tasks}</section>
+  <p class="minor">Everyone labels the first ${EV_SHARED} rows of each sheet, so the labellers&rsquo; agreement can be measured. The rest are shared out: each is given to one person only.</p>
+  <h2 class="h2">Results</h2>${rep}
+  <h2 class="h2">Changes accepted on the desk</h2>
+  <p class="minor">Of the changes reviewers were shown, the share they accepted. A change left out is not always a wrong one: a reviewer may leave out a true detail that does not belong.</p>
+  <section class="focus an">${evAcceptance()}</section>`;
+}
+function evScreen() {
+  const T = EV_TASKS[EV.task], r = EV.item, L = EV.label;
+  if (EV.guide) return `<div class="evhead"><span><b>${T.name}</b> &middot; the rules</span><span class="qrow"><button class="quiet" data-act="ev-stop">Back to the sheets</button></span></div>
+    <section class="focus evread">${evGuideHtml(EV.task)}</section>
+    <div class="actions"><button class="stamp go" data-act="ev-guide-done"><b>Accept and start</b></button></div>`;
+  const head = `<div class="evhead"><span><b>${T.name}</b>${r ? ` &middot; ${r.ord <= EV_SHARED ? `one of everyone&rsquo;s ${EV_SHARED}` : "given to you alone"}` : ""}${EV.back.length ? ` &middot; ${EV.back.length} done` : ""}</span>
+    <span class="qrow">${EV_GUIDE[EV.task] ? `<button class="quiet" data-act="ev-guide">Rules</button>` : ""}${EV.back.length ? `<button class="quiet" data-act="ev-back">Back</button>` : ""}<button class="quiet" data-act="ev-stop">Stop for now</button></span></div>`
+    + (testing ? `<p class="notice test">Test account: nothing you label is saved.</p>` : "") + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "")
+    + (EV.error ? `<p class="notice">${esc(EV.error)} <button class="quiet" data-act="${r ? "ev-save" : "ev-retry"}">Try again</button></p>` : "");
+  if (!r) return head + (EV.busy || EV.error ? (EV.busy ? `<div class="done-card"><h2>Finding your next row&hellip;</h2></div>` : "")
+    : `<div class="done-card"><div class="bigtick">&#10003;</div><h2>Nothing left for you on this sheet</h2><p>Every row in your languages is labelled, or on a colleague&rsquo;s screen.</p><button class="evgo" data-act="ev-stop">Back to the sheets</button></div>`);
+  // a row come back to with Back shows the answer given
+  const b = r.body, was = (k, v) => L && L[k] === v ? " was" : "";
+  // relevance is judged from the headline and summary alone, as the AI judges it: no link to the article
+  const src = (url, link) => `<span class="src">${esc(outletOf(url))}${b.published ? ` &middot; ${esc(dayOf(b.published))}` : ""}${link ? ` &middot; <a href="${esc(url)}" target="_blank" rel="noopener">Open article &#8599;</a>` : ""}</span>`;
+  const ask = `<p class="evq">${T.ask}</p>`;
+  if (EV.task === "relevance") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, false)}</div>
+      <blockquote>${esc(b.title)}</blockquote>${b.description ? `<p class="evdesc">${esc(b.description)}</p>` : ""}</div></section>${ask}
+    <div class="actions"><div class="pair"><button class="stamp go${was("relevant", true)}" data-act="ev-rel" data-v="y"><b>Yes, relevant</b><span>Key Y</span></button>
+      <button class="stamp red${was("relevant", false)}" data-act="ev-rel" data-v="n"><b>No</b><span>Key N</span></button></div></div>`;
+  if (EV.task === "matching") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, true)}</div>
+      <blockquote>${evMark(b.evidence, [b.name, b.name_en])}</blockquote>
+      <p class="tr">${esc(b.name)}${b.name_en && b.name_en !== b.name ? ` (${esc(b.name_en)})` : ""}${b.article ? ` &middot; from &ldquo;${esc(gist(b.article, 90))}&rdquo;` : ""}</p></div>
+    <div class="join">same?</div>
+    <div class="side tte"><div class="label"><span>In TTE now</span><span class="src">no. ${esc(b.tte_id)}</span></div><p class="name">${esc(b.tte_name)}</p>
+      ${(b.tte_fields || []).length ? `<div class="evrec">${b.tte_fields.map(([k, v]) => `<div><span class="k">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>` : `<p class="ident">Nothing else on the record.</p>`}</div></section>${ask}
+    <div class="actions"><div class="evtrio"><button class="stamp go${was("same", "Y")}" data-act="ev-same" data-v="Y"><b>Same</b><span>Key Y</span></button>
+      <button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b><span>Key N</span></button>
+      <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b><span>Key ?</span></button></div></div>`;
+  const names = (b.names || []).map((n, i) => {
+    const g = L.names[n.entity];
+    return `<div class="evname"><div><b>${esc(n.entity)}</b><span class="tt">${esc(kind({ type: n.type || "" }))}</span></div>
+      ${n.evidence ? `<p class="tr">&ldquo;${esc(gist(n.evidence, 240))}&rdquo;</p>` : ""}
+      <div class="ev3">${EV_VERDICTS.map(([v, t]) => `<button class="${v}${g.verdict === v ? " on" : ""}" data-act="ev-verdict" data-i="${i}" data-v="${v}">${t}</button>`).join("")}</div>
+      ${g.verdict === "ok" && n.fields.length ? `<p class="hint">Tap any detail that is wrong.</p><div class="evchips">${n.fields.map(([k, v], j) => `<button class="evchip${g.wrong_fields.includes(k || gist(v, 40)) ? " bad" : ""}" data-act="ev-field" data-i="${i}" data-j="${j}" title="${esc(v)}">${k ? `<b>${esc(k)}</b>` : ""}${esc(gist(v, 120))}</button>`).join("")}</div>` : ""}</div>`;
+  }).join("");
+  const missed = `<div class="evname"><div><b>Did it miss anyone?</b></div><p class="hint">Anyone in the article who has, or should have, a TTE record and is not highlighted.</p>
+    ${b.text && L.missed.length ? `<div class="evchips">${L.missed.map((m, k) => `<button class="evchip miss" data-act="ev-unmiss" data-i="${k}" title="Take it off">${esc(m)} &#10005;</button>`).join("")}</div>` : ""}
+    ${b.text ? `<div class="ev3"><button id="evadd" data-act="ev-addmiss" ${EV.sel ? "" : "disabled"}>${EV.sel ? `Add &ldquo;${esc(gist(EV.sel, 40))}&rdquo; as missed` : "Select a name in the article to add it"}</button></div>`
+      : `<textarea id="evmisstxt" rows="3" placeholder="The article's text could not be fetched: open it, and write each name it missed on its own line">${esc(L.missed.join("\n"))}</textarea>`}
+    <div class="ev3"><button class="ok${L.none && !L.missed.length ? " on" : ""}" data-act="ev-none" ${L.missed.length ? "disabled" : ""}>Nothing missed</button></div></div>`;
+  return head + `<div class="evext"><div class="evtext" id="evtext"><h2>${esc(b.title)}</h2>${b.text ? evMark(b.text, (b.names || []).map(n => n.entity)) : `<a href="${esc(b.url)}" target="_blank" rel="noopener">Open the article &#8599;</a>`}</div>
+    <div class="evnames"><p class="evq" style="margin:0">${T.ask}</p>${names}${missed}
+      <div class="actions"><button class="stamp go" data-act="ev-save" ${evReady() ? "" : "disabled"}><b>Save and next</b><span>${evTodo()}</span></button></div></div></div>`;
+}
+const evalPage = () => !isEvaluator() ? `<div class="done-card"><h2>Evaluation</h2><p>This page is for evaluators.</p></div>` : EV.task ? evScreen() : evOverview();
+// The words selected in the article, kept when the click on "Add" empties the selection; a click in the text without
+// selecting anything clears them.
+document.addEventListener("selectionchange", () => {
+  if (PAGE !== "evaluation" || EV.task !== "extraction" || !EV.item) return;
+  const s = window.getSelection(), box = $("#evtext"), btn = $("#evadd");
+  if (!s || !box || !btn || !s.rangeCount || !box.contains(s.anchorNode)) return;
+  EV.sel = box.contains(s.focusNode) ? s.toString().replace(/\s+/g, " ").trim().slice(0, 120) : EV.sel;
+  btn.disabled = !EV.sel;
+  btn.innerHTML = EV.sel ? `Add &ldquo;${esc(gist(EV.sel, 40))}&rdquo; as missed` : "Select a name in the article to add it";
+});
+
 function navState() {
   document.querySelectorAll(".navi").forEach(b => b.classList.toggle("on", b.dataset.nav === PAGE));
   $("#topbar").hidden = $("#progwrap").hidden = PAGE !== "review";
   $("#waitbadge").textContent = CARDS.filter(available).length;
   $("#signout").hidden = !me; if (me) $("#signout").title = "Sign out " + myName;
   $("#langpill").textContent = "Reading: " + (langs ? langs.map(l => LANG_NAMES[l]).join(" + ") : "all languages");
+  $("#evalnav").hidden = !isEvaluator();
 }
 function draw(top) {
   const c = card(); navState();
@@ -1719,6 +2054,11 @@ function draw(top) {
   else if (PAGE === "results") $("#stage").innerHTML = resultsPage();
   else if (PAGE === "analytics") $("#stage").innerHTML = analyticsPage();
   else if (PAGE === "downloads") $("#stage").innerHTML = downloadsPage();
+  else if (PAGE === "evaluation") {   // the article keeps its place while names are marked beside it
+    const t = $("#evtext"), y = t ? t.scrollTop : 0;
+    $("#stage").innerHTML = evalPage();
+    const t2 = $("#evtext"); if (t2 && !top) t2.scrollTop = y;
+  }
   else if (!c || allDone) $("#stage").innerHTML = `<div class="done-card"><div class="bigtick">&#10003;</div><h2>${LOG.length ? "All done" : "Nothing waiting for you"}</h2><p>${LOG.length ? "That was every card you can read." : "No cards match your languages and the type you chose."}</p>${LOG.length && !ONLINE ? `<button class="stamp go" data-act="restart"><b>Start over</b><span>clears this session</span></button>` : ""}</div>`;
   else {
     const held = claimed(c);

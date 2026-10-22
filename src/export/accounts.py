@@ -5,13 +5,15 @@ Reviewer accounts for the online desk, made from the command line.
     python -m src.export --account test@nlb.gov.sg "Test account" --test
     python -m src.export --accounts
     python -m src.export --reset-password glenn@nlb.gov.sg
+    python -m src.export --mark-evaluator glenn@nlb.gov.sg
 
 The dashboard does the same by hand (Authentication > Users > Add user);
 this is one line per reviewer with the secret key already in `.env`.
 A password is generated and printed once; Supabase keeps only a hash of it,
 so a forgotten one is replaced, never looked up.
 `--test` marks the account so its decisions are left out when decisions
-are collected.
+are collected. `--mark-evaluator` gives an account the desk's Evaluation page,
+where the evaluation's sheets are labelled (sql/19_evaluation.sql).
 """
 
 import secrets
@@ -52,6 +54,21 @@ def mark_test(email: str) -> str:
     return user.id
 
 
+def is_evaluator(user) -> bool:
+    """An account that labels the evaluation's sheets: marked in app_metadata, like a test account."""
+    return bool((getattr(user, "app_metadata", None) or {}).get("evaluator"))
+
+
+def mark_evaluator(email: str, on: bool = True) -> str:
+    """Give an existing account the Evaluation page, or take it away. It shows from their next sign-in."""
+    admin = get_client().auth.admin
+    user = next((u for u in admin.list_users() if (u.email or "").lower() == email.strip().lower()), None)
+    if user is None:
+        raise ValueError(f"No account for {email}. `--accounts` lists them.")
+    admin.update_user_by_id(user.id, {"app_metadata": {**(user.app_metadata or {}), "evaluator": on}})
+    return user.id
+
+
 def reset_password(email: str, password: str | None = None) -> dict:
     """Give an existing account a new password; the old one stops working."""
     admin = get_client().auth.admin
@@ -86,5 +103,5 @@ def listing() -> list[dict]:
     for u in get_client().auth.admin.list_users():
         meta = u.user_metadata or {}
         out.append({"id": u.id, "email": u.email or "", "name": meta.get("name") or "",
-                    "test": is_test(u), "last_sign_in": (u.last_sign_in_at or "")})
+                    "test": is_test(u), "evaluator": is_evaluator(u), "last_sign_in": (u.last_sign_in_at or "")})
     return sorted(out, key=lambda r: r["email"])

@@ -19,10 +19,15 @@ from pathlib import Path
 from src.export.package import standalone
 
 SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+GUIDE_MARK = "/*__EVAL_GUIDE__*/{}"
 
 
 def online_page(template: str, url: str, anon_key: str) -> str:
-    """The template as the online page: the client library and the keys in the head."""
+    """The template as the online page: the client library and the keys in the head, and the labelling
+    guide for the Evaluation page (docs/labelling-guide.md)."""
+    if GUIDE_MARK in template:
+        from src.eval.guide import sections
+        template = template.replace(GUIDE_MARK, json.dumps(sections(), ensure_ascii=False).replace("</", "<\\/"))
     config = {"url": url, "anonKey": anon_key}
     head = (f'<script src="{SUPABASE_JS}"></script>\n'
             f"<script>window.__ONLINE__ = {json.dumps(config)};</script>\n")

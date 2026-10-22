@@ -128,7 +128,7 @@ def relevance(window: str, out: Path) -> None:
     _write(out, "1-relevance", sheet, key,
            "Fill in 'relevant' with TRUE or FALSE for every row. TRUE = the article names an "
            "entity the authority file holds or should hold, AND reports a fact that would change "
-           "or create its record. A mention alone is FALSE.")
+           "or create its record. A mention alone is FALSE. The full rules: docs/labelling-guide.md.")
     _sampling_note(out, window, len(month), strata, weights)
 
 
@@ -230,7 +230,7 @@ def matching(out: Path) -> None:
     _write(out, "2-matching", pd.DataFrame(rows), pd.DataFrame(key),
            "Fill in 'same' with Y, N or ? for every row. Y = the sentence and the TTE record "
            "describe one and the same person or thing. ? = the row does not carry enough to "
-           "decide; it is a real answer and is counted.")
+           "decide; it is a real answer and is counted. The full rules: docs/labelling-guide.md.")
 
 
 def extraction(window: str, out: Path) -> None:
@@ -279,7 +279,8 @@ def extraction(window: str, out: Path) -> None:
     _write(out, "3-extraction", pd.DataFrame(rows), pd.DataFrame(key),
            "For each name the app found, put ok / wrong / not_worth in 'verdict', and any field "
            "whose value is wrong in 'field_errors'. On each article's blank last row, put in "
-           "'missed' any name the article carries that the app should have found, one per line.")
+           "'missed' any name the article carries that the app should have found, one per line. "
+           "The full rules: docs/labelling-guide.md.")
 
 
 def logs(out: Path) -> None:
