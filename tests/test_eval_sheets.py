@@ -6,17 +6,16 @@ import pandas as pd
 import pytest
 
 
-def test_a_proportion_carries_its_interval_and_a_small_n_shows_it():
-    from src.eval.score import interval, prf
+def test_a_score_carries_its_range_and_a_small_n_shows_it():
+    from src.eval.plan import share
+    from src.eval.score import pr, ranged
 
-    assert interval(8, 10).startswith("0.80 [")
-    # The same proportion on a tenth of the data is reported far less certainly.
-    wide = interval(8, 10)
-    narrow = interval(80, 100)
-    span = lambda s: float(s.split("[")[1].split(",")[1].strip(" ]")) - float(s.split("[")[1].split(",")[0])
-    assert span(wide) > span(narrow) * 2
-    assert interval(0, 0) == "n/a"
-    assert "F1 0.80" in prf(8, 2, 2)
+    assert ranged(share(8, 10)).startswith("0.80 [")
+    # The same share on a tenth of the rows is reported far less certainly.
+    span = lambda t: t[2] - t[1]
+    assert span(share(8, 10)) > span(share(80, 100)) * 2
+    assert ranged(share(0, 0)) == "n/a"
+    assert "F1 0.80" in pr(share(8, 10), share(8, 10))
 
 
 def test_agreement_is_chance_corrected():
@@ -63,7 +62,7 @@ def test_the_sheet_holds_no_answer_and_the_key_holds_it(tmp_path):
 
     sheet = pd.DataFrame({"url": ["u1", "u2"], "relevant": ["", ""]})
     k = pd.DataFrame({"url": ["u1", "u2"], "app_said": [True, False]})
-    sheets._write(tmp_path, "1-relevance", sheet, k, "a note")
+    sheets._write(tmp_path, "1-relevance", sheet, k, "a note", "50 rows")
     back = pd.read_excel(tmp_path / "1-relevance.xlsx", sheet_name="rows",
                          dtype=str, keep_default_na=False)
     assert (back["relevant"] == "").all() and "app_said" not in back.columns
@@ -72,29 +71,63 @@ def test_the_sheet_holds_no_answer_and_the_key_holds_it(tmp_path):
     assert json.loads((tmp_path / "1-relevance-key.json").read_text(encoding="utf-8"))[0]["app_said"] is True
 
 
-def test_the_strata_cover_the_month_and_their_weights_put_it_back():
+def test_each_year_gets_its_share_and_the_weights_put_the_group_back():
     """
-    A weighted estimate is only unbiased if every article sat in exactly one
-    stratum and each stratum's weight is its population over its sample. The
-    three strata are: what the app kept, and the two halves of what it
-    rejected, split by a rule applied to every rejected article.
+    A weighted estimate is only unbiased if every item had a known chance of being drawn and each row's
+    weight is its year's items over its year's rows: then the weights of the rows drawn add up to the group.
     """
+    import random
+
     from src.eval import sheets
 
-    month, kept = 2135, 236
-    named_pop, other_pop = 442, 1457
-    assert kept + named_pop + other_pop == month, "the strata must partition the month"
+    items = [("2015", i) for i in range(3000)] + [("2022", i) for i in range(6000)] + [("2026", i) for i in range(1000)]
+    got, years, passed = sheets.by_year(items, lambda x: x[0], 200, random.Random(1))
+    assert len(got) == 200 and years == {"2015": [3000, 60], "2022": [6000, 120], "2026": [1000, 20]} and passed == 0
+    assert sum(w for _, w in got) == pytest.approx(len(items))
+    assert {w for (y, _), w in got if y == "2026"} == {50.0}
+    assert len({x for x, _ in got}) == 200                      # drawn without replacement
+    # a group smaller than its rows is taken whole, each row standing for itself
+    small, _, _ = sheets.by_year(items[:30], lambda x: x[0], 200, random.Random(1))
+    assert len(small) == 30 and {w for _, w in small} == {1.0}
 
-    named_n = min(sheets.N_NAMED_REJECT, named_pop)
-    other_n = min(sheets.N_OTHER_REJECT, other_pop)
-    weights = {"kept": 1.0, "named": named_pop / named_n, "other": other_pop / other_n}
-    # Weighting the sample back reconstructs the month, which is the property
-    # that makes recall an estimate of the month rather than of the sheet.
-    back = kept * weights["kept"] + named_n * weights["named"] + other_n * weights["other"]
-    assert back == pytest.approx(month, abs=1)
-    # Misses hide where names are, so that stratum is sampled harder: a row
-    # drawn from it stands for fewer articles than one drawn from the other.
-    assert weights["named"] < weights["other"]
+
+def test_an_article_whose_page_gives_no_text_is_passed_over_for_the_next_of_its_year(tmp_path):
+    import random
+
+    from src.eval import sheets
+
+    asked = []
+
+    def fetch(url):
+        asked.append(url)
+        if url.endswith("dead"):
+            raise RuntimeError("404")
+        return "" if url.endswith("empty") else "Some text."
+
+    check = sheets.readable(tmp_path, fetch, pause=0)
+    items = ([("2015", f"https://www.straitstimes.com/a{i}-dead") for i in range(5)]
+             + [("2015", f"https://www.straitstimes.com/b{i}") for i in range(5)]
+             + [("2016", "https://www.straitstimes.com/c-empty"), ("2016", "https://www.straitstimes.com/d")])
+    got, years, passed = sheets.by_year(items, lambda x: x[0], 6, random.Random(3), lambda x: check(x[1]))
+    assert not any(u.endswith(("dead", "empty")) for (_, u), _ in got)
+    assert years == {"2015": [10, 5], "2016": [2, 1]} and passed == len(asked) - 6
+    # each one drawn still stands for its year's whole group
+    assert sum(w for _, w in got) == pytest.approx(12)
+    # the text is kept for the page, and a page that gave it is not fetched again
+    kept = json.loads((tmp_path / "3-extraction-texts.json").read_text(encoding="utf-8"))
+    assert kept["https://www.straitstimes.com/d"] == "Some text."
+    n = len(asked)
+    assert check("https://www.straitstimes.com/d") and len(asked) == n
+
+
+def test_named_is_found_fast_and_as_a_plain_search_would():
+    from src.eval import sheets
+
+    names = {"tan kah kee", "national library board", "esplanade"}
+    named = sheets._namer(names)
+    for text in ("Tan Kah Kee's old house reopens", "The NATIONAL LIBRARY BOARD said", "Esplanade's new hall",
+                 "Tan Kah", "a library board", "", "Esplanad"):
+        assert named(text) == any(n in text.lower() for n in names), text
 
 
 def test_a_weighted_miss_counts_for_more_than_one(tmp_path):

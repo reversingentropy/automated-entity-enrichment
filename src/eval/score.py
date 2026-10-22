@@ -3,42 +3,39 @@ Score the labelled sheets against the key held back from them.
 
     python -m src.eval score data/eval/returned
 
-Each sheet gives precision, recall and F1 with a 95% interval, and the
-figures the evaluation doc promises: relevance by language with the
-sampling weights applied, matching by script with the "cannot tell" rate,
-extraction by language and type with the per-field error count. Where two
-people labelled the same row, agreement (Cohen's kappa) is reported; where
-they disagree, the row is listed rather than averaged away.
+Each sheet gives precision, recall and F1, each with a 95% range worked out as src/eval/plan.py sets
+down: relevance and matching with each group scaled up to its size by the rows' weights, extraction
+article by article, since the names in one article are right or wrong together. Then the figures the
+evaluation doc promises: relevance by language, matching by script with the "cannot tell" rate,
+extraction by language with the per-field error count. Where two people labelled the same row,
+agreement (Cohen's kappa) is reported; where they disagree, the row is listed rather than averaged away.
 """
 
 import json
-import math
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
 
+from src.eval.online import lang_of
+from src.eval.plan import by_article, recall, share
+
 TRUE = {"TRUE", "T", "Y", "YES", "1"}
 FALSE = {"FALSE", "F", "N", "NO", "0"}
 UNSURE = {"?", "UNSURE", "NOT SURE", "MAYBE"}
 
 
-def interval(hits: float, total: float) -> str:
-    """A 95% interval on a proportion, wide when the count is small, and said so."""
-    if not total:
-        return "n/a"
-    p = hits / total
-    half = 1.96 * math.sqrt(max(p * (1 - p), 1e-9) / total)
-    return f"{p:.2f} [{max(p - half, 0):.2f}, {min(p + half, 1):.2f}]"
+def ranged(t: tuple[float, float, float]) -> str:
+    """A score and its 95% range, as 0.80 [0.74, 0.85]."""
+    v, lo, hi = t
+    return "n/a" if v != v else f"{v:.2f} [{lo:.2f}, {hi:.2f}]"
 
 
-def prf(tp: float, fp: float, fn: float) -> str:
-    p = tp / (tp + fp) if tp + fp else 0.0
-    r = tp / (tp + fn) if tp + fn else 0.0
-    f = 2 * p * r / (p + r) if p + r else 0.0
-    return (f"P {interval(tp, tp + fp)}   R {interval(tp, tp + fn)}   F1 {f:.2f}"
-            f"   (tp {tp:.0f} fp {fp:.0f} fn {fn:.0f})")
+def pr(p: tuple, r: tuple) -> str:
+    """Precision and recall, each with its range, and F1."""
+    f1 = 2 * p[0] * r[0] / (p[0] + r[0]) if p[0] == p[0] and r[0] == r[0] and p[0] + r[0] else 0.0
+    return f"P {ranged(p)}   R {ranged(r)}   F1 {f1:.2f}"
 
 
 def kappa(a: list, b: list) -> float:
@@ -101,6 +98,23 @@ def _agreement(sheets, join, column, label):
             print(f"    split on {label} {key}: " + ", ".join(f"{w}={m}" for w, m in v.items()))
 
 
+def _groups(key: dict, label: dict, keep, said, yes) -> tuple[list, list[list]]:
+    """
+    What the app said yes to, and each group of what it said no to, as recall() takes them: [size, rows
+    labelled, rows labelled yes]. A group's size is its rows' weights added up: each row stands for that many.
+    """
+    kept, dropped = [0.0, 0, 0], defaultdict(lambda: [0.0, 0, 0])
+    for k, row in key.items():
+        if not keep(k):
+            continue
+        t = kept if said(row) else dropped[row.get("stratum") or row.get("side") or "rejected"]
+        t[0] += row.get("weight") or 1.0
+        if k in label and label[k] is not None:
+            t[1] += 1
+            t[2] += yes(label[k])
+    return kept, list(dropped.values())
+
+
 def relevance(folder: Path, key_dir: Path) -> None:
     sheets = _returned(folder, "1-relevance")
     if not sheets:
@@ -109,58 +123,33 @@ def relevance(folder: Path, key_dir: Path) -> None:
     print("\nRELEVANCE")
     # One label per row: the first person to mark it. Disagreements are listed
     # by _agreement rather than resolved here.
-    label, lang = {}, {}
+    label = {}
     for _, df in sheets:
         for row in df.itertuples():
             m = _mark(getattr(row, "relevant", ""))
             if m and row.url not in label:
                 label[row.url] = m == "Y"
-                lang[row.url] = "zh" if row.source == "zb" else "en"
     done = [u for u in label if u in key]
     print(f"  labelled {len(done)} of {len(key)} rows")
-    # What each stratum contributed, printed so the weighting can be checked.
-    from collections import defaultdict as _dd
-    counted = _dd(lambda: [0, 0, 0.0])          # rows, misses found, weight
+    # What each group contributed, printed so the weighting can be checked.
+    drawn, size, seen = Counter(), Counter(), defaultdict(lambda: [0, 0])
+    for u, k in key.items():
+        drawn[k["stratum"]] += 1
+        size[k["stratum"]] += k.get("weight") or 1.0
     for u in done:
-        k = key[u]
-        seen = counted[k["stratum"]]
-        seen[0] += 1
-        seen[1] += bool(label[u] and not k["app_said"])
-        seen[2] = k["weight"]
-    for stratum, (rows, misses, w) in sorted(counted.items()):
-        print(f"    {stratum:30} {rows:4} rows, each standing for {w:5.2f}; "
+        seen[key[u]["stratum"]][0] += 1
+        seen[key[u]["stratum"]][1] += bool(label[u] and not key[u]["app_said"])
+    for stratum, (rows, misses) in sorted(seen.items()):
+        print(f"    {stratum:30} {rows:4} rows, each standing for about {size[stratum] / drawn[stratum]:,.0f}; "
               f"{misses} the app should have kept")
 
-    for name, keep in (("overall", lambda u: True), ("english", lambda u: lang[u] == "en"),
-                       ("chinese", lambda u: lang[u] == "zh")):
-        tp = fp = fn = 0.0
-        found = 0
-        for u in done:
-            k = key[u]
-            w = k["weight"] or 0.0
-            if not keep(u):
-                continue
-            app, human = k["app_said"], label[u]
-            if app and human:
-                tp += w
-            elif app and not human:
-                fp += w
-            elif human and not app:
-                fn += w
-                found += 1
-        # Precision is a census of what the app called relevant, so its
-        # interval is the plain one. Recall is weighted, and a single labelled
-        # miss stands for several articles, so its interval is computed on the
-        # rows actually labelled rather than on the weighted total, which
-        # would claim a precision the sample does not have.
-        p = tp / (tp + fp) if tp + fp else 0.0
-        r = tp / (tp + fn) if tp + fn else 0.0
-        f1 = 2 * p * r / (p + r) if p + r else 0.0
-        n_p = sum(1 for u in done if key[u]["app_said"] and keep(u))
-        n_r = n_p + found
-        print(f"  {name:8} P {interval(round(p * n_p), n_p)}   "
-              f"R {interval(round(r * n_r), n_r)}   F1 {f1:.2f}   "
-              f"(weighted: caught {tp:.0f}, missed {fn:.0f}; misses labelled {found})")
+    for name, keep in (("overall", lambda u: True), ("english", lambda u: lang_of(u) == "en"),
+                       ("chinese", lambda u: lang_of(u) == "zh")):
+        kept, dropped = _groups(key, label, keep, lambda k: k["app_said"], bool)
+        if not kept[1]:
+            continue
+        print(f"  {name:8} {pr(share(kept[2], kept[1]), recall(tuple(kept), [tuple(g) for g in dropped]))}"
+              f"   (misses labelled {sum(g[2] for g in dropped)})")
 
     examples = [u for u in done if label[u] and not key[u]["app_said"]]
     if examples:
@@ -187,17 +176,14 @@ def matching(folder: Path, key_dir: Path) -> None:
     unsure = sum(1 for p in done if label[p] == "?")
     print(f"  labelled {len(done)} of {len(key)} rows; cannot tell: {unsure} "
           f"({100 * unsure / max(len(done), 1):.0f}%)")
+    # "Cannot tell" is reported above and left out of precision and recall.
+    sure = {p: m for p, m in label.items() if m != "?"}
     for name, keep in (("overall", lambda p: True), ("latin", lambda p: key[p]["script"] == "latin"),
                        ("chinese", lambda p: key[p]["script"] == "chinese")):
-        tp = fp = fn = 0
-        for p in done:
-            if label[p] == "?" or not keep(p):
-                continue
-            app, human = key[p]["app_said_same"], label[p] == "Y"
-            tp += app and human
-            fp += app and not human
-            fn += human and not app
-        print(f"  {name:8} {prf(tp, fp, fn)}")
+        kept, dropped = _groups(key, sure, keep, lambda k: k["app_said_same"], lambda m: m == "Y")
+        if not kept[1]:
+            continue
+        print(f"  {name:8} {pr(share(kept[2], kept[1]), recall(tuple(kept), [tuple(g) for g in dropped]))}")
     _agreement(sheets, "id", "same", "proposal")
 
 
@@ -206,32 +192,44 @@ def extraction(folder: Path, key_dir: Path) -> None:
     if not sheets:
         return
     print("\nEXTRACTION")
-    verdicts, missed, fielderr = {}, defaultdict(set), Counter()
-    langs = {}
-    for _, df in sheets:
+    path = key_dir / "3-extraction-key.json"
+    weight = {r["article_url"]: r.get("weight") or 1.0
+              for r in (json.loads(path.read_text(encoding="utf-8")) if path.exists() else []) if r.get("article_url")}
+    # Each article as its first labeller marked it: their verdicts and their missed names.
+    owner = {}
+    for who, df in sheets:
         for row in df.itertuples():
-            ent = (getattr(row, "entity", "") or "").strip()
+            if (getattr(row, "verdict", "") or "").strip() or (getattr(row, "missed", "") or "").strip():
+                owner.setdefault(getattr(row, "article_url", ""), who)
+    verdicts, missed, fielderr, arts = {}, defaultdict(set), Counter(), {}
+    for who, df in sheets:
+        for row in df.itertuples():
             art = getattr(row, "article_url", "")
+            if owner.get(art) != who:
+                continue
+            a = arts.setdefault(art, {"group": getattr(row, "language", "en") or "en", "weight": weight.get(art, 1.0),
+                                      "ok": 0, "bad": 0, "missed": 0})
+            ent = (getattr(row, "entity", "") or "").strip()
             v = (getattr(row, "verdict", "") or "").strip().lower()
-            if ent and v:
-                verdicts.setdefault((art, ent), v)
-                langs[(art, ent)] = getattr(row, "language", "en")
+            if ent and v and (art, ent) not in verdicts:
+                verdicts[(art, ent)] = v
+                a["ok" if v == "ok" else "bad"] += 1
                 for f in (getattr(row, "field_errors", "") or "").replace(";", ",").split(","):
                     if f.strip():
                         fielderr[f.strip()] += 1
             for m in (getattr(row, "missed", "") or "").splitlines():
-                if m.strip():
+                if m.strip() and m.strip() not in missed[art]:
                     missed[art].add(m.strip())
+                    a["missed"] += 1
     n_missed = sum(len(v) for v in missed.values())
     print(f"  entities marked {len(verdicts)}, names reported missing {n_missed}")
-    for name, keep in (("overall", lambda k: True), ("english", lambda k: langs[k] == "en"),
-                       ("chinese", lambda k: langs[k] == "zh")):
-        ok = sum(1 for k, v in verdicts.items() if v == "ok" and keep(k))
-        bad = sum(1 for k, v in verdicts.items() if v in ("wrong", "not_worth") and keep(k))
-        miss = n_missed if name == "overall" else sum(
-            len(v) for a, v in missed.items()
-            if any(keep(k) for k in verdicts if k[0] == a))
-        print(f"  {name:8} {prf(ok, bad, miss)}")
+    for name, keep in (("overall", lambda a: True), ("english", lambda a: a["group"] == "en"),
+                       ("chinese", lambda a: a["group"] == "zh")):
+        rows = [a for a in arts.values() if keep(a)]
+        if not rows:
+            continue
+        got = by_article(rows)
+        print(f"  {name:8} {pr(got['precision'], got['recall'])}   ({len(rows)} articles)")
     kinds = Counter(v for v in verdicts.values())
     print(f"  verdicts: " + ", ".join(f"{k} {n}" for k, n in kinds.most_common()))
     if fielderr:
@@ -249,6 +247,6 @@ def report(folder: str | Path, key_dir: str | Path | None = None) -> int:
     relevance(folder, key_dir)
     matching(folder, key_dir)
     extraction(folder, key_dir)
-    print("\nIntervals are 95%. A wide one means the sheet was small, not that the "
-          "system is uncertain.")
+    print("\nRanges are 95%: the true value lies inside about 95 times in 100 "
+          "(python -m src.eval check). A wide one means few rows, not an unsure system.")
     return 0

@@ -176,6 +176,8 @@ python -m src.job3_resolution [--limit N] [--dry-run]   # proposals per article'
 python -m src.job3_resolution --requeue-stale [--dry-run]   # after a TTE import
 python -m src.load_tte [--source local] [--dry-run]     # the authority file, from the bucket
 python -m src.eval [--case edge-] [--show]              # the resolution prompt on frozen cases
+python -m src.eval sheets                               # the evaluation's sheets, drawn from every year (src/eval/plan.py)
+python -m src.eval check                                # the scoring tried on made-up data with known answers
 python -m src.eval online publish                       # the evaluation's sheets to the desk's Evaluation page
 python -m src.eval online pull                          # their labels back as returned sheets; `online results` scores them
 python -m src.export --package data/dist/tte-desk.zip   # the review desk, as a file
@@ -202,6 +204,7 @@ done until the write succeeds.** A failed run leaves rows queued for the next.
 - [docs/online.md](docs/online.md): the desk with the database behind it: accounts, one reviewer per card, collecting
 - [docs/evaluation.md](docs/evaluation.md): the evaluation for the team: accuracy, effectiveness, efficiency, satisfaction, reliability
 - [docs/evaluation-method.md](docs/evaluation-method.md): the method in full: sampling, labelling rules, formulas, commands
+- [docs/evaluation-how.md](docs/evaluation-how.md): the Evaluation page's "How this works", and the maths behind it
 - [docs/backfill.md](docs/backfill.md): the archives and the internal model, with what the round trips returned
 - [docs/gotchas.md](docs/gotchas.md): what cost an evening
 - [docs/pipeline.html](docs/pipeline.html): the explainer for someone who has never seen any of this

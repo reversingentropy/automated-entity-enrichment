@@ -33,19 +33,24 @@ Two consequences, and they shape everything below.
 
 ## 1. Accuracy: is each step right?
 
-Three labelled sheets, drawn from **August 2026** (2,135 articles, 236 of
-them judged relevant by the app), in week one. Between four people, about
-**two and a half hours each**: roughly 75 minutes on relevance, 20 on
-matching, 75 on extraction. The first draft said an hour; that was wrong,
-and extraction is what costs.
+Three labelled sheets, drawn from **every year since 2015** (295,269
+headlines, 27,941 of them judged relevant), each year in proportion to its
+size. About **ten hours in all**, so five each for two labellers: roughly
+1¾ hours on relevance, 2 on matching and 6 on extraction, counting the
+shared rows twice. Extraction is what costs. English and Chinese only;
+Malay and Tamil are a round of their own. The Evaluation page explains the
+maths under **How this works**.
 
 Rules for all three sheets:
 
 - The sheet does not show the app's answer. The answer key is held
   separately and joined after labels are frozen.
-- Everyone marks the **first 50 rows**; the rest are divided between you.
-  The rows are shuffled, so any block is a fair share, and the shared 50 are
-  what agreement between labellers (Cohen's κ) is measured on.
+- Everyone marks the **first 50 rows** (the first **20 articles** for
+  extraction); the rest are divided between you. The rows are shuffled, so
+  any block is a fair share, and the shared rows are what agreement between
+  labellers (Cohen's κ) is measured on. Below 0.6, the rules are tightened
+  and the shared rows labelled again; a row two people split on is settled
+  between them, and the agreed answer counts.
 - Nothing is relabelled after seeing a score.
 - Put the time taken in the `minutes` cell at the top of the sheet.
 
@@ -63,28 +68,27 @@ award, a death, a rename, a merger, a founding. A mention alone is FALSE.
 | …/tommy-koh-ramon-magsaysay-award | cna | Veteran diplomat Tommy Koh wins Ramon Magsaysay Award | Tommy Koh, 88, has won the Ramon Magsaysay Award, regarded as Asia's version of the Nobel Prize. | TRUE |
 | …/nus-bizad-charity-run-140000 | cna | NUS Bizad Charity Run raises over S$140,000 | More than 1,300 NUS staff, students and alumni took part in the run, raising over S$140,000. | FALSE |
 
-**Sampling.** 736 rows in three strata that between them cover every article
-the feed carried in August, so nothing was chosen by hand and every article
-had a known chance of being drawn:
+**Sampling.** 700 rows in three strata that between them cover every
+English and Chinese headline in the archive, so nothing was chosen by hand
+and every headline had a known chance of being drawn. Each year gives rows
+in proportion to its share of the stratum:
 
-| stratum | in the month | sampled | each row stands for |
-|---|---|---|---|
-| the app called it relevant | 236 | 236 | 1.0 |
-| rejected, names a TTE record | 442 | 200 | 2.21 |
-| rejected, names none | 1,457 | 300 | 4.86 |
+| stratum | headlines | sampled | each row stands for |
+|---|---:|---:|---:|
+| the app called it relevant | 27,941 | 200 | about 140 |
+| rejected, names a TTE record | 91,182 | 200 | about 456 |
+| rejected, names none | 176,146 | 300 | about 587 |
 
 The split between the two rejected strata is mechanical: an article is
 *named* when its title or description contains the name of an active TTE
 record of at least seven characters. Misses concentrate there, which is why
-it is sampled harder; the weight puts it back in proportion. Precision is a
-census of the first stratum and needs no weighting; recall is weighted, and
-one labelled miss stands for two or five articles depending on where it was
-found. `data/eval/0-sampling.md` records this, with the random seed, before
-anyone labels anything.
+it is sampled harder; the weight puts it back in proportion. Recall is
+weighted: one labelled miss stands for about 460 or 590 headlines,
+depending on where it was found. `data/eval/0-sampling.md` records this,
+with the random seed, before anyone labels anything.
 
-Sampling the whole month at random instead would need about 1,400 rows to
-reach the same precision on recall, because nine articles in ten are
-rejects that name nobody.
+Drawn at random instead, nine rows in ten would be rejects that name
+nobody, and recall would rest on a handful of misses.
 
 **TL;DR:** fill in `relevant` for every row.
 **Produces:** precision, recall, F1, by language.
@@ -98,10 +102,11 @@ decide; it is a real answer and is counted, not dropped.
 |---|---|---|---|---|---|---|
 | Alan Chan | Former CPA chairman Alan Chan received the Order of Temasek. | …/lta-chairman-new-board-members | 18593383 | Chan, Alan Heng Loon | Occupation: Civil servant · Affiliations: Singapore Press Holdings · Born: 1952 | |
 
-**Sampling.** 300 rows: 150 pairs the app matched, 150 it did not (with the
-best record it was shown), drawn at random. The evidence sentence is in the
-sheet, so a row can be judged without opening the article. At 150 a side,
-precision and recall each land within about ±0.06.
+**Sampling.** 300 rows: 150 pairs the app matched (of 2,831), 150 it did
+not (of 643, with the best record it was shown), each year in proportion to
+its size. The evidence sentence is in the sheet, so a row can be judged
+without opening the article. At 150 a side, precision lands within about ±5
+points.
 
 **TL;DR:** fill in `same` for every row.
 **Produces:** precision, recall, F1; the `?` rate; results split by Latin and
@@ -122,9 +127,9 @@ and did not, one per line.
 | …/khaw-boon-wan-sph-media-trust | en | SPH Media Trust | ORGANISATION | Founder: Khaw Boon Wan | | | |
 | …/khaw-boon-wan-sph-media-trust | en | | | | | | Teo Chee Hean |
 
-**Sampling.** 60 articles from August 2026 that the app processed, English
-and Chinese, with the names it found already filled in. You are checking and
-adding, not extracting from scratch.
+**Sampling.** 100 articles the app processed, 50 English and 50 Chinese,
+from every year, with the names it found already filled in (about 350). You
+are checking and adding, not extracting from scratch.
 
 **TL;DR:** mark each row `ok` / `wrong` / `not_worth`; add what was missed.
 **Produces:** precision, recall, F1 by language and type; error rate per

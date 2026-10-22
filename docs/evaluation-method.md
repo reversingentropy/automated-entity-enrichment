@@ -23,21 +23,40 @@ own misses count; labellers never see the model's answer.
 
 ## Quality: how accurate each step is
 
-Three labelled sheets, one fixed window (one calendar month of the feed),
-about an hour per person, done in week one. Out of them: precision, recall
-and F1 per stage, by language and type, in time for the paper.
+Three labelled sheets, drawn from everything the AI has handled, 2015 to
+now, each year in proportion to its size: 700 headlines, 300 matching
+decisions and 100 articles, about ten hours in all, so five each for two
+labellers. Out of them: precision, recall and F1 per stage, each with its
+95% range, by language. English and Chinese only; Malay and Tamil are a
+round of their own. The sizes and the maths are in `src/eval/plan.py`, and
+the page explains them under **How this works**
+([evaluation-how.md](evaluation-how.md)).
 
 Common rules, all three sheets:
 
 - The sheet given to labellers has **no model verdict column**. The
   verdict is joined after the labels are frozen.
-- **50 rows of each sheet are labelled by two people**; agreement (Cohen's
-  κ) is reported. Seventeen minutes a person; it is the first thing a
-  referee asks.
+- **The first rows of each sheet are labelled by everyone**: 50 for
+  relevance and matching, 20 articles for extraction. Agreement (Cohen's
+  κ) is reported; below 0.6, that sheet's rules are tightened and its
+  shared rows labelled again. Where two labellers split, they settle it
+  between them, or a third person does, and the agreed answer counts. It
+  needs two labellers at least.
 - Labels are frozen before scoring. Nothing is relabelled after seeing a
   score.
-- The window, the sampling and the labelling rule are written down here
-  and in the paper.
+- The sampling is recorded before anyone labels, by the draw itself
+  (`data/eval/0-sampling.md`: every group's size, the rows drawn from each
+  year, the seed), and the labelling rule here and in the paper.
+- **Every score carries its 95% range**, worked out for what it is:
+  Jeffreys' interval for a share, each group scaled to its size for recall,
+  whole articles redrawn for extraction. `python -m src.eval check` draws
+  the sheets 2,000 times from made-up populations with known answers and
+  scores them: each score within 0.2 points of the truth on average, the
+  ranges holding it 94 to 98 times in 100. A test runs it on every push.
+- **The labels are a fixed test set.** Labellers judge the item, never the
+  AI's answer, so the labels stay true when the model or a prompt changes:
+  the new version is run on the same rows (with the API calls approved) and
+  scored again. Only the names a new extraction finds need labelling.
 - **The labelling rules are the AI's own instructions**, in plain words:
   [labelling-guide.md](labelling-guide.md), written from each stage's
   prompt and recording which version of it. A labeller judges whether the
@@ -68,6 +87,8 @@ of in Excel. The rows and the rules are the same; only the place changes.
   labeller, for the agreement. The rest are dealt one at a time, like the
   desk's records: a row nobody has labelled and nobody else holds, held
   for an hour. Nobody splits the sheet by hand, and no row is done twice.
+  For extraction, where a row is a whole article, the shared rows are the
+  first 20.
   Rows go only to someone who reads their language.
 - **Private labels.** Labels save as they are given, into `eval_labels`,
   which no account can read. The page learns only how far along each
@@ -80,7 +101,7 @@ decisions, the share of changes accepted by field, by language and by
 week.
 
 ```bash
-python -m src.eval online publish   # the sheets' rows to the page; fetches the 60 extraction articles once, 10 s apart
+python -m src.eval online publish   # the sheets' rows to the page, with the extraction articles' text the draw kept
 python -m src.eval online pull      # the labels back as data/eval/returned/<sheet>-<name>.xlsx
 python -m src.eval online results   # score them, and put the report on the page
 ```
@@ -94,23 +115,22 @@ out.
 **Purpose.** Does the model say yes to the articles worth a look, and no to
 the rest? It sees title and description only; so does the labeller.
 
-**Files given.** `relevance-<window>.csv`, one row per article:
+**Rows given.** One per headline: link, outlet, date, title, description,
+and `relevant` to fill (TRUE or FALSE). Nothing else.
 
-| column | holds |
-|---|---|
-| `id` | article id |
-| `language` | en / zh / ms / ta |
-| `title`, `description` | as the feed carried them |
-| `worth_a_look` | **to fill**: `y` or `n` |
+**Sampling.** Every English and Chinese headline in the archive sits in one
+of three groups, and each is drawn at random, each year in proportion to
+its size:
 
-**Sampling** (positives are ~4% of the feed, so 150/150 would find two
-misses and guess the rest):
+| group | headlines (2026-10-22) | drawn | each row stands for |
+|---|---:|---:|---:|
+| the AI called it relevant | 27,941 | 200 | about 140 |
+| rejected, names a TTE record | 91,182 | 200 | about 456 |
+| rejected, names none | 176,146 | 300 | about 587 |
 
-- every article the model said **yes** to in the window (~100);
-- **200 random** articles it said no to, for the unbiased miss rate;
-- **200** "no" articles whose title or description contains a name from
-  the TTE index, where misses hide; **examples only**, excluded from the
-  recall estimate, and the report says so.
+*Names a TTE record* is mechanical: the title or description holds the
+name of an active TTE record of at least seven characters. Misses hide
+there, so it is drawn harder, and its weight puts it back in proportion.
 
 **Labelling rule** (from `prompts/relevance.txt`; in full in the
 [guide](labelling-guide.md#relevance)). Yes when the headline and summary
@@ -121,32 +141,14 @@ merger, closure or rename, an opening, a law passed. No for commentary,
 people only mentioned or quoted, reactions, routine operations, pop-ups,
 court cases, foreign brands and branches, and plans not yet in effect.
 
-**Test.** Against the model's verdict: precision = yeses the labeller also
-marked `y` ÷ all model yeses; recall = model yeses among the labeller's
-`y` ÷ all labeller `y`, computed on the yes set plus the random-no set
-with inverse sampling weights (a random-no row stands for 2,700/200 ≈ 13
-articles). F1 from those. Reported with 95% intervals; by language.
+**Test.** Precision = the share of the AI's yeses a labeller also calls
+relevant, with Jeffreys' 95% range. Recall = found ÷ (found + missed), each
+group's share scaled up to the group's size; its range combines each
+group's own Jeffreys range. By language.
 
-**Required n.** All model yeses (precision within about ±0.08); 200 random
-noes (recall is bounded by misses found, ~4, so the interval is wide,
-about ±0.10, and is printed rather than hidden).
-
-**Commands.**
-
-```bash
-python -m src.eval sample relevance --window 2026-10 --out data/eval/relevance.csv
-python -m src.eval score relevance data/eval/relevance-labelled.csv
-```
-
-**Output.**
-
-```
-RELEVANCE  window 2026-10  n=500 (yes 104 · random no 200 · name-hit no 196)
-  P 0.81 [0.73, 0.88]   R 0.90 [0.79, 0.97]   F1 0.85
-  en  P 0.85 R 0.93     zh  P 0.72 R 0.81
-  agreement κ 0.78 (50 rows, 2 labellers)
-  misses found in the name-hit sample: 9 (examples in data/eval/relevance-misses.csv)
-```
+**Required n.** 200 yeses give precision to about ±5.5 points at 80%.
+Recall rests on the misses found, which are few, so its range is wider:
+about ±8 points in the check.
 
 ### Q2. Matching (Job 3, the identity decision)
 
@@ -154,18 +156,14 @@ RELEVANCE  window 2026-10  n=500 (yes 104 · random no 200 · name-hit no 196)
 decide "same" correctly? This is where the real errors live (romanised
 Chinese names, namesakes), and where the desk's design comes from.
 
-**Files given.** `matching-<window>.csv`, one row per (name, record) pair:
+**Rows given.** One per (name, record) pair: the name as extracted and in
+English, the sentence it came from, the article, the TTE record's name and
+identifying fields, and `same` to fill (Y, N or ?).
 
-| column | holds |
-|---|---|
-| `id` | proposal id |
-| `name`, `name_en` | as extracted, and the model's English rendering if any |
-| `evidence` | the sentence the name was taken from |
-| `tte_name`, `tte_fields` | the record's name and identifying fields (occupation, affiliations, birth year, description opening) |
-| `same` | **to fill**: `y`, `n` or `?` (cannot tell from this) |
-
-**Sampling.** 100 pairs the model matched, 100 pairs it rejected or left
-out (the best candidate it was shown), random within the window.
+**Sampling.** 150 pairs the AI matched (of 2,831) and 150 it turned down
+(of 643: a new record made though a plausible candidate was shown, the best
+of them), each year in proportion to its size. A matched pair stands for
+about 19 of its kind, a turned-down one for about 4.
 
 **Labelling rule** (from `prompts/resolution.txt`; in full in the
 [guide](labelling-guide.md#matching)). `y` when the evidence and the record
@@ -176,29 +174,12 @@ when the details point elsewhere, since a shared name alone proves nothing;
 and is counted, not dropped. Only identity is judged, not whether the record
 needs updating.
 
-**Test.** Precision = model matches labelled `y` ÷ model matches; recall =
-model matches among all pairs labelled `y` ÷ all `y`. The `?` rate is
-reported on its own: it is the share of decisions the desk must ask a
-person about.
+**Test.** Precision = matched pairs labelled `y` ÷ matched pairs labelled
+`y` or `n`. Recall = matches found ÷ all `y`, each side scaled to its size.
+The `?` rate is reported on its own and left out of both: it is the share
+of decisions the desk must ask a person about. By script (Latin, Chinese).
 
-**Required n.** 100 + 100 gives about ±0.07 on each side.
-
-**Commands.**
-
-```bash
-python -m src.eval sample matching --window 2026-10 --out data/eval/matching.csv
-python -m src.eval score matching data/eval/matching-labelled.csv
-```
-
-**Output.**
-
-```
-MATCHING   window 2026-10  n=200 (matched 100 · rejected 100)
-  P 0.93 [0.86, 0.97]   R 0.88 [0.80, 0.94]   F1 0.90
-  cannot tell: 11 (5%)
-  by script:  Latin names P 0.96 R 0.92   Chinese names P 0.84 R 0.71
-  agreement κ 0.85
-```
+**Required n.** 150 + 150 give precision to about ±4.8 points at 90%.
 
 ### Q3. Extraction (Job 2)
 
@@ -206,20 +187,17 @@ MATCHING   window 2026-10  n=200 (matched 100 · rejected 100)
 right ones with the right fields, and which did it miss? The only stage
 whose recall needs someone to read the article.
 
-**Files given.** `extraction-<window>.csv`, one row per extracted entity,
-plus blank rows to add what was missed:
+**Rows given.** Per article: its text (fetched once for the page, since the
+pipeline does not keep it), each name the AI found with its type, fields
+and evidence, a verdict to give per name, wrong fields to tap, and the
+names it missed.
 
-| column | holds |
-|---|---|
-| `article_id`, `language`, `url` | the article; the text is re-fetched once for this sheet, since the pipeline does not keep it |
-| `entity`, `type` | as extracted |
-| `fields` | the extracted fields, `Field: value` one per line |
-| `verdict` | **to fill**: `ok`, `wrong` (not what the article says), `not_worth` (real, but no authority record would hold it) |
-| `field_errors` | **to fill**: fields whose value is wrong, comma-separated |
-| `missed` | **to fill** on the article's blank row: names the article carries that should have been extracted, one per line |
-
-**Sampling.** 60 relevant articles in the window: 30 English, 30 Chinese,
-random. About 150 to 200 entities.
+**Sampling.** 50 Chinese articles (of 2,875) and 50 English (of 9,818)
+that the AI found names in, each year in proportion to its size. An English
+article stands for about 196, a Chinese one for about 58. About 350 names.
+A missed name cannot be spotted without the text, so the draw fetches each
+article's page, 10 s apart, and one that will not give its text is passed
+over for the next drawn from its year; `0-sampling.md` counts them.
 
 **Labelling rule** (from `prompts/extraction.txt`, `fields_brief.txt` and
 `notability.txt`; in full in the [guide](labelling-guide.md#extraction)).
@@ -232,26 +210,23 @@ in the wrong field (a post as Occupation, a designation as an Award), its
 date is wrong, or it is not in English. *Missed* means a named Singapore
 entity with a new fact of its own and no extracted row.
 
-**Test.** Precision = `ok` ÷ extracted; recall = `ok` ÷ (`ok` + missed);
-F1. Field error rate per field. By language and type.
+**Test.** Precision = `ok` ÷ marked; recall = `ok` ÷ (`ok` + missed), the
+articles weighted by what they stand for. The range comes from redrawing
+whole articles 2,000 times within each language (Efron's BCa), since the
+names in one article are right or wrong together. Field error rate per
+field. By language.
 
-**Required n.** 60 articles → about ±0.06 on precision; recall similar.
+**Required n.** 100 articles give about ±6 points, the check finds.
+Articles where the AI found no names are not drawn, so recall may read a
+little high.
 
-**Commands.**
+### Commands
 
 ```bash
-python -m src.eval sample extraction --window 2026-10 --n 60 --out data/eval/extraction.csv   # fetches 60 articles once
-python -m src.eval score extraction data/eval/extraction-labelled.csv
-```
-
-**Output.**
-
-```
-EXTRACTION window 2026-10  articles 60 (en 30 · zh 30)  entities 171  missed 38
-  P 0.88 [0.82, 0.92]   R 0.71 [0.64, 0.78]   F1 0.79
-  en  P 0.91 R 0.78     zh  P 0.82 R 0.59
-  field errors: Affiliations 9 · Awards 4 · Birth Year 2 · Occupation 1
-  agreement κ 0.81
+python -m src.eval sheets           # the three sheets and their keys into data/eval/, and 0-sampling.md; fetches the extraction pages, 10 s apart (about 20 minutes)
+python -m src.eval online publish   # or label them in Excel and put the returned files in data/eval/returned/
+python -m src.eval score data/eval/returned   # P, R and F1 with 95% ranges, per sheet, by language; agreement
+python -m src.eval check            # the method tried on made-up data with known answers
 ```
 
 ### Q4. The desk's own precision (no labelling)

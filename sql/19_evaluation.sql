@@ -2,7 +2,7 @@
 -- Run after 18_malay_tamil_feeds.sql. Re-runnable.
 --
 -- The sheets are the ones `python -m src.eval sheets` built (docs/evaluation-method.md): relevance,
--- matching and extraction, drawn from one month of the feed. `python -m src.eval online publish` puts
+-- matching and extraction, drawn from every year the AI has handled. `python -m src.eval online publish` puts
 -- their rows here; `python -m src.eval online pull` writes the labels back out as the returned sheets
 -- `python -m src.eval score` has always read, so the scoring is unchanged.
 --
@@ -14,7 +14,8 @@
 -- Labellers do not see each other's labels either: nobody can read eval_labels except through the
 -- secret key. The page learns only how far along each sheet is, from eval_progress().
 --
--- Rows 1 to 50 of each sheet go to every labeller, which is what agreement between them is measured on.
+-- The first rows of each sheet go to every labeller, which is what agreement between them is measured on:
+-- 50 for relevance and matching, 20 for extraction, where a row is a whole article.
 -- The rest are dealt one at a time, as the desk deals records: a row nobody has labelled and nobody
 -- else holds, held for an hour (hold_minutes() in 15_desk_queue.sql), so no row is labelled twice.
 
@@ -25,9 +26,11 @@ language sql stable as $$
 $$;
 grant execute on function public.is_evaluator() to anon, authenticated, service_role;
 
--- Rows every labeller is given, for agreement (SHARED in src/eval/sheets.py).
-create or replace function public.eval_shared() returns int
-language sql immutable as $$ select 50 $$;
+-- Rows every labeller is given, for agreement (SHARED in src/eval/plan.py). The first version took no
+-- sheet and gave every sheet 50.
+drop function if exists public.eval_shared();
+create or replace function public.eval_shared(task text) returns int
+language sql immutable as $$ select case $1 when 'extraction' then 20 else 50 end $$;
 
 create table if not exists public.eval_items (
   task text not null check (task in ('relevance', 'matching', 'extraction')),
@@ -99,7 +102,7 @@ begin
   end if;
   select i.item into k
   from public.eval_items i
-  where i.task = eval_take.task and i.ord <= public.eval_shared()
+  where i.task = eval_take.task and i.ord <= public.eval_shared(i.task)
     and i.lang = any(coalesce(eval_take.langs, array['en', 'zh', 'ms', 'ta']))
     and not exists (select 1 from public.eval_labels l
                     where l.task = i.task and l.item = i.item and l.labeller = me)
@@ -112,7 +115,7 @@ begin
   loop
     select i.item into k
     from public.eval_items i
-    where i.task = eval_take.task and i.ord > public.eval_shared()
+    where i.task = eval_take.task and i.ord > public.eval_shared(i.task)
       and i.lang = any(coalesce(eval_take.langs, array['en', 'zh', 'ms', 'ta']))
       and not exists (select 1 from public.eval_labels l where l.task = i.task and l.item = i.item)
       and not exists (select 1 from public.eval_holds h
@@ -152,7 +155,7 @@ begin
   if o is null then
     return false;
   end if;
-  if o > public.eval_shared() and (
+  if o > public.eval_shared(eval_save.task) and (
        exists (select 1 from public.eval_labels l
                where l.task = eval_save.task and l.item = eval_save.item and l.labeller <> me)
        or exists (select 1 from public.eval_holds h
@@ -185,12 +188,12 @@ returns table (task text, lang text, total int, shared int, shared_mine int, min
 language sql stable security definer set search_path = public as $$
   select i.task, i.lang,
          count(*)::int,
-         count(*) filter (where i.ord <= public.eval_shared())::int,
-         count(*) filter (where i.ord <= public.eval_shared() and exists (
+         count(*) filter (where i.ord <= public.eval_shared(i.task))::int,
+         count(*) filter (where i.ord <= public.eval_shared(i.task) and exists (
            select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid()))::int,
          count(*) filter (where exists (
            select 1 from public.eval_labels l where l.task = i.task and l.item = i.item and l.labeller = auth.uid()))::int,
-         count(*) filter (where i.ord > public.eval_shared() and exists (
+         count(*) filter (where i.ord > public.eval_shared(i.task) and exists (
            select 1 from public.eval_labels l where l.task = i.task and l.item = i.item))::int,
          count(*) filter (where exists (
            select 1 from public.eval_holds h where h.task = i.task and h.item = i.item

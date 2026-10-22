@@ -322,6 +322,20 @@ def test_everyone_labels_the_shared_rows_and_the_rest_are_dealt_once(db):
     assert save(A, a)                                                         # changing one's own label is fine
 
 
+def test_extraction_shares_twenty_articles_not_fifty(db):
+    sheet("extraction", 22)
+    take = lambda user: ev(user, "eval_take", "'extraction'")
+    keep = lambda user, item: ev(user, "eval_save", "'extraction'", lit(item), lit('{"names": {}}') + "::jsonb", "60")
+    for user in (A, B):
+        for n in range(1, 21):
+            assert take(user) == f"r{n}"
+            assert keep(user, f"r{n}")
+    a, b = take(A), take(B)
+    assert {a, b} == {"r21", "r22"} and not keep(B, a)                        # article 21 on: one labeller each
+    got = json.loads(run_sql("select coalesce(jsonb_agg(p), '[]') from public.eval_progress() p;", A, evaluator=True))
+    assert got[0]["shared"] == 20 and got[0]["shared_mine"] == 20
+
+
 def test_a_labeller_is_given_rows_in_their_languages_and_a_lapsed_hold_goes_back(db):
     sheet("relevance", 55, lambda i: "zh" if i % 2 else "en")
     assert ev(A, "eval_take", "'relevance'", langs("en")) == "r2"

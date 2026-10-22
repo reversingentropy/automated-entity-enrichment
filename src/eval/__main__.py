@@ -17,9 +17,9 @@ grades it.
 
 The labelled sheets the team fills in are built here too, and need no model:
 
-  python -m src.eval sheets                      # all five, from August 2026
-  python -m src.eval sheets --window 2026-07     # another month
+  python -m src.eval sheets                      # all five, drawn from every year (src/eval/plan.py)
   python -m src.eval score data/eval/returned    # the marked sheets, scored
+  python -m src.eval check                       # the scoring tried on made-up data with known answers
 
 Or labelled on the desk's Evaluation page (src/eval/online.py):
 
@@ -80,20 +80,21 @@ def check(case: dict, result) -> tuple[bool, str]:
 def sheets(argv: list[str]) -> int:
     """Build the labelled sheets. No model call; the database and the archive suffice."""
     parser = argparse.ArgumentParser(prog="python -m src.eval sheets")
-    parser.add_argument("--window", default="2026-08", help="the month to draw from (YYYY-MM)")
     parser.add_argument("--out", default="data/eval", help="where to write the sheets")
     parser.add_argument("--only", default=None,
                         help="one of relevance, matching, extraction, logs, sus")
+    parser.add_argument("--no-fetch", action="store_true",
+                        help="draw extraction articles without checking their pages give text (10 s a page)")
     args = parser.parse_args(argv)
 
     from src.eval import sheets as build
     out = Path(args.out)
-    steps = [("relevance", lambda: build.relevance(args.window, out)),
+    steps = [("relevance", lambda: build.relevance(out)),
              ("matching", lambda: build.matching(out)),
-             ("extraction", lambda: build.extraction(args.window, out)),
+             ("extraction", lambda: build.extraction(out, fetch=not args.no_fetch)),
              ("logs", lambda: build.logs(out)),
              ("sus", lambda: build.sus(out))]
-    print(f"Sheets from {args.window} into {out}/")
+    print(f"Sheets from every year into {out}/")
     for name, run in steps:
         if args.only and args.only != name:
             continue
@@ -106,6 +107,9 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "sheets":
         return sheets(argv[1:])
+    if argv and argv[0] == "check":
+        from src.eval.plan import main as check
+        return check(argv[1:])
     if argv and argv[0] == "online":
         from src.eval.online import main as online
         return online(argv[1:])

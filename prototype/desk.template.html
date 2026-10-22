@@ -460,6 +460,9 @@
   .evguidebox{max-width:40rem;max-height:88vh;overflow:auto}
   .evguidebox h2{font-size:1.25rem;margin:0 0 .6rem}
   .evguidebox .go{margin-top:1rem}
+  .evmaths{margin-top:1rem;padding-top:.7rem;border-top:1px solid var(--rule)}
+  .evmaths summary{cursor:pointer;font-weight:700}
+  .evmaths[open] summary{margin-bottom:.5rem}
   @media (max-width:42rem){.evtrio{grid-template-columns:1fr}.evext{grid-template-columns:1fr}.evtext{max-height:45vh}.evrec div{grid-template-columns:1fr}.evtask{grid-template-columns:1fr}}
 </style>
 </head>
@@ -1457,7 +1460,9 @@ function act(a, el) {
     if (PAGE === "home") refreshTeam();
     if (PAGE === "review" && QUEUE() && !card() && !DEAL) return resumeOrDeal();
     if (PAGE === "evaluation" && !EV.task) evLoad();
-    return draw(true);
+    const drawn = draw(true);
+    if (PAGE === "evaluation") evHowOnce();
+    return drawn;
   }
   if (a === "done") { LOG[i].done = !LOG[i].done; saveDone(LOG[i]); return draw(); }
   if (a === "release") { HELD.delete(el.dataset.k); buildList($("#filter").value); return draw(); }
@@ -1777,11 +1782,11 @@ function settings() {
 // ---- evaluation: the three labelled sheets, labelled here instead of in Excel (sql/19_evaluation.sql, src/eval/online.py) ----
 // Only for an account marked as an evaluator; reviewers never see the page. The rows of relevance and matching carry
 // nothing of the AI's answer, so a labeller cannot see what they are grading; extraction shows what the AI found, since
-// that is what is graded. Rows 1 to 50 go to every labeller, for agreement; the rest are dealt by the database, one
-// labeller each. Scoring needs the answers, so it happens on the PC that holds them (python -m src.eval online results),
+// that is what is graded. The first rows of each sheet go to every labeller, for agreement; the rest are dealt by the
+// database, one labeller each. Scoring needs the answers, so it happens on the PC that holds them (python -m src.eval online results),
 // and only its report comes back here.
 const isEvaluator = () => !!(me && me.app_metadata && me.app_metadata.evaluator);
-const EV_SHARED = 50;
+const EV_SHARED = { relevance: 50, matching: 50, extraction: 20 };   // eval_shared() in sql/19_evaluation.sql
 const EV_TASKS = {
   relevance: { name: "Relevance", ask: "Does this report a fact that would change or create a TTE record?" },
   extraction: { name: "Extraction", ask: "Did the AI find the right names, with the right details?" },
@@ -1802,6 +1807,24 @@ function evGuideVeil(t) {
     <button class="go" data-act="ev-guide-close">Close</button></div>`;
   document.body.appendChild(v);
   v.querySelector(".go").focus({ preventScroll: true });   // read from the top; Enter or Escape still closes it
+}
+// How the evaluation works, and the maths behind its numbers (docs/evaluation-how.md): by itself the first time an
+// evaluator opens the page in this browser, and from the page's button after.
+function evHowVeil() {
+  if ($("#veil") || !EV_GUIDE.how) return;
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
+  v.innerHTML = `<div class="welcome evguidebox" role="dialog" aria-label="${esc(EV_GUIDE.how.title)}"><h2>${esc(EV_GUIDE.how.title)}</h2>
+    <div class="evguide">${EV_GUIDE.how.html}</div>
+    ${EV_GUIDE.maths ? `<details class="evmaths"><summary>${esc(EV_GUIDE.maths.title)}</summary><div class="evguide">${EV_GUIDE.maths.html}</div></details>` : ""}
+    <button class="go" data-act="ev-guide-close">Close</button></div>`;
+  document.body.appendChild(v);
+  v.querySelector(".go").focus({ preventScroll: true });
+}
+function evHowOnce() {
+  if (!isEvaluator()) return;
+  let seen = true;
+  try { seen = !!localStorage.getItem("desk2-eval-how"); localStorage.setItem("desk2-eval-how", "1"); } catch (e) {}
+  if (!seen) evHowVeil();
 }
 const EV = { task: null, guide: false, items: {}, item: null, label: null, at: 0, back: [], progress: null, report: undefined, error: "", busy: false, sel: "", done: new Set() };
 const evReset = () => Object.assign(EV, { task: null, guide: false, items: {}, item: null, label: null, back: [], progress: null, report: undefined, error: "", busy: false, sel: "", done: new Set() });
@@ -1877,6 +1900,7 @@ function evAct(a, el) {
   if (a === "ev-guide-done") { EV.guide = false; evNext(); return true; }
   if (a === "ev-guide") { evGuideVeil((el && el.dataset.t) || EV.task); return true; }
   if (a === "ev-guide-close") { const v = $("#veil"); if (v) v.remove(); return true; }
+  if (a === "ev-how") { evHowVeil(); return true; }
   if (a === "ev-stop") {
     if (sb && !testing) Promise.resolve(sb.rpc("eval_release")).catch(() => {});
     Object.assign(EV, { task: null, guide: false, item: null, label: null, back: [], error: "" }); NOTICE = ""; evLoad(); draw(true); return true;
@@ -1957,18 +1981,18 @@ function evOverview() {
     const btn = !s.total ? "" : `<button class="evgo" data-act="ev-start" data-t="${t}" ${s.left ? "" : "disabled"}>${s.left ? (s.mine ? "Continue" : "Start") : "Done"}</button>`;
     return `<div class="evtask"><div><h3>${T.name}</h3><p>${T.ask}</p></div>${btn}
       <div class="evbar">${s.total ? `<div class="track"><i class="d" style="width:${done / of * 100}%"></i><i class="h" style="width:${s.held / of * 100}%"></i></div>
-        <small>Everyone&rsquo;s ${EV_SHARED}: you have done ${s.sharedMine} of the ${s.shared} in your languages.${s.rest ? ` The other ${s.rest}: ${s.labelled} labelled${s.held ? `, ${s.held} on a colleague&rsquo;s screen` : ""}.` : ""}${s.other ? ` ${s.other} ${s.other === 1 ? "is" : "are"} only in languages you do not read.` : ""}${s.labellers ? ` ${s.labellers} labeller${s.labellers === 1 ? "" : "s"} so far.` : ""}</small>`
+        <small>Everyone&rsquo;s ${EV_SHARED[t]}: you have done ${s.sharedMine} of the ${s.shared} in your languages.${s.rest ? ` The other ${s.rest}: ${s.labelled} labelled${s.held ? `, ${s.held} on a colleague&rsquo;s screen` : ""}.` : ""}${s.other ? ` ${s.other} ${s.other === 1 ? "is" : "are"} only in languages you do not read.` : ""}${s.labellers ? ` ${s.labellers} labeller${s.labellers === 1 ? "" : "s"} so far.` : ""}</small>`
         : `<small>Not on the page yet: run <code>python -m src.eval online publish</code>.</small>`}</div></div>`;
   }).join("");
   const rep = EV.report === undefined ? `<p class="minor">Loading&hellip;</p>`
     : EV.report ? `<p class="minor">Scored ${esc(dayOf(EV.report.at))}, from the labels pulled to the PC that holds the AI&rsquo;s answers.</p><section class="focus"><pre class="evreport">${esc(EV.report.report)}</pre></section>`
     : `<p class="minor">Not scored yet. Once the sheets are labelled, run <code>python -m src.eval online pull</code>, then <code>python -m src.eval online results</code>.</p>`;
-  return `<div class="phead"><h1>Evaluation</h1></div>
+  return `<div class="phead"><h1>Evaluation</h1><button class="quiet" data-act="ev-how">How this works</button></div>
   <p class="minor">Only evaluators see this page. For relevance and matching, the AI&rsquo;s answers are kept off it, so you cannot see what you are grading.</p>
   ${testing ? `<p class="notice test">Test account: try anything you like. Nothing you label is saved.</p>` : ""}${EV.error ? `<p class="notice">${esc(EV.error)}</p>` : ""}
   <h2 class="h2">Label the sheets</h2>
   <section class="focus">${EV.progress === null && !EV.error ? `<p class="empty">Loading&hellip;</p>` : tasks}</section>
-  <p class="minor">Everyone labels the first ${EV_SHARED} rows of each sheet, so the labellers&rsquo; agreement can be measured. The rest are shared out: each is given to one person only.</p>
+  <p class="minor">Everyone labels the same first rows of each sheet (${EV_SHARED.relevance} headlines, ${EV_SHARED.matching} pairs, ${EV_SHARED.extraction} articles), so the labellers&rsquo; agreement can be measured. The rest are shared out: each is given to one person only.</p>
   <h2 class="h2">Results</h2>${rep}
   <h2 class="h2">Changes accepted on the desk</h2>
   <p class="minor">Of the changes reviewers were shown, the share they accepted. A change left out is not always a wrong one: a reviewer may leave out a true detail that does not belong.</p>
@@ -1979,7 +2003,7 @@ function evScreen() {
   if (EV.guide) return `<div class="evhead"><span><b>${T.name}</b> &middot; the rules</span><span class="qrow"><button class="quiet" data-act="ev-stop">Back to the sheets</button></span></div>
     <section class="focus evread">${evGuideHtml(EV.task)}</section>
     <div class="actions"><button class="stamp go" data-act="ev-guide-done"><b>Accept and start</b></button></div>`;
-  const head = `<div class="evhead"><span><b>${T.name}</b>${r ? ` &middot; ${r.ord <= EV_SHARED ? `one of everyone&rsquo;s ${EV_SHARED}` : "given to you alone"}` : ""}${EV.back.length ? ` &middot; ${EV.back.length} done` : ""}</span>
+  const head = `<div class="evhead"><span><b>${T.name}</b>${r ? ` &middot; ${r.ord <= EV_SHARED[EV.task] ? `one of everyone&rsquo;s ${EV_SHARED[EV.task]}` : "given to you alone"}` : ""}${EV.back.length ? ` &middot; ${EV.back.length} done` : ""}</span>
     <span class="qrow">${EV_GUIDE[EV.task] ? `<button class="quiet" data-act="ev-guide">Rules</button>` : ""}${EV.back.length ? `<button class="quiet" data-act="ev-back">Back</button>` : ""}<button class="quiet" data-act="ev-stop">Stop for now</button></span></div>`
     + (testing ? `<p class="notice test">Test account: nothing you label is saved.</p>` : "") + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "")
     + (EV.error ? `<p class="notice">${esc(EV.error)} <button class="quiet" data-act="${r ? "ev-save" : "ev-retry"}">Try again</button></p>` : "");

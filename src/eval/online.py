@@ -12,8 +12,10 @@ come back as one returned sheet per labeller, in the folder and the format
 `python -m src.eval score` has always read, so the scoring is unchanged.
 
 The extraction sheet carries only each article's headline, and a missed name
-cannot be spotted from a headline, so `publish` fetches the 60 articles' text
-once, ten seconds apart, and keeps it beside the sheets for the next time.
+cannot be spotted from a headline, so the articles' text goes up with them:
+fetched once, ten seconds apart, when the sheet is drawn (sheets.readable) and
+kept beside the sheets; `publish` fetches only what is still missing, and
+`--no-fetch` publishes with what is kept.
 """
 
 import contextlib
@@ -32,7 +34,7 @@ STEMS = {"relevance": "1-relevance", "matching": "2-matching", "extraction": "3-
 TEXTS = "3-extraction-texts.json"
 SECONDS_BETWEEN_PAGES = 10     # the crawl delay the news sites ask for
 # What a row may carry up: the key files' columns never do (tests/test_eval_online.py).
-KEY_COLUMNS = {"app_said", "app_said_same", "stratum", "weight", "script", "entity_id", "article_id"}
+KEY_COLUMNS = {"app_said", "app_said_same", "stratum", "side", "weight", "script", "entity_id", "article_id"}
 # The field a value belongs to: "Founder: Chng Siew Hern · Description: …" (sheets._fields_line, extraction rows).
 FIELD = re.compile(r"\s·\s(?=[A-Z][^:·]{0,60}: )")
 
@@ -107,7 +109,8 @@ def publish(folder: str | Path = "data/eval", fetch: bool = True) -> dict[str, i
     from src.shared.supabase_client import get_client
     for line in stale():
         print("  Note: " + line)
-    texts = fetch_texts(folder) if fetch else {}
+    cached = Path(folder) / TEXTS
+    texts = fetch_texts(folder) if fetch else json.loads(cached.read_text(encoding="utf-8")) if cached.exists() else {}
     rows = items(folder, texts)
     client = get_client()
     for start in range(0, len(rows), 200):
@@ -198,7 +201,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m src.eval online")
     parser.add_argument("step", choices=("publish", "pull", "results"))
     parser.add_argument("--folder", default="data/eval", help="where the sheets and their keys are")
-    parser.add_argument("--no-fetch", action="store_true", help="publish without fetching the articles' text")
+    parser.add_argument("--no-fetch", action="store_true", help="publish with the articles' text already kept, fetching none")
     args = parser.parse_args(argv)
     if args.step == "publish":
         publish(args.folder, fetch=not args.no_fetch)

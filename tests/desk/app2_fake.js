@@ -3,8 +3,8 @@
 // The queue functions follow sql/15_desk_queue.sql rule for rule (tests/test_desk_queue.py checks the SQL itself in
 // a real Postgres): newest news first, one record held per person, a hold lapses after an hour unless renewed, a
 // decision is kept only on a record its reviewer holds, a record kept for review goes to someone else, and only
-// one's own decision can be changed. The evaluation functions follow sql/19_evaluation.sql the same way: rows 1 to 50
-// go to every evaluator, the rest are dealt one at a time and held, and nobody reads anyone's labels.
+// one's own decision can be changed. The evaluation functions follow sql/19_evaluation.sql the same way: the first 50
+// rows (20 for extraction) go to every evaluator, the rest are dealt one at a time and held, and nobody reads anyone's labels.
 (function () {
   const F = window.__FAKE__;
   F.rpcs = []; F.fail = false; F.direct = false; F.shift = 0;
@@ -17,7 +17,7 @@
   const me = () => user && user.id;
   const isTest = () => !!(user && user.app_metadata && user.app_metadata.test);
   const isEval = () => !!(user && user.app_metadata && user.app_metadata.evaluator);
-  const SHARED = 50;
+  const SHARED = task => task === "extraction" ? 20 : 50;
   const evLive = h => now() - new Date(h.held_at).getTime() < HOLD;
   const evItem = (task, item) => F.evalItems.find(i => i.task === task && i.item === item);
   const langOf = link => /zaobao/.test(link) ? "zh" : /beritaharian/.test(link) ? "ms" : /tamilmurasu/.test(link) ? "ta" : "en";
@@ -81,10 +81,10 @@
       const who = me(); if (!who || !isEval() || isTest()) return null;
       const L = langs || ["en", "zh", "ms", "ta"], byOrd = (a, b) => a.ord - b.ord;
       const labelled = (i, by) => F.evalLabels.some(l => l.task === task && l.item === i.item && (!by || l.labeller === by));
-      const shared = F.evalItems.filter(i => i.task === task && i.ord <= SHARED && L.includes(i.lang) && !labelled(i, who)).sort(byOrd)[0];
+      const shared = F.evalItems.filter(i => i.task === task && i.ord <= SHARED(i.task) && L.includes(i.lang) && !labelled(i, who)).sort(byOrd)[0];
       if (shared) return shared.item;
       F.evalHolds = F.evalHolds.filter(h => !(h.labeller === who && h.task === task));
-      const next = F.evalItems.filter(i => i.task === task && i.ord > SHARED && L.includes(i.lang) && !labelled(i)
+      const next = F.evalItems.filter(i => i.task === task && i.ord > SHARED(i.task) && L.includes(i.lang) && !labelled(i)
         && !F.evalHolds.some(h => h.task === task && h.item === i.item && evLive(h))).sort(byOrd)[0];
       if (!next) return null;
       F.evalHolds = F.evalHolds.filter(h => !(h.task === task && h.item === next.item)).concat([{ task, item: next.item, labeller: who, held_at: stamp() }]);
@@ -93,7 +93,7 @@
     eval_save({ task, item, label, seconds }) {
       const who = me(); if (!who || !isEval() || isTest() || !label || typeof label !== "object" || Array.isArray(label)) return false;
       const i = evItem(task, item); if (!i) return false;
-      if (i.ord > SHARED && (F.evalLabels.some(l => l.task === task && l.item === item && l.labeller !== who)
+      if (i.ord > SHARED(i.task) && (F.evalLabels.some(l => l.task === task && l.item === item && l.labeller !== who)
           || F.evalHolds.some(h => h.task === task && h.item === item && h.labeller !== who && evLive(h)))) return false;
       F.evalLabels = F.evalLabels.filter(l => !(l.task === task && l.item === item && l.labeller === who))
         .concat([{ task, item, labeller: who, label, seconds: seconds ?? null, at: stamp() }]);
@@ -109,9 +109,9 @@
         if (!out.has(k)) out.set(k, { task: i.task, lang: i.lang, total: 0, shared: 0, shared_mine: 0, mine: 0, labelled: 0, held: 0,
                                       labellers: new Set(F.evalLabels.filter(l => l.task === i.task).map(l => l.labeller)).size });
         const p = out.get(k);
-        p.total++; if (i.ord <= SHARED) { p.shared++; if (mine) p.shared_mine++; }
+        p.total++; if (i.ord <= SHARED(i.task)) { p.shared++; if (mine) p.shared_mine++; }
         if (mine) p.mine++;
-        if (i.ord > SHARED && ls.length) p.labelled++;
+        if (i.ord > SHARED(i.task) && ls.length) p.labelled++;
         if (F.evalHolds.some(h => h.task === i.task && h.item === i.item && h.labeller !== me() && evLive(h))) p.held++;
       });
       return [...out.values()];

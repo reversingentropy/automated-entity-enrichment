@@ -1,5 +1,5 @@
 // Drives the desk's Evaluation page against the stand-in (app2_fake.js): hidden from a reviewer; for an evaluator,
-// the three sheets in the pipeline's order, the scored report and the desk's acceptance; each sheet's own rules,
+// how the evaluation works, by itself on the first visit and from its button after; the three sheets in the pipeline's order, the scored report and the desk's acceptance; each sheet's own rules,
 // accepted before its rows every time it is chosen and a click away on every row; relevance by key and by click, Back, the shared rows
 // then the dealt ones, a row a colleague labelled first or holds, a lapsed hold, Stop for now; matching's three
 // answers; extraction's marks, wrong details, a missed name selected in the article or typed in; and a test account
@@ -35,8 +35,21 @@
     out.evaluatorNav = q("#evalnav").hidden === false;
     act("nav", { dataset: { nav: "evaluation" } });
     out.overviewLoaded = await until(() => EV.progress && EV.report !== undefined && /Start/.test(stage()));
+    // the first visit: how the evaluation works comes up by itself, the maths folded away under it
+    const how = q("#veil .evguidebox");
+    out.howFirstVisit = !!how && /How the evaluation works/.test(how.innerHTML) && /700 headlines/.test(how.innerHTML)
+      && !!how.querySelector("details.evmaths:not([open])") && /Jeffreys/.test(how.innerHTML) && /kappa = /.test(how.innerHTML)
+      && /held the true value 94 to 98 times in 100/.test(how.innerHTML);
+    key("y"); await tick(20);
+    act("ev-guide-close");
+    out.howCloses = !q("#veil") && !F.evalLabels.length;
+    act("nav", { dataset: { nav: "evaluation" } }); await tick(20);
+    out.howOnlyOnce = !q("#veil");
+    act("ev-how");
+    out.howFromButton = !!q("#veil details.evmaths") && /data-act="ev-how">How this works</.test(stage());
+    act("ev-guide-close");
     out.overview = /Label the sheets/.test(stage()) && /Relevance/.test(stage()) && /Matching/.test(stage()) && /Extraction/.test(stage())
-      && /you have done 0 of the 49 in your languages/.test(stage())
+      && /you have done 0 of the 49 in your languages/.test(stage()) && /50 headlines, 50 pairs, 20 articles/.test(stage())
       && /Relevance<\/h3>[\s\S]*Extraction<\/h3>[\s\S]*Matching<\/h3>/.test(stage()) && !/data-act="ev-guide"/.test(stage()) && /2 are only in languages you do not read/.test(stage());
     out.reportShown = stage().includes("precision 0.91 &lt;weighted&gt;") && !F.readLabels;
     // Glenn accepted the date started and the description, and left out the founder: one change per date, by language
@@ -111,6 +124,7 @@
     out.extGuide = EV.guide && /Not worth a record:/.test(stage()) && /prompts\/extraction.txt/.test(stage()) && /prompts\/tte\/notability.txt/.test(stage());
     act("ev-guide-done"); await until(() => EV.item);
     const x1 = EV.item, [n0, n1] = x1.body.names.map(n => n.entity);
+    out.extSharedTwenty = /one of everyone\u2019s 20/.test(stage());
     out.extHighlights = /<mark>Acme Robotics<\/mark>/.test(stage()) && /<mark>Chng Siew Hern<\/mark>/.test(stage()) && !/<mark>Lim Bee Hoon/.test(stage());
     out.extWaits = q('[data-act="ev-save"]').disabled && /2 names still to mark/.test(stage()) && !q('[data-act="ev-field"]');
     act("ev-verdict", { dataset: { i: "0", v: "ok" } });

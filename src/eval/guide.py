@@ -6,7 +6,8 @@ task's section names the prompt files it was written from, with the first eight 
 SHA-256; `stale()` lists any that have changed since, and the tests stop on them, so a rule changed in a
 prompt is never labelled against the old one without anyone noticing.
 
-The site build (`python -m src.export --site`) puts the sections into the page; this reads only the little
+The site build (`python -m src.export --site`) puts the sections into the page, with those of
+docs/evaluation-how.md, the page's "How this works"; this reads only the little
 Markdown the guide uses: `##` sections with an `{#id}`, `###` headings, `-` lists (nested by two spaces),
 paragraphs, **bold**, *italic* and `code`.
 """
@@ -18,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE = ROOT / "docs" / "labelling-guide.md"
+HOW = ROOT / "docs" / "evaluation-how.md"         # the page's "How this works", and the maths
 SECTION = re.compile(r"^## (.+?) \{#(\w+)\}\s*$")
 SOURCE = re.compile(r"`(prompts/[\w/.-]+)` \(version ([0-9a-f]{8})\)")
 
