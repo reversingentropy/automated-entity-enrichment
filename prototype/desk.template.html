@@ -455,7 +455,7 @@ const INDEX = IDX.index, NPT = IDX.npt;
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const CJK = /[㐀-鿿]/;
-const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"]];
+const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"], ["beritaharian", "Berita Harian"], ["tamilmurasu", "Tamil Murasu"]];
 const outletOf = link => (OUTLET.find(([k]) => (link || "").includes(k)) || [0, "News"])[1];
 // With the year: "16 Sept" alone left a reviewer guessing which year a date in the article meant (Feedback 3).
 const dayOf = d => { const t = new Date(d); return isNaN(t) ? (d || "") : t.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
@@ -965,7 +965,7 @@ const TAKEN = new Set();   // online: records another reviewer has decided or ho
 // proposal nobody has decided, or one a colleague kept for review, that nobody else holds. One you hold counts only
 // in a language you read: after choosing Tamil, an English record from before is not what home offers.
 const available = c => QUEUE() ? readable(c) && openFor(c) && !HELD.has(c.key)
-                               : (readable(c) || MINE.has(c.key)) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
+                               : readable(c) && !HELD.has(c.key) && !TAKEN.has(c.key) && !DECIDED.has(c.key) && !teamLog().some(x => x.key === c.key);
 
 // ---- online: sign-in, the deck, holding a record, saving each decision -------------------
 // The same database calls as the first desk (src/export/desk_template.html), so the `reviews` rows, the sheets built
@@ -1186,8 +1186,9 @@ function takeIn(reviews, holds) {
   });
   LOG.sort((a, b) => a.when - b.when);
   TEAM_N = Math.max(1, others.size);
-  // a hold not renewed within the hour has lapsed: that record is back in the pile
-  holds.forEach(h => { if (h.reviewer === me.id) MINE.add(h.card_key); else if (live(h.claimed_at)) HELD.set(h.card_key, h.claimed_at || ""); });
+  // a hold not renewed within the hour has lapsed: that record is back in the pile. A test account holds nothing, so
+  // an old hold of its own (from before it was one) is ignored
+  holds.forEach(h => { if (h.reviewer === me.id) { if (!testing) MINE.add(h.card_key); } else if (live(h.claimed_at)) HELD.set(h.card_key, h.claimed_at || ""); });
   lastFetch = Date.now();
 }
 // What colleagues have done since, for home's counts: at most once a minute.
@@ -1484,7 +1485,7 @@ function welcome() {
     <h2>An AI reads the news and proposes updates to TTE. You decide each one.</h2>
     <p class="sub">One card per record: is it the same entity, and which changes go in.</p>
     <div class="flow">
-      <div class="fstep">${icon.news}<b>The news</b><span>CNA, The Straits Times and Lianhe Zaobao</span></div>
+      <div class="fstep">${icon.news}<b>The news</b><span>CNA, The Straits Times, Lianhe Zaobao, Berita Harian and Tamil Murasu</span></div>
       <div class="fstep">${icon.ai}<b>The AI proposes</b><span>It spots people, organisations and places, and suggests updates to their records</span></div>
       <div class="fstep you"><em>You are here</em>${icon.you}<b>You decide</b><span>Accept, edit or leave out each change</span></div>
       <div class="fstep">${icon.rec}<b>The sheet</b><span>All decisions are exported to an Excel file for follow-up in TTE</span></div>

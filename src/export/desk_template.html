@@ -666,7 +666,7 @@ const DSTATE = {
 // "LEGAL_ACT" is a legal act on screen.
 const kind = c => c.type.toLowerCase().replace(/_/g, " ");
 // "The Straits Times, 28 Aug" from a source's link and date.
-const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"]];
+const OUTLET = [["straitstimes", "The Straits Times"], ["zaobao", "Lianhe Zaobao"], ["channelnewsasia", "CNA"], ["beritaharian", "Berita Harian"], ["tamilmurasu", "Tamil Murasu"]];
 function outletOf(c, key) {
   const src = c.sources[sourceIndex(c, key)] || {};
   const host = (src.link || "").split("/")[2] || "";

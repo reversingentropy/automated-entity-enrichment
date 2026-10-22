@@ -64,6 +64,7 @@
     dOpt.extra = keepExtra; dOpt.dates = keepDates; S[dc.key] = keepS;
     out.fieldNamed = fieldLabel("Day Started (dd)") === "Day started" && fieldLabel("Description") === "Description" && fieldLabel("Affiliations(groupName)") === "Affiliations";
     out.sourceDateHasYear = /2026/.test(dayOf("2026-09-16"));
+    out.outletNamed = outletOf("https://www.beritaharian.sg/singapura/x") === "Berita Harian" && outletOf("https://www.tamilmurasu.com.sg/singapore/x") === "Tamil Murasu";
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);
@@ -209,9 +210,14 @@
       act("stopnow"); langs = ["en", "zh"];
     }
     // a test account: looks, holds nothing, saves nothing
+    // ...and a test account holds nothing: an old hold of its own, in a language not chosen, is not offered first
+    const zk = CARDS.find(c => cardLangs(c).join() === "zh").key;
+    F.claims.push({ card_key: zk, reviewer: "u9", claimed_at: new Date(Date.now() - 30 * 86400e3).toISOString() });
+    langs = ["en"];
     const nRev = F.reviews.length, nRpc = F.rpcs.length;
     F.setUser({ id: "u9", email: "test@nlb.gov.sg", user_metadata: { name: "Tester" }, app_metadata: { test: true } });
     await signedIn({ id: "u9", email: "test@nlb.gov.sg", user_metadata: { name: "Tester" }, app_metadata: { test: true } });
+    out.testHoldsNothing = MINE.size === 0 && !available(cOf(zk)) && !LIST.some(i => CARDS[i].key === zk);
     act("start"); act("keep"); await tick(100);
     out.testWritesNothing = F.reviews.length === nRev && F.rpcs.length === nRpc && /Test account/.test(stage());
     out.noDirectWrites = !F.direct;
