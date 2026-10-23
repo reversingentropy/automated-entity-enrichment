@@ -43,7 +43,21 @@ laptop, and would run unchanged from a static host later.
    ```
 
    The password is generated and printed once; pass it on in person or by
-   message, and keep no copy. Supabase stores only a hash of it, so a
+   message, and keep no copy. Add `--password` to type one yourself instead:
+   it is asked twice at a hidden prompt and never printed.
+
+   The Supabase dashboard works too: Authentication > Users > Add user >
+   Create new user, with "Auto Confirm User" ticked. It asks only for the
+   email and password, so the desk shows the part of the email before the
+   @ until a name is set. Either set it, or mark a test account, in the SQL
+   editor:
+
+   ```sql
+   update auth.users set raw_user_meta_data = coalesce(raw_user_meta_data, '{}') || '{"name": "Their Name"}'
+   where email = 'someone@nlb.gov.sg';
+   update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}') || '{"test": true}'
+   where email = 'test@nlb.gov.sg';
+   ``` Supabase stores only a hash of it, so a
    forgotten password is replaced rather than looked up:
    `python -m src.export --reset-password glenn@nlb.gov.sg` prints a new one
    and the old one stops working. (Supabase's own "forgot password" email

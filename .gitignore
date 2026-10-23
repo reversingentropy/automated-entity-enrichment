@@ -12,6 +12,14 @@ __pycache__/
 # guidelines under data/ are marked NLB internal.
 data/
 
+# Documents anywhere: the guideline PDFs, paper drafts, decks. The repo is
+# public; one of these reached it in the first commit (10 Oct 2026).
+*.pdf
+*.docx
+*.doc
+*.pptx
+*.xlsx
+
 # Scratch files at the root
 /*.zip
 /*.csv

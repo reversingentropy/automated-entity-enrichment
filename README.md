@@ -74,6 +74,7 @@ src/
   job2_extraction/  fetch -> scraper -> prompt -> update
   job3_resolution/  fetch -> candidates -> rank -> prompt -> update
                     requeue: what a TTE update invalidates
+  manual/           the three stages by hand in AI Studio: one prompt out, one answer in
   load_tte/         the authority file from the Storage bucket into entities
   export/           cards (the review data), desk_template.html (the first
                     desk, still the zip's), package (a zip for reviewers),
@@ -174,6 +175,7 @@ python -m src.job1_relevance  [--limit N] [--dry-run]   # verdict per unscored a
 python -m src.job2_extraction [--limit N] [--dry-run]   # entities per relevant article
 python -m src.job3_resolution [--limit N] [--dry-run]   # proposals per article's entities
 python -m src.job3_resolution --requeue-stale [--dry-run]   # after a TTE import
+python -m src.manual relevance|extraction|matching export|import   # a stage by hand in AI Studio
 python -m src.load_tte [--source local] [--dry-run]     # the authority file, from the bucket
 python -m src.eval [--case edge-] [--show]              # the resolution prompt on frozen cases
 python -m src.eval sheets                               # the evaluation's sheets, drawn from every year (src/eval/plan.py)
@@ -195,6 +197,14 @@ python -m src.backfill collect all                      # the archives, see docs
 
 Every job follows one rule: **the queue is a column, and nothing is marked
 done until the write succeeds.** A failed run leaves rows queued for the next.
+
+When the Gemini API is too busy or out of requests, a stage can be done by
+hand in AI Studio. `export` puts everything waiting into one prompt on the
+clipboard; paste it into a chat, copy the whole answer back, and `import`
+checks it as the API's answer is checked and writes it as the job would,
+recording the model as answered by hand. Anything the nightly run did in
+between is left alone. The details are at the top of
+[`src/manual/__main__.py`](src/manual/__main__.py).
 
 ## Where to read more
 

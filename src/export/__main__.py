@@ -48,6 +48,7 @@ The online desk:
   python -m src.export --account EMAIL NAME  # make one; --test for the test account
   python -m src.export --accounts            # list them
   python -m src.export --reset-password EMAIL  # a new password, printed once
+                                             # (--password on either: type your own, hidden)
   python -m src.export --mark-test EMAIL     # an existing account can look but not write
   python -m src.export --mark-evaluator EMAIL  # give it the Evaluation page (--unmark-evaluator takes it away)
   python -m src.export --holds               # which card each reviewer has on their desk
@@ -95,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="list the reviewer accounts")
     parser.add_argument("--reset-password", metavar="EMAIL",
                         help="give an account a new password, printed once")
+    parser.add_argument("--password", action="store_true",
+                        help="with --account or --reset-password: type the password yourself, asked twice and not shown")
     parser.add_argument("--mark-test", metavar="EMAIL",
                         help="make an existing account a test account: it can look but not write")
     parser.add_argument("--mark-evaluator", metavar="EMAIL",
@@ -198,10 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.account:
-        from src.export.accounts import create
-        made = create(args.account[0], args.account[1], test=args.test)
+        from src.export.accounts import ask_password, create
+        chosen = ask_password() if args.password else None
+        made = create(args.account[0], args.account[1], test=args.test, password=chosen)
         print(f"Created {made['email']} ({made['name']}{', test account' if made['test'] else ''})")
-        print(f"  password: {made['password']}   (shown once and not stored; if it's lost, --reset-password)")
+        print("  password: the one you typed" if chosen else
+              f"  password: {made['password']}   (shown once and not stored; if it's lost, --reset-password)")
         return 0
 
     if args.mark_test:
@@ -246,13 +251,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.reset_password:
-        from src.export.accounts import reset_password
+        from src.export.accounts import ask_password, reset_password
+        chosen = ask_password() if args.password else None
         try:
-            done = reset_password(args.reset_password)
+            done = reset_password(args.reset_password, password=chosen)
         except ValueError as e:
             print(e)
             return 1
-        print(f"New password for {done['email']}: {done['password']}   (shown once; the old one no longer works)")
+        print(f"New password for {done['email']}: " + ("the one you typed" if chosen else done["password"]) +
+              "   (" + ("" if chosen else "shown once; ") + "the old one no longer works)")
         return 0
 
     if args.accounts:

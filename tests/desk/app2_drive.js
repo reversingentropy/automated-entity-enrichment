@@ -77,6 +77,8 @@
 
     // Start: the record already on this reviewer's desk comes back first, taken again by name
     act("start"); await settled();
+    const who = () => document.querySelector("#who");
+    out.realAccountNamed = !who().hidden && !who().classList.contains("test") && /Signed in as/.test(who().textContent) && /saved/.test(who().textContent);
     out.firstIsMine = DEALT === F.mineKey && F.rpcs.includes("claim_card:" + F.mineKey) && !F.rpcs.some(r => r.startsWith("take_next"));
     // deciding it: saved through decide(), the record given back and the next handed over in the same call
     const k1 = await decideThrough();
@@ -220,6 +222,7 @@
     out.testHoldsNothing = MINE.size === 0 && !available(cOf(zk)) && !LIST.some(i => CARDS[i].key === zk);
     act("start"); act("keep"); await tick(100);
     out.testWritesNothing = F.reviews.length === nRev && F.rpcs.length === nRpc && /Test account/.test(stage());
+    out.testAccountNamed = who().classList.contains("test") && /Test account/.test(who().textContent) && /test@nlb\.gov\.sg/.test(who().textContent);
     out.noDirectWrites = !F.direct;
     say("RESULT " + JSON.stringify(out));
   } catch (e) { say("ERROR " + (e && e.stack || e) + "\n" + JSON.stringify(out)); }

@@ -149,6 +149,11 @@ def send(mails: list[dict], dry_run: bool = False) -> int:
     """Send through the environment's mail server, or print when there is none."""
     server, sender = os.environ.get("MAIL_SERVER"), os.environ.get("MAIL_FROM")
     if dry_run or not (server and sender and os.environ.get("MAIL_USERNAME") and os.environ.get("MAIL_PASSWORD")):
+        if os.environ.get("GITHUB_ACTIONS") and not dry_run:
+            # A public repository's run logs are public: who would have been written to, and about which
+            # records, stays out of them (they were printed there until 23 Oct 2026).
+            print(f"No mail settings: {len(mails)} message(s) not sent, and not printed, as this log is public.")
+            return 0
         for m in mails:
             print(f"--- to {m['to']}: {m['subject']}\n{m['body']}")
         if not dry_run:

@@ -5,17 +5,21 @@ Reviewer accounts for the online desk, made from the command line.
     python -m src.export --account test@nlb.gov.sg "Test account" --test
     python -m src.export --accounts
     python -m src.export --reset-password glenn@nlb.gov.sg
+    python -m src.export --account someone@nlb.gov.sg "Their Name" --password   # choose it yourself
     python -m src.export --mark-evaluator glenn@nlb.gov.sg
 
 The dashboard does the same by hand (Authentication > Users > Add user);
 this is one line per reviewer with the secret key already in `.env`.
 A password is generated and printed once; Supabase keeps only a hash of it,
-so a forgotten one is replaced, never looked up.
+so a forgotten one is replaced, never looked up. With `--password` (on
+`--account` or `--reset-password`) you type one yourself instead, at a hidden
+prompt, so it stays out of the shell's history and is not printed back.
 `--test` marks the account so its decisions are left out when decisions
 are collected. `--mark-evaluator` gives an account the desk's Evaluation page,
 where the evaluation's sheets are labelled (sql/19_evaluation.sql).
 """
 
+import getpass
 import secrets
 
 from src.shared.supabase_client import get_client
@@ -25,6 +29,22 @@ ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 def new_password(length: int = 14) -> str:
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
+
+
+SHORTEST = 8
+
+
+def ask_password(ask=None) -> str:
+    """A password typed twice at a hidden prompt; asked again until the two match and it is long enough."""
+    ask = ask or getpass.getpass
+    while True:
+        first = ask(f"Password (at least {SHORTEST} characters, not shown): ")
+        if len(first) < SHORTEST:
+            print(f"  Too short: at least {SHORTEST} characters.")
+            continue
+        if ask("Same password again: ") == first:
+            return first
+        print("  The two did not match. Again:")
 
 
 def is_test(user) -> bool:

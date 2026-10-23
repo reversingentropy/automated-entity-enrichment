@@ -106,6 +106,31 @@ def test_a_forgotten_password_is_replaced_on_the_right_account(monkeypatch):
         accounts.reset_password("nobody@nlb.gov.sg")
 
 
+def test_a_chosen_password_is_asked_twice_and_never_printed(monkeypatch, capsys):
+    from types import SimpleNamespace
+
+    import src.export.__main__ as cli
+    from src.export import accounts
+
+    typed = iter(["short", "long enough 1", "long enough 2", "long enough 1", "long enough 1"])
+    assert accounts.ask_password(lambda prompt: next(typed)) == "long enough 1"
+    out = capsys.readouterr().out
+    assert "Too short" in out and "did not match" in out
+
+    seen = {}
+
+    class Admin:
+        def create_user(self, attrs):
+            seen.update(attrs)
+            return SimpleNamespace(user=SimpleNamespace(id="u9"))
+    monkeypatch.setattr(accounts, "get_client", lambda: SimpleNamespace(auth=SimpleNamespace(admin=Admin())))
+    monkeypatch.setattr(accounts.getpass, "getpass", lambda prompt: "my own choice")
+    assert cli.main(["--account", "someone@nlb.gov.sg", "Their Name", "--password"]) == 0
+    assert seen["password"] == "my own choice" and seen["user_metadata"] == {"name": "Their Name"}
+    out = capsys.readouterr().out
+    assert "Created someone@nlb.gov.sg (Their Name)" in out and "my own choice" not in out
+
+
 def test_cards_are_dealt_latest_news_first():
     from src.export.cards import deal_order
 
@@ -222,3 +247,19 @@ def test_a_site_build_refuses_the_url_and_the_key_swapped(tmp_path, monkeypatch)
     monkeypatch.setenv("SUPABASE_URL", " https://p.supabase.co \n")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "eyJhbGciOi.payload.signature")
     assert build_site(template, tmp_path / "out").exists()
+
+
+def test_unsent_mail_is_not_printed_into_a_public_run_log(monkeypatch, capsys):
+    from src.export.notify import send
+
+    mail = [{"to": "someone@nlb.gov.sg", "subject": "TTE desk", "body": "On your desk: a record."}]
+    for k in ("MAIL_SERVER", "MAIL_FROM", "MAIL_USERNAME", "MAIL_PASSWORD"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert send(mail) == 0
+    out = capsys.readouterr().out
+    assert "someone@nlb.gov.sg" not in out and "On your desk" not in out and "1 message" in out
+    assert send(mail, dry_run=True) == 0 and "someone@nlb.gov.sg" in capsys.readouterr().out   # by hand, shown
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    send(mail)
+    assert "someone@nlb.gov.sg" in capsys.readouterr().out

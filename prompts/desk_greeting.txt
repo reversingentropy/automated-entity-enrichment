@@ -8,6 +8,6 @@ If a widely known Singapore public holiday or festival falls within three days o
 
 Never mention: the news, real people, politics, money, illness, any one religion beyond a festive greeting, or anything that could offend a colleague. No emoji, no hashtags, no quotation marks around the line.
 
-Do not repeat or closely echo yesterday's line: {previous}
+Do not repeat or closely echo yesterday's line or style: {previous}
 
 Return JSON: {{"line": "..."}}
