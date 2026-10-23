@@ -1,5 +1,5 @@
 """
-The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql), what the page's key can reach (sql/17), the feeds (sql/18) and the evaluation's labelling (sql/19) in a real Postgres: who is given which record, for how long, and who may decide it.
+The desk's queue (sql/15_desk_queue.sql, sql/16_desk_groups.sql), what the page's key can reach (sql/17), the feeds (sql/18), the evaluation's labelling (sql/19) and accounts made on the page (sql/20) in a real Postgres: who is given which record, for how long, and who may decide it.
 
 Runs the desk's own SQL (sql/11, sql/15, sql/16, sql/17) in a throwaway Postgres 16 container, on top of just enough of Supabase
 (tests/sql/supabase_stub.sql): each call is made as a signed-in reviewer, through the same role and request
@@ -54,15 +54,19 @@ def db():
                   "sql/19_evaluation.sql", "sql/19_evaluation.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
+        # sql/20 after the accounts above, as on the live project: those were made before it, so they are approved
+        for f in ("sql/20_self_signup.sql", "sql/20_self_signup.sql"):
+            run_sql((ROOT / f).read_text(encoding="utf-8"))
         yield
     finally:
         subprocess.run([DOCKER, "rm", "-f", NAME], capture_output=True)
 
 
-def run_sql(sql: str, user: str | None = None, test: bool = False, evaluator: bool = False) -> str:
+def run_sql(sql: str, user: str | None = None, test: bool = False, evaluator: bool = False, admin: bool = False) -> str:
     """Run SQL as the database owner, or, given a user, as that signed-in reviewer."""
     if user:
-        meta = {**({"test": True} if test else {}), **({"evaluator": True} if evaluator else {})}
+        meta = {**({"test": True} if test else {}), **({"evaluator": True} if evaluator else {}),
+                **({"admin": True} if admin else {})}
         claims = json.dumps({"sub": user, "role": "authenticated", "app_metadata": meta})
         sql = (f"begin; set local role authenticated; set local request.jwt.claims to '{claims}';\n{sql}\ncommit;")
     done = subprocess.run([DOCKER, "exec", "-i", NAME, "psql", "-U", "postgres", "-tAq", "-v", "ON_ERROR_STOP=1"],
@@ -72,9 +76,9 @@ def run_sql(sql: str, user: str | None = None, test: bool = False, evaluator: bo
     return done.stdout.strip()
 
 
-def call(user: str, fn: str, *args, test: bool = False, evaluator: bool = False):
+def call(user: str, fn: str, *args, test: bool = False, evaluator: bool = False, admin: bool = False):
     """One of the desk's functions, as a reviewer; the result as Python."""
-    out = run_sql(f"select to_jsonb({fn}({', '.join(args)}));", user, test, evaluator)
+    out = run_sql(f"select to_jsonb({fn}({', '.join(args)}));", user, test, evaluator, admin)
     return json.loads(out) if out else None
 
 
@@ -134,7 +138,8 @@ def test_updating_and_creating_are_separate_groups(db):
 def test_two_reviewers_asking_at_the_same_instant_get_different_records(db):
     deck(*[(f"k{n:02}", "PERSON", f"2026-10-{n % 28 + 1:02}", "en", [100 + n]) for n in range(25)])
     users = [str(uuid.UUID(int=1000 + n)) for n in range(12)]
-    run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in users) + " on conflict do nothing;")
+    run_sql("insert into auth.users (id, raw_app_meta_data) values "                  # made by key: approved (sql/20)
+            + ",".join(f"('{u}', '{{\"approved\": true}}')" for u in users) + " on conflict do nothing;")
     start = time.time() + 3
     sql = f"select pg_sleep_until(to_timestamp({start})); select take_next({langs('en')});"
     with ThreadPoolExecutor(len(users)) as pool:
@@ -371,3 +376,46 @@ def test_progress_counts_without_saying_whose_label_says_what(db):
     assert got == [{"task": "relevance", "lang": "en", "total": 52, "shared": 50, "shared_mine": 1, "mine": 1,
                     "labelled": 0, "held": 1, "labellers": 2}]
     assert run_sql("select count(*) from public.eval_progress();", A) == "0"  # a reviewer: nothing
+
+
+NEWCOMER = "00000000-0000-0000-0000-00000000000a"
+
+
+def sign_up(user: str, email: str, name: str, meta: dict | None = None):
+    """An account made after sql/20, as Supabase makes one at sign-up (or by the secret key, with app_metadata)."""
+    run_sql(f"delete from auth.users where id = '{user}';"
+            f"insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data) values ('{user}', {lit(email)}, "
+            f"{lit(json.dumps({'provider': 'email', **(meta or {})}))}::jsonb, {lit(json.dumps({'name': name}))}::jsonb);")
+
+
+def test_an_account_made_on_the_page_waits_and_reaches_nothing_until_approved(db):
+    deck(("x", "PERSON", "2026-10-12", "en", [1]))
+    run_sql("insert into public.entities (uid) values ('r-1') on conflict do nothing;")
+    sign_up(NEWCOMER, "new@nlb.gov.sg", "New Colleague")
+    assert call(NEWCOMER, "is_waiting") is True and call(A, "is_waiting") is False     # accounts from before: approved
+    for table in ("deck", "reviews", "claims"):
+        assert run_sql(f"select count(*) from public.{table};", NEWCOMER) == "0"
+    assert run_sql("select count(*) from public.deck;", A) == "1"
+    assert call(NEWCOMER, "take_next", langs("en")) is None and call(NEWCOMER, "claim_card", "'x'") is False
+    assert call(NEWCOMER, "decide", "'x'", rows(1))["reason"] == "not allowed" and holds() == {}
+    assert call(NEWCOMER, "desk_record", "'r-1'") == []
+
+    assert call(B, "waiting_accounts") == [] and call(B, "approve_account", f"'{NEWCOMER}'") is False   # not an admin
+    waiting = call(A, "waiting_accounts", admin=True)
+    assert [(w["email"], w["name"]) for w in waiting] == [("new@nlb.gov.sg", "New Colleague")]
+    assert call(A, "approve_account", f"'{NEWCOMER}'", admin=True) is True
+    assert call(NEWCOMER, "is_waiting") is False and call(NEWCOMER, "take_next", langs("en")) == "x"
+    assert call(A, "waiting_accounts", admin=True) == []
+
+
+def test_only_a_waiting_account_can_be_declined_and_accounts_made_by_key_do_not_wait(db):
+    sign_up(NEWCOMER, "stranger@example.com", "Who")
+    assert call(A, "decline_account", f"'{A}'", admin=True) is False                                  # a reviewer stays
+    assert call(B, "decline_account", f"'{NEWCOMER}'") is False                                         # not an admin
+    assert call(A, "decline_account", f"'{NEWCOMER}'", admin=True) is True
+    assert run_sql(f"select count(*) from auth.users where id in ('{NEWCOMER}', '{A}');") == "1"
+    sign_up(NEWCOMER, "made@nlb.gov.sg", "By key", {"approved": True})                                # --account
+    assert call(NEWCOMER, "is_waiting") is False
+    sign_up(NEWCOMER, "test2@nlb.gov.sg", "Tester", {"test": True})                                     # --account --test
+    assert call(NEWCOMER, "is_waiting") is False
+    run_sql(f"delete from auth.users where id = '{NEWCOMER}';")

@@ -120,14 +120,14 @@ def messages(people: list[dict], cards: list[dict], reviews: list[dict], holds: 
 
 def gather() -> tuple[list[dict], list[dict], list[dict], list[dict], dict]:
     """Everything messages() needs, read with the service role."""
-    from src.export.accounts import is_test
+    from src.export.accounts import is_test, is_waiting, waiting_since
     from src.shared.pagination import fetch_all
     from src.shared.supabase_client import get_client
 
     client = get_client()
-    people = []
+    people, since = [], waiting_since()
     for u in client.auth.admin.list_users():
-        if is_test(u) or not u.email:
+        if is_test(u) or is_waiting(u, since) or not u.email:
             continue
         meta = u.user_metadata or {}
         people.append({"id": u.id, "email": u.email, "name": meta.get("name") or "",

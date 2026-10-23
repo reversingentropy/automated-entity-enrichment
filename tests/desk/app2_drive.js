@@ -224,6 +224,35 @@
     out.testWritesNothing = F.reviews.length === nRev && F.rpcs.length === nRpc && /Test account/.test(stage());
     out.testAccountNamed = who().classList.contains("test") && /Test account/.test(who().textContent) && /test@nlb\.gov\.sg/.test(who().textContent);
     out.noDirectWrites = !F.direct;
+
+    // An account made on the sign-in screen: it waits, the admin approves it on their home page, and it can start.
+    const suVeil = () => (document.querySelector("#veil") || {}).textContent || "";
+    const suType = (vals) => Object.entries(vals).forEach(([id, v]) => { document.querySelector("#" + id).value = v; });
+    F.setUser(null); signInPage(); act("signup");
+    out.signUpShown = !!document.querySelector("#veil #nm") && !!document.querySelector("#veil #pw2");
+    suType({ nm: "New Colleague", em: "new@nlb.gov.sg", pw: "short", pw2: "short" });
+    act("dosignup"); await tick();
+    out.signUpChecksLength = /at least 8/.test(suVeil()) && document.querySelector("#nm").value === "New Colleague";
+    suType({ pw: "long enough", pw2: "long enough" });
+    act("dosignup");
+    out.signUpWaits = await until(() => /waiting for Ashwin/.test(suVeil()));
+    act("checkagain");
+    out.stillWaiting = await until(() => /Not approved yet/.test(suVeil()));
+    const suId = F.accounts[0].id;
+    F.accounts.push({ id: "u99", email: "stranger@example.com", name: "Who", made: new Date().toISOString(), waiting: true });
+    const suBoss = { id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: { admin: true } };
+    F.setUser(suBoss); await signedIn(suBoss);
+    out.adminSeesWaiting = await until(() => /2 new accounts are waiting/.test(stage()) && /new@nlb\.gov\.sg/.test(stage()));
+    document.querySelector(`[data-act="approve"][data-id="${suId}"]`).click();
+    out.adminApproves = await until(() => !F.accounts[0].waiting && /is approved/.test(stage()) && /1 new account is waiting/.test(stage()));
+    window.confirm = () => true;
+    document.querySelector('[data-act="decline"][data-id="u99"]').click();
+    out.adminDeclines = await until(() => F.accounts.length === 1 && !/new account/.test(stage()) && /was declined/.test(stage()));
+    const suFresh = { id: suId, email: "new@nlb.gov.sg", user_metadata: { name: "New Colleague" }, app_metadata: {} };
+    F.setUser(suFresh); await signedIn(suFresh);
+    out.approvedStarts = !document.querySelector("#veil") && PAGE === "home" && !/new account/.test(stage());
+    act("changepw"); suType({ pw: "a new one!", pw2: "a new one!" }); act("dochangepw");
+    out.passwordChanged = await until(() => F.passwordSetTo === "a new one!" && /Password changed/.test(stage()));
     say("RESULT " + JSON.stringify(out));
   } catch (e) { say("ERROR " + (e && e.stack || e) + "\n" + JSON.stringify(out)); }
 })();

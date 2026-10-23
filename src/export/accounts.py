@@ -7,6 +7,8 @@ Reviewer accounts for the online desk, made from the command line.
     python -m src.export --reset-password glenn@nlb.gov.sg
     python -m src.export --account someone@nlb.gov.sg "Their Name" --password   # choose it yourself
     python -m src.export --mark-evaluator glenn@nlb.gov.sg
+    python -m src.export --mark-admin EMAIL     # Approve and Decline on the Team page
+    python -m src.export --approve EMAIL        # the same Approve, from here
 
 The dashboard does the same by hand (Authentication > Users > Add user);
 this is one line per reviewer with the secret key already in `.env`.
@@ -17,10 +19,14 @@ prompt, so it stays out of the shell's history and is not printed back.
 `--test` marks the account so its decisions are left out when decisions
 are collected. `--mark-evaluator` gives an account the desk's Evaluation page,
 where the evaluation's sheets are labelled (sql/19_evaluation.sql).
+
+People can also make their own account on the desk's sign-in screen. Such an account waits, reaching nothing,
+until an admin approves it (sql/20_self_signup.sql); one made here is approved as it is made.
 """
 
 import getpass
 import secrets
+from datetime import datetime
 
 from src.shared.supabase_client import get_client
 
@@ -57,9 +63,8 @@ def is_test(user) -> bool:
 def create(email: str, name: str, test: bool = False, password: str | None = None) -> dict:
     """Create the account, confirmed, with the name the desk will show."""
     password = password or new_password()
-    attrs = {"email": email, "password": password, "email_confirm": True, "user_metadata": {"name": name}}
-    if test:
-        attrs["app_metadata"] = {"test": True}
+    attrs = {"email": email, "password": password, "email_confirm": True, "user_metadata": {"name": name},
+             "app_metadata": {"approved": True, **({"test": True} if test else {})}}
     user = get_client().auth.admin.create_user(attrs).user
     return {"id": user.id, "email": email, "name": name, "test": test, "password": password}
 
@@ -71,6 +76,38 @@ def mark_test(email: str) -> str:
     if user is None:
         raise ValueError(f"No account for {email}. `--accounts` lists them.")
     admin.update_user_by_id(user.id, {"app_metadata": {**(user.app_metadata or {}), "test": True}})
+    return user.id
+
+
+def _when(value) -> datetime | None:
+    if not value:
+        return None
+    return value if isinstance(value, datetime) else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
+def waiting_since() -> datetime | None:
+    """When accounts made on the page started to wait for approval; None before sql/20 has run."""
+    try:
+        rows = get_client().from_("account_gate").select("since").execute().data
+    except Exception:
+        return None
+    return _when(rows[0]["since"]) if rows else None
+
+
+def is_waiting(user, since: datetime | None) -> bool:
+    """Made on the page and not approved yet: the same rule as account_waiting() in sql/20."""
+    meta = getattr(user, "app_metadata", None) or {}
+    made = _when(getattr(user, "created_at", None))
+    return bool(since and made and made > since and not meta.get("approved") and not meta.get("test"))
+
+
+def mark(email: str, **flags) -> str:
+    """Set marks in an account's app_metadata, keeping the rest. They count from the next sign-in."""
+    admin = get_client().auth.admin
+    user = next((u for u in admin.list_users() if (u.email or "").lower() == email.strip().lower()), None)
+    if user is None:
+        raise ValueError(f"No account for {email}. `--accounts` lists them.")
+    admin.update_user_by_id(user.id, {"app_metadata": {**(user.app_metadata or {}), **flags}})
     return user.id
 
 
@@ -119,9 +156,10 @@ def release(email: str) -> int:
 
 
 def listing() -> list[dict]:
-    out = []
+    out, since = [], waiting_since()
     for u in get_client().auth.admin.list_users():
         meta = u.user_metadata or {}
         out.append({"id": u.id, "email": u.email or "", "name": meta.get("name") or "",
-                    "test": is_test(u), "evaluator": is_evaluator(u), "last_sign_in": (u.last_sign_in_at or "")})
+                    "test": is_test(u), "evaluator": is_evaluator(u), "waiting": is_waiting(u, since),
+                    "admin": bool((u.app_metadata or {}).get("admin")), "last_sign_in": (u.last_sign_in_at or "")})
     return sorted(out, key=lambda r: r["email"])

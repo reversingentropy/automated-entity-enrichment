@@ -10,6 +10,7 @@
   F.rpcs = []; F.fail = false; F.direct = false; F.shift = 0;
   F.reviews = F.reviews || []; F.claims = F.claims || [];
   F.evalItems = F.evalItems || []; F.evalLabels = F.evalLabels || []; F.evalHolds = F.evalHolds || []; F.evalResults = F.evalResults || [];
+  F.accounts = F.accounts || [];      // accounts made on the sign-in screen (sql/20_self_signup.sql)
   let user = null;
   const HOLD = 60 * 60000;
   const now = () => Date.now() + F.shift;
@@ -17,6 +18,7 @@
   const me = () => user && user.id;
   const isTest = () => !!(user && user.app_metadata && user.app_metadata.test);
   const isEval = () => !!(user && user.app_metadata && user.app_metadata.evaluator);
+  const isAdmin = () => !!(user && user.app_metadata && user.app_metadata.admin);
   const SHARED = task => task === "extraction" ? 20 : 50;
   const evLive = h => now() - new Date(h.held_at).getTime() < HOLD;
   const evItem = (task, item) => F.evalItems.find(i => i.task === task && i.item === item);
@@ -116,6 +118,14 @@
       });
       return [...out.values()];
     },
+    approve_account({ account }) {
+      const a = F.accounts.find(x => x.id === account && x.waiting); if (!isAdmin() || !a) return false;
+      a.waiting = false; return true;
+    },
+    decline_account({ account }) {
+      if (!isAdmin() || !F.accounts.some(x => x.id === account && x.waiting)) return false;
+      F.accounts = F.accounts.filter(x => x.id !== account); return true;
+    },
     mark_done({ pids, done }) {
       let n = 0;
       F.reviews.forEach(r => { if (pids.includes(r.pid) && r.reviewer === me()) { r.decision = { ...r.decision, done }; n++; } });
@@ -140,6 +150,15 @@
         return { data: { user }, error: null };
       },
       signOut: async () => { user = null; return {}; },
+      // Sign-up with "Confirm email" off: the account is made and signed in at once, and waits for approval.
+      signUp: async ({ email, password, options }) => {
+        if (F.accounts.some(a => a.email === email)) return { data: null, error: { message: "User already registered" } };
+        const name = (options && options.data && options.data.name) || "";
+        user = { id: "u" + (10 + F.accounts.length), email, user_metadata: { name }, app_metadata: {} };
+        F.accounts.push({ id: user.id, email, name, made: new Date(now()).toISOString(), waiting: true });
+        return { data: { user, session: { user } }, error: null };
+      },
+      updateUser: async ({ password }) => { F.passwordSetTo = password; return { data: { user }, error: null }; },
     },
     from(table) {
       return {
@@ -164,6 +183,10 @@
       };
     },
     rpc: async (name, args = {}) => {
+      // asked at every sign-in and by the admin's pages; not part of the queue the driver counts calls to
+      if (name === "is_waiting") return { data: !!(user && F.accounts.some(a => a.id === user.id && a.waiting)), error: null };
+      if (name === "waiting_accounts")
+        return { data: isAdmin() ? F.accounts.filter(a => a.waiting).map(({ id, email, name, made }) => ({ id, email, name, made })) : [], error: null };
       F.rpcs.push(name + ":" + (args.key || args.grp || args.task || ""));
       await new Promise(r => setTimeout(r, 5));
       if (F.fail) throw new Error("offline");

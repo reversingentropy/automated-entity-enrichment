@@ -74,12 +74,12 @@ def test_an_account_is_made_confirmed_with_its_name_and_a_fresh_password(monkeyp
     monkeypatch.setattr(accounts, "get_client", lambda: SimpleNamespace(auth=SimpleNamespace(admin=Admin())))
     made = accounts.create("glenn@nlb.gov.sg", "Glenn Hong")
     assert seen["email_confirm"] is True and seen["user_metadata"] == {"name": "Glenn Hong"}
-    assert "app_metadata" not in seen
+    assert seen["app_metadata"] == {"approved": True}             # made by key: it does not wait (sql/20)
     assert made["password"] == seen["password"] and len(made["password"]) == 14
     seen.clear()
     test = accounts.create("test@nlb.gov.sg", "Test", test=True)
     # The test mark goes where only the service role can write it.
-    assert seen["app_metadata"] == {"test": True} and seen["user_metadata"] == {"name": "Test"}
+    assert seen["app_metadata"] == {"approved": True, "test": True} and seen["user_metadata"] == {"name": "Test"}
     assert test["password"] != made["password"]
 
 
@@ -263,3 +263,18 @@ def test_unsent_mail_is_not_printed_into_a_public_run_log(monkeypatch, capsys):
     monkeypatch.delenv("GITHUB_ACTIONS")
     send(mail)
     assert "someone@nlb.gov.sg" in capsys.readouterr().out
+
+
+def test_an_account_made_on_the_page_waits_until_approved_and_gets_no_mail():
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    from src.export.accounts import is_waiting
+
+    since = datetime(2026, 10, 23, tzinfo=timezone.utc)
+    user = lambda made, **meta: SimpleNamespace(created_at=made, app_metadata=meta)
+    assert is_waiting(user("2026-10-24T01:00:00Z"), since)
+    assert not is_waiting(user("2026-10-24T01:00:00Z", approved=True), since)
+    assert not is_waiting(user("2026-10-24T01:00:00Z", test=True), since)
+    assert not is_waiting(user("2026-10-01T01:00:00Z"), since)                 # made before sql/20
+    assert not is_waiting(user("2026-10-24T01:00:00Z"), None)                  # sql/20 not run yet

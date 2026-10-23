@@ -51,6 +51,8 @@ The online desk:
                                              # (--password on either: type your own, hidden)
   python -m src.export --mark-test EMAIL     # an existing account can look but not write
   python -m src.export --mark-evaluator EMAIL  # give it the Evaluation page (--unmark-evaluator takes it away)
+  python -m src.export --mark-admin EMAIL      # it approves accounts made on the desk, on the Team page
+  python -m src.export --approve EMAIL         # approve one from here instead
   python -m src.export --holds               # which card each reviewer has on their desk
   python -m src.export --release EMAIL       # put someone's held card back in the pile
 """
@@ -100,6 +102,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="with --account or --reset-password: type the password yourself, asked twice and not shown")
     parser.add_argument("--mark-test", metavar="EMAIL",
                         help="make an existing account a test account: it can look but not write")
+    parser.add_argument("--mark-admin", metavar="EMAIL",
+                        help="let an account approve the accounts people make on the desk (Team page)")
+    parser.add_argument("--approve", metavar="EMAIL",
+                        help="approve an account someone made on the desk's sign-in screen")
     parser.add_argument("--mark-evaluator", metavar="EMAIL",
                         help="give an existing account the desk's Evaluation page, to label the evaluation's sheets")
     parser.add_argument("--unmark-evaluator", metavar="EMAIL",
@@ -219,6 +225,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{args.mark_test} is now a test account: it can look at the desk, and nothing it does is saved.")
         return 0
 
+    if args.mark_admin or args.approve:
+        from src.export.accounts import mark
+        email = args.mark_admin or args.approve
+        try:
+            mark(email, **({"admin": True} if args.mark_admin else {"approved": True}))
+        except ValueError as e:
+            print(e)
+            return 1
+        print(f"{email} can now approve accounts on the Team page, from their next sign-in." if args.mark_admin else
+              f"{email} is approved: they can start now (Check again, or sign in again).")
+        return 0
+
     if args.mark_evaluator or args.unmark_evaluator:
         from src.export.accounts import mark_evaluator
         email = args.mark_evaluator or args.unmark_evaluator
@@ -269,8 +287,8 @@ def main(argv: list[str] | None = None) -> int:
             print("No accounts yet.")
             return 0
         for r in rows:
-            print(f"{r['email']:40} {r['name']:24} {'test' if r['test'] else '':5} {'evaluator' if r['evaluator'] else '':10}"
-                  f"last sign-in {str(r['last_sign_in'])[:16] or 'never'}")
+            marks = " ".join(m for m in ("waiting", "test", "evaluator", "admin") if r.get(m))
+            print(f"{r['email']:40} {r['name']:24} {marks:22} last sign-in {str(r['last_sign_in'])[:16] or 'never'}")
         return 0
 
     if args.requests:

@@ -377,6 +377,13 @@
   .signin .fld{display:block;text-align:left;font-size:.85rem;font-weight:600;margin:.6rem 0}
   .signin .fld input{display:block;width:100%;box-sizing:border-box;margin-top:.25rem;padding:.55rem .6rem;border:1.5px solid #BDB6A4;border-radius:8px;font:inherit}
   .signin .err{color:#B3261E;font-size:.88rem;margin:.4rem 0}
+  .signin .alt{margin:.9rem 0 0;font-size:.88rem;color:var(--ink2)}
+  .signin .alt button,.who button{background:none;border:none;padding:0;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
+  .notice.acct{text-align:left}
+  .acctrow{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between;padding:.45rem 0 0;margin-top:.45rem;border-top:1px solid rgba(0,0,0,.1)}
+  .acctrow .btns{display:flex;gap:.4rem}
+  .acctrow button{border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.85rem;border:1px solid #BDB6A4;background:#fff;color:var(--ink);cursor:pointer}
+  .acctrow button.p{background:var(--accent);border-color:var(--accent);color:#fff}
   .sw{width:.8rem;height:.8rem;border-radius:3px;display:inline-block}
   /* home A: minimal */
   .hm{max-width:34rem;margin:0 auto;padding:3.2rem 0 1rem;text-align:center}
@@ -1041,6 +1048,7 @@ const available = c => QUEUE() ? readable(c) && openFor(c) && !HELD.has(c.key)
 // The same database calls as the first desk (src/export/desk_template.html), so the `reviews` rows, the sheets built
 // from them (src/export/reviews.py) and the reminders read exactly as before.
 let sb = null, me = null, myName = "", testing = false, loading = "", NOTICE = "", TEAM = [], TEAM_N = 4, STATUS = null;
+let ACCOUNTS = [];          // accounts made on the sign-in screen and waiting for approval: the admin's to approve
 const MINE = new Set();     // records this reviewer held when the deck was fetched: they come back first
 const CLAIM = new Map();    // record key -> "asking" | true | false | "retry"
 let UNSENT = {};            // record key -> rows the table has not taken yet
@@ -1097,6 +1105,9 @@ function toDecision(x, c) {
 async function signedIn(user) {
   me = user; testing = !!(user.app_metadata && user.app_metadata.test);
   myName = (user.user_metadata && user.user_metadata.name) || (user.email || "").split("@")[0] || "reviewer";
+  // An account made on the sign-in screen waits for approval (sql/20_self_signup.sql); the database refuses it
+  // everything meanwhile, and this only says so.
+  if (!testing && await waitingNow()) return waitingPage();
   SAMPLE = false; _team = null; evReset();
   const v = $("#veil"); if (v) v.remove();
   loading = "Fetching the records…"; draw();
@@ -1120,6 +1131,7 @@ async function signedIn(user) {
   loading = ""; PAGE = "home"; HOMENOTE = "";
   buildList("all"); draw(true);
   flushUnsent();
+  loadAccounts();
   // How it works, once per browser; then the languages, if not chosen yet.
   let welcomed = false;
   try { welcomed = !!localStorage.getItem("desk2-welcomed"); localStorage.setItem("desk2-welcomed", "1"); } catch (e) {}
@@ -1192,11 +1204,12 @@ function signInPage(message) {
   if ($("#veil")) $("#veil").remove();
   const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
   v.innerHTML = sb ? `<form class="welcome small signin" role="dialog" aria-label="Sign in" onsubmit="return false">
-      <h2>TTE Review Desk</h2><p class="sub">Sign in with the account Ashwin gave you.</p>
+      <h2>TTE Review Desk</h2><p class="sub">Sign in, or make an account if you have none yet.</p>
       <label class="fld">Email<input id="em" type="email" autocomplete="username" required></label>
       <label class="fld">Password<input id="pw" type="password" autocomplete="current-password" required></label>
       ${message ? `<p class="err">${esc(message)}</p>` : ""}
-      <button class="go" data-act="signin">Sign in</button></form>`
+      <button class="go" data-act="signin">Sign in</button>
+      <p class="alt">No account yet? <button type="button" data-act="signup">Make one</button></p></form>`
     : `<div class="welcome small" role="dialog"><h2>TTE Review Desk</h2><p class="sub">The desk cannot reach its database. Check the internet connection and reload the page.</p></div>`;
   document.body.appendChild(v);
   const em = v.querySelector("#em"); if (em) em.focus();
@@ -1208,6 +1221,89 @@ async function signIn() {
   try { out = await sb.auth.signInWithPassword({ email: email.trim(), password }); } catch (e) { out = { error: e }; }
   if (out.error || !out.data || !out.data.user) return signInPage("That email and password do not match an account.");
   signedIn(out.data.user);
+}
+function veil(html) {
+  if ($("#veil")) $("#veil").remove();
+  const v = document.createElement("div"); v.className = "veil"; v.id = "veil"; v.innerHTML = html;
+  document.body.appendChild(v);
+  const first = v.querySelector("input"); if (first) first.focus();
+}
+// Anyone can make an account; it waits until Ashwin approves it, after a word with the person.
+function signUpPage(message, f = {}) {
+  veil(`<form class="welcome small signin" role="dialog" aria-label="Make an account" onsubmit="return false">
+      <h2>Make an account</h2><p class="sub">Ashwin approves each new account before it can start, after a quick check with you.</p>
+      <label class="fld">Your name<input id="nm" autocomplete="name" value="${esc(f.name || "")}" required></label>
+      <label class="fld">Email<input id="em" type="email" autocomplete="username" value="${esc(f.email || "")}" required></label>
+      <label class="fld">Password (at least 8 characters)<input id="pw" type="password" autocomplete="new-password" required></label>
+      <label class="fld">The same password again<input id="pw2" type="password" autocomplete="new-password" required></label>
+      ${message ? `<p class="err">${esc(message)}</p>` : ""}
+      <button class="go" data-act="dosignup">Make the account</button>
+      <p class="alt">Have one already? <button type="button" data-act="signinpage">Sign in</button></p></form>`);
+}
+async function signUp() {
+  const val = id => ($("#" + id) || {}).value || "";
+  const f = { name: val("nm").trim(), email: val("em").trim() }, password = val("pw");
+  if (!f.name || !f.email) return signUpPage("Type your name and your email.", f);
+  if (password.length < 8) return signUpPage("The password needs at least 8 characters.", f);
+  if (password !== val("pw2")) return signUpPage("The two passwords are not the same.", f);
+  let out;
+  try { out = await sb.auth.signUp({ email: f.email, password, options: { data: { name: f.name } } }); } catch (e) { out = { error: e }; }
+  if (out.error) return signUpPage(/already|registered|exists/i.test(out.error.message || "")
+    ? "There is already an account for that email. Sign in instead, or ask Ashwin to reset its password."
+    : "The account could not be made: " + (out.error.message || "try again in a moment."), f);
+  const session = out.data && out.data.session;
+  if (!session) return signInPage("Account made. Sign in once Ashwin has approved it.");
+  signedIn(session.user);
+}
+async function waitingNow() {
+  if (!sb) return false;
+  try { const { data, error } = await sb.rpc("is_waiting"); return !error && data === true; } catch (e) { return false; }
+}
+function waitingPage(message) {
+  veil(`<div class="welcome small signin" role="dialog" aria-label="Waiting for approval">
+      <h2>Thanks, ${esc(myName)}</h2>
+      <p class="sub">Your account (${esc(me.email || "")}) is made, and waiting for Ashwin to approve it. You can start as soon as that is done.</p>
+      ${message ? `<p class="err">${esc(message)}</p>` : ""}
+      <button class="go" data-act="checkagain">Check again</button>
+      <p class="alt"><button type="button" data-act="signout">Sign out</button></p></div>`);
+}
+function passwordPage(message) {
+  veil(`<form class="welcome small signin" role="dialog" aria-label="Change password" onsubmit="return false">
+      <h2>Change your password</h2>
+      <label class="fld">New password (at least 8 characters)<input id="pw" type="password" autocomplete="new-password" required></label>
+      <label class="fld">The same password again<input id="pw2" type="password" autocomplete="new-password" required></label>
+      ${message ? `<p class="err">${esc(message)}</p>` : ""}
+      <button class="go" data-act="dochangepw">Change it</button>
+      <p class="alt"><button type="button" data-act="closeveil">Cancel</button></p></form>`);
+}
+async function changePassword() {
+  const password = ($("#pw") || {}).value || "", again = ($("#pw2") || {}).value || "";
+  if (password.length < 8) return passwordPage("The password needs at least 8 characters.");
+  if (password !== again) return passwordPage("The two passwords are not the same.");
+  let out;
+  try { out = await sb.auth.updateUser({ password }); } catch (e) { out = { error: e }; }
+  if (out.error) return passwordPage("It could not be changed: " + (out.error.message || "try again in a moment."));
+  $("#veil").remove(); HOMENOTE = "Password changed. Use the new one next time you sign in."; PAGE = "home"; draw();
+}
+const isAdmin = () => !!(me && me.app_metadata && me.app_metadata.admin);
+async function loadAccounts() {
+  if (!sb || !isAdmin()) return;
+  try { const { data, error } = await sb.rpc("waiting_accounts"); if (!error) { ACCOUNTS = data || []; draw(); } } catch (e) {}
+}
+// On the admin's home and Team pages: who is waiting, with Approve and Decline.
+function accountsBox() {
+  if (!isAdmin() || !ACCOUNTS.length) return "";
+  return `<div class="notice acct"><b>${ACCOUNTS.length === 1 ? "1 new account is" : ACCOUNTS.length + " new accounts are"} waiting for your approval.</b> Check with the person first.
+    ${ACCOUNTS.map(a => `<div class="acctrow"><span><b>${esc(a.name || "(no name)")}</b> &middot; ${esc(a.email || "")} &middot; made ${esc(dayStr(a.made))}</span>
+      <span class="btns"><button class="p" data-act="approve" data-id="${esc(a.id)}">Approve</button><button data-act="decline" data-id="${esc(a.id)}">Decline</button></span></div>`).join("")}</div>`;
+}
+async function decideAccount(a, acc) {
+  if (a === "decline" && !confirm(`Decline ${acc.email}? The account is removed, and that email can make one again.`)) return;
+  let out;
+  try { out = await sb.rpc(a === "approve" ? "approve_account" : "decline_account", { account: acc.id }); } catch (e) { out = { error: e }; }
+  HOMENOTE = out.error ? "That did not go through. Try again in a moment."
+           : a === "approve" ? `${acc.name || acc.email} is approved and can start now.` : `${acc.email} was declined.`;
+  ACCOUNTS = ACCOUNTS.filter(x => x.id !== acc.id); draw(); loadAccounts();
 }
 async function startOnline() {
   if (!sb) return signInPage();
@@ -1424,6 +1520,14 @@ const go = (st, screen, extra) => Object.assign(st, { screen, full: false, descF
 function act(a, el) {
   const i = el ? Number(el.dataset.i) : 0;
   if (a === "signin") { signIn(); return; }
+  if (a === "signup") return signUpPage();
+  if (a === "signinpage") return signInPage();
+  if (a === "dosignup") { signUp(); return; }
+  if (a === "checkagain") { waitingNow().then(w => w ? waitingPage("Not approved yet. Ashwin may still be checking.") : signedIn(me)); return; }
+  if (a === "changepw") return passwordPage();
+  if (a === "dochangepw") { changePassword(); return; }
+  if (a === "closeveil") { const v = $("#veil"); if (v) v.remove(); return; }
+  if (a === "approve" || a === "decline") { const acc = ACCOUNTS.find(x => x.id === el.dataset.id); if (acc) decideAccount(a, acc); return; }
   // home's big button is for every type, as its number counts every type; a chip is for one
   if (a === "start") { group = "all"; PAGE = "review"; HOMENOTE = ""; allDone = false; buildList($("#filter").value); if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
   if (a === "startgroup") { group = el.dataset.g; PAGE = "review"; HOMENOTE = ""; buildList($("#filter").value); if (QUEUE() && !fits(card())) return resumeOrDeal(); return draw(true); }
@@ -1647,6 +1751,7 @@ function homeMinimal(d) {
   ${dayLine() ? `<p class="dayline">${esc(dayLine())}</p>` : ""}
   ${warnNote(d) ? `<p class="warnnote">${esc(warnNote(d))}</p>` : ""}
   ${HOMENOTE ? `<p class="notice">${esc(HOMENOTE)}</p>` : ""}
+  ${accountsBox()}
   <div class="hmnum">${d.n}</div>
   <p class="hmlab">${d.n === 1 ? "record waiting for you" : "records waiting for you"}</p>
   <p class="hmsub">${subLine(d)}</p>
@@ -1698,7 +1803,7 @@ function teamPage() {
   const bar = r => { const p = v => (r.total ? v / r.total * 100 : 0) + "%"; return `<div class="stack"><i class="d" style="width:${p(r.decided)}"></i><i class="k" style="width:${p(r.kept)}"></i><i class="h" style="width:${p(r.held)}"></i></div>`; };
   const held = [...HELD.entries()].map(([key, since]) => { const c = CARDS.find(x => x.key === key); return `<div class="heldrow"><span><b>${esc(c ? c.entity : key)}</b> &middot; on someone&rsquo;s desk since ${esc(dayStr(since))}</span>${ONLINE ? "" : `<button class="donebtn" data-act="release" data-k="${esc(key)}">Release</button>`}</div>`; }).join("");
   const approved = ALL.filter(x => x.kind === "approved");
-  return `<div class="tiles">${tile(sum("decided"), "decided")}${tile(sum("waiting"), "waiting")}${tile(sum("held"), "on someone&rsquo;s desk")}${tile(sum("kept"), "kept for review")}</div>
+  return `${accountsBox()}<div class="tiles">${tile(sum("decided"), "decided")}${tile(sum("waiting"), "waiting")}${tile(sum("held"), "on someone&rsquo;s desk")}${tile(sum("kept"), "kept for review")}</div>
   <section class="focus">${rows.map(r => `<div class="grp"><div class="top">${esc(r.name)}<span>${r.total} cards</span></div>${bar(r)}<div class="legend"><span><i class="sw" style="background:var(--tick)"></i>${r.decided} decided</span><span><i class="sw" style="background:var(--amber-line)"></i>${r.kept} kept</span><span><i class="sw" style="background:var(--accent)"></i>${r.held} on someone&rsquo;s desk</span><span><i class="sw" style="background:#E4DFD2"></i>${r.waiting} waiting</span></div></div>`).join("")}</section>
   ${byLang.length ? `<p class="minor">Waiting, by the language of their articles: ${byLang.map(([n, k]) => `${n} ${k}`).join(", ")}. A card with articles in more than one is counted in each.</p>` : ""}
   ${HELD.size ? `<h2 class="h2">On someone&rsquo;s desk</h2><section class="focus">${held}</section><p class="minor">${ONLINE ? "A record stays on one person&rsquo;s desk while they work on it, so nobody else is dealt it. Left for an hour, it goes back to the pile by itself." : "A card stays on one person&rsquo;s desk until they decide it, so nobody else is dealt it. If someone is away, release it here."}</p>` : ""}
@@ -2071,7 +2176,7 @@ function navState() {
   if (me) {
     who.className = testing ? "who test" : "who";
     who.innerHTML = testing ? `<span><b>Test account</b> &middot; ${esc(me.email || "")} &middot; nothing is saved</span>`
-                            : `Signed in as <b>${esc(me.email || myName)}</b> &middot; your decisions are saved`;
+                            : `Signed in as <b>${esc(me.email || myName)}</b> &middot; your decisions are saved &middot; <button data-act="changepw">Change password</button>`;
   }
   $("#langpill").textContent = "Reading: " + (langs ? langs.map(l => LANG_NAMES[l]).join(" + ") : "all languages");
   $("#evalnav").hidden = !isEvaluator();
