@@ -1268,6 +1268,17 @@ function waitingPage(message) {
       <button class="go" data-act="checkagain">Check again</button>
       <p class="alt"><button type="button" data-act="signout">Sign out</button></p></div>`);
 }
+// Asked again by the waiting screen. A declined account is gone: its sign-in no longer finds it.
+async function checkAgain() {
+  let gone = false;
+  try { const { data, error } = await sb.auth.getUser(); gone = !!error || !data || !data.user; } catch (e) {}
+  if (gone) {
+    try { await sb.auth.signOut(); } catch (e) {}
+    me = null; return signInPage("That account was declined, so it no longer exists. Ask Ashwin if this is a mistake.");
+  }
+  if (await waitingNow()) return waitingPage("Not approved yet. Ashwin may still be checking.");
+  signedIn(me);
+}
 function passwordPage(message) {
   veil(`<form class="welcome small signin" role="dialog" aria-label="Change password" onsubmit="return false">
       <h2>Change your password</h2>
@@ -1524,7 +1535,7 @@ function act(a, el) {
   if (a === "signup") return signUpPage();
   if (a === "signinpage") return signInPage();
   if (a === "dosignup") { signUp(); return; }
-  if (a === "checkagain") { waitingNow().then(w => w ? waitingPage("Not approved yet. Ashwin may still be checking.") : signedIn(me)); return; }
+  if (a === "checkagain") { checkAgain(); return; }
   if (a === "changepw") return passwordPage();
   if (a === "dochangepw") { changePassword(); return; }
   if (a === "closeveil") { const v = $("#veil"); if (v) v.remove(); return; }

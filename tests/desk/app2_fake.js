@@ -124,7 +124,7 @@
     },
     decline_account({ account }) {
       if (!isAdmin() || !F.accounts.some(x => x.id === account && x.waiting)) return false;
-      F.accounts = F.accounts.filter(x => x.id !== account); return true;
+      F.accounts = F.accounts.filter(x => x.id !== account); F.declined = (F.declined || []).concat(account); return true;
     },
     mark_done({ pids, done }) {
       let n = 0;
@@ -142,6 +142,9 @@
   const client = {
     auth: {
       getSession: async () => ({ data: { session: user ? { user } : null } }),
+      // asks the server, so an account declined since sign-in is found gone
+      getUser: async () => (user && !(F.declined || []).includes(user.id) ? { data: { user }, error: null }
+                                                                         : { data: { user: null }, error: { message: "User not found" } }),
       signInWithPassword: async ({ email, password }) => {
         if (password !== "pw") return { data: null, error: { message: "bad" } };
         user = email.startsWith("test")

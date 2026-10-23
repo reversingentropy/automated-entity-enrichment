@@ -38,11 +38,14 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.account_waiting(auth.users) from public, anon, authenticated;
 
--- Whether the signed-in account is waiting. The page asks it once, at sign-in.
+-- Whether the signed-in account is waiting. The page asks it once, at sign-in. A sign-in whose account is gone,
+-- declined or deleted, counts as waiting too: its token stays valid for up to an hour after, and the first version
+-- of this let such a token read the deck (a declined test account, 23 Oct 2026).
 create or replace function public.is_waiting()
 returns boolean
 language sql stable security definer set search_path = public as $$
-  select coalesce((select public.account_waiting(u) from auth.users u where u.id = auth.uid()), false);
+  select auth.uid() is not null
+         and coalesce((select public.account_waiting(u) from auth.users u where u.id = auth.uid()), true);
 $$;
 grant execute on function public.is_waiting() to anon, authenticated, service_role;
 

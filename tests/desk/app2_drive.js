@@ -248,6 +248,10 @@
     window.confirm = () => true;
     document.querySelector('[data-act="decline"][data-id="u99"]').click();
     out.adminDeclines = await until(() => F.accounts.length === 1 && !/new account/.test(stage()) && /was declined/.test(stage()));
+    // the declined one, still holding a sign-in from before: it is told, and signed out
+    const declined = { id: "u99", email: "stranger@example.com", user_metadata: { name: "Who" }, app_metadata: {} };
+    F.setUser(declined); me = declined; waitingPage(); act("checkagain");
+    out.declinedTold = await until(() => /was declined/.test(suVeil()) && !!document.querySelector("#veil #em"));
     const suFresh = { id: suId, email: "new@nlb.gov.sg", user_metadata: { name: "New Colleague" }, app_metadata: {} };
     F.setUser(suFresh); await signedIn(suFresh);
     out.approvedStarts = !document.querySelector("#veil") && PAGE === "home" && !/new account/.test(stage());

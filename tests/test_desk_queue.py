@@ -414,6 +414,10 @@ def test_only_a_waiting_account_can_be_declined_and_accounts_made_by_key_do_not_
     assert call(B, "decline_account", f"'{NEWCOMER}'") is False                                         # not an admin
     assert call(A, "decline_account", f"'{NEWCOMER}'", admin=True) is True
     assert run_sql(f"select count(*) from auth.users where id in ('{NEWCOMER}', '{A}');") == "1"
+    # declined, the browser's sign-in token still works for up to an hour: it must reach nothing
+    deck(("x", "PERSON", "2026-10-12", "en", [1]))
+    assert call(NEWCOMER, "is_waiting") is True and run_sql("select count(*) from public.deck;", NEWCOMER) == "0"
+    assert call(NEWCOMER, "take_next", langs("en")) is None and holds() == {}
     sign_up(NEWCOMER, "made@nlb.gov.sg", "By key", {"approved": True})                                # --account
     assert call(NEWCOMER, "is_waiting") is False
     sign_up(NEWCOMER, "test2@nlb.gov.sg", "Tester", {"test": True})                                     # --account --test
