@@ -10,12 +10,14 @@ and write is set by the policies in `sql/11_desk_online.sql`, not by the
 key. The deck and the search index are fetched after sign-in, so the page
 itself is small and holds nothing from TTE. It runs from a local folder or
 from any static host; nothing in it depends on where it is served from.
+Both pages are served without their comments (src/export/strip.py).
 """
 
 import json
 import os
 from pathlib import Path
 
+from src.export import strip
 from src.export.package import standalone
 
 SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
@@ -35,8 +37,8 @@ def online_page(template: str, url: str, anon_key: str) -> str:
     # The second desk is a whole document already: the two scripts go into its own head.
     if template.lstrip().lower().startswith("<!doctype"):
         at = template.lower().index("<head>") + len("<head>")
-        return template[:at] + "\n" + head + template[at:]
-    return standalone(template, head=head)
+        return strip.page(template[:at] + "\n" + head + template[at:])
+    return strip.page(standalone(template, head=head))
 
 
 def build_site(template_path: str | Path, out_dir: str | Path) -> Path:
@@ -59,6 +61,6 @@ def build_site(template_path: str | Path, out_dir: str | Path) -> Path:
     # without the briefing.
     explainer = Path("docs/pipeline.html")
     if explainer.exists():
-        (out / "pipeline.html").write_text(standalone(explainer.read_text(encoding="utf-8")),
+        (out / "pipeline.html").write_text(strip.page(standalone(explainer.read_text(encoding="utf-8"))),
                                            encoding="utf-8")
     return page
