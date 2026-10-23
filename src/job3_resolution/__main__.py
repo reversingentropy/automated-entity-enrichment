@@ -5,8 +5,8 @@ For each article with unresolved entities: retrieve database candidates for
 every entity, ask Gemini which correspond to existing authority records, and
 write the decisions to candidate_matches as proposals.
 
-Nothing mutates the `entities` table. Resolutions are recorded with
-`applied = false` for a review step.
+Nothing mutates the `entities` table. Resolutions are proposals; people
+decide them on the review desk.
 
   python -m src.job3_resolution                      # full run (what CI does)
   python -m src.job3_resolution --limit 2 --dry-run  # no writes

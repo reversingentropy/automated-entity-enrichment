@@ -6,9 +6,6 @@ alter table public.article add column if not exists relevant             boolean
 alter table public.article add column if not exists reason               text;
 alter table public.article add column if not exists processed_extraction boolean not null default false;
 
--- Scraped article body. Lets extraction be re-run offline after a prompt
--- change, and survives the source URL rotting. ~5 KB per relevant article.
-alter table public.article add column if not exists text text;
 
 -- Job queues.
 create index if not exists article_unscored

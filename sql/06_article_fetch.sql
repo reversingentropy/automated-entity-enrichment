@@ -11,5 +11,3 @@ alter table public.article add column if not exists fetch_attempts integer not n
 
 -- Job 2 gives up on a row after three failed reads, so "relevant but
 -- unreadable" is a count on the row rather than a nightly retry.
-create index if not exists article_unfetched
-  on public.article (id) where text is null and fetch_attempts < 3;

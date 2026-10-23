@@ -34,7 +34,6 @@ from the online desk's `reviews` table:
   python -m src.export --reviews table --out decisions.csv
   python -m src.export --weekly [--since YYYY-MM-DD]  # the week's changes, as the Excel file
   python -m src.export --numbers                     # every count the documents quote, dated
-  python -m src.export --logs                        # the evaluation's change and weekly logs, as CSVs
   python -m src.export --notify [--print-only]       # the daily email, only to reviewers with something to do
 
 That writes one row per reviewer per proposal, so where two people disagreed
@@ -44,7 +43,6 @@ The online desk:
 
   python -m src.export --publish             # the deck to the database, nightly
   python -m src.export --site data/dist/site # index.html, served locally or anywhere
-  python -m src.export --requests            # who has asked for an account
   python -m src.export --account EMAIL NAME  # make one; --test for the test account
   python -m src.export --accounts            # list them
   python -m src.export --reset-password EMAIL  # a new password, printed once
@@ -88,8 +86,6 @@ def main(argv: list[str] | None = None) -> int:
                              "for the online desk")
     parser.add_argument("--site", metavar="DIR",
                         help="write index.html for the online desk into DIR")
-    parser.add_argument("--requests", action="store_true",
-                        help="list the access requests made from the online desk's sign-in screen")
     parser.add_argument("--account", nargs=2, metavar=("EMAIL", "NAME"),
                         help="create a reviewer account for the online desk; the password is printed once")
     parser.add_argument("--test", action="store_true",
@@ -126,8 +122,6 @@ def main(argv: list[str] | None = None) -> int:
                         help="the daily email, to each reviewer with something to act on")
     parser.add_argument("--print-only", action="store_true",
                         help="with --notify: print the emails instead of sending them")
-    parser.add_argument("--logs", action="store_true",
-                        help="the evaluation's change log and weekly log, as CSVs (use --out for the folder)")
     parser.add_argument("--numbers", action="store_true",
                         help="every count the documents quote, dated, to docs/numbers.md")
     parser.add_argument("--weekly", action="store_true",
@@ -146,13 +140,6 @@ def main(argv: list[str] | None = None) -> int:
         mails = messages(people, cards, reviews, holds, news, SETTINGS.notify.desk_url)
         sent = send(mails, dry_run=args.print_only)
         print(f"{len(mails)} of {len(people)} reviewer(s) had something to act on; {sent} email(s) sent.")
-        return 0
-
-    if args.logs:
-        from src.export.logs import collect
-        folder = args.out if args.out != "proposals.csv" else "data/evaluation"
-        for name, n in collect(folder).items():
-            print(f"Wrote {folder}/{name}: {n} row(s)")
         return 0
 
     if args.numbers:
@@ -289,22 +276,6 @@ def main(argv: list[str] | None = None) -> int:
         for r in rows:
             marks = " ".join(m for m in ("waiting", "test", "evaluator", "admin") if r.get(m))
             print(f"{r['email']:40} {r['name']:24} {marks:22} last sign-in {str(r['last_sign_in'])[:16] or 'never'}")
-        return 0
-
-    if args.requests:
-        from src.shared.supabase_client import get_client
-        rows = (get_client().from_("access_requests").select("id, name, email, message, asked_at, handled")
-                .order("asked_at").execute().data or [])
-        open_rows = [r for r in rows if not r["handled"]]
-        if not open_rows:
-            print(f"No open access requests ({len(rows)} handled).")
-            return 0
-        for r in open_rows:
-            print(f"#{r['id']}  {r['asked_at'][:16]}  {r['name']} <{r['email']}>")
-            if r.get("message"):
-                print(f"      {r['message']}")
-        print("Create the account under Authentication > Users, then mark the row handled:")
-        print(f"  update access_requests set handled = true where id in ({', '.join(str(r['id']) for r in open_rows)});")
         return 0
 
     if args.package:

@@ -21,17 +21,13 @@ create table if not exists public.candidate_matches (
   confidence        text,
   reasoning         text,
   field_updates     jsonb not null default '[]'::jsonb,
-  inverse_updates   jsonb not null default '[]'::jsonb,
   re_query_term     text,
   duplicate_uids    jsonb not null default '[]'::jsonb,
   -- What retrieval offered, kept for auditing a decision after the fact.
   candidates        jsonb not null default '[]'::jsonb,
-  applied           boolean not null default false,
   created_at        timestamptz not null default now()
 );
 
 create index if not exists candidate_matches_extracted on public.candidate_matches (extracted_id);
-create index if not exists candidate_matches_pending
-  on public.candidate_matches (id) where applied = false;
 
 grant select, insert, update, delete on public.candidate_matches to service_role;

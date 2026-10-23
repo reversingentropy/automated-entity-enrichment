@@ -304,9 +304,11 @@ savings against human effort".
 - By the desk, automatically: `seconds` on every decision (from the card
   coming onto the desk to the stamp, across visits); `edits`, `dropped`,
   `foundBySearch`, `note` on every label; `at` timestamps.
-- By each reviewer, weekly, in the box on the desk (`manual_log`):
-  `week_start, minutes, changes`: minutes spent reading the news the old
-  way, changes made by hand. Without this there is no manual time figure.
+- By each reviewer, weekly, in the weekly tab of the logs spreadsheet
+  (`python -m src.eval sheets logs` makes it): `week_start, minutes,
+  changes`: minutes spent reading the news the old way, changes made by
+  hand. Without this there is no manual time figure. (The desk once had
+  boxes for this; nobody used them, and they were removed on 23 Oct 2026.)
 - Once at month one and once at the end: the **SUS** questionnaire (ten
   standard usability statements, 1 to 5). Five users is the classic n; the
   score is comparable across systems.
@@ -366,6 +368,6 @@ Read at month one, month three, and any day in between.
 
 Built: the desk records seconds, edits, found-by-search and notes on every
 decision; `reviews` and the collection command. To build: the three
-`src.eval sample` / `score` sheets, the `misses` and `manual_log` tables
-with their boxes on the desk, and `--metrics` with the manual-CSV join and
-the miss attribution.
+`src.eval sample` / `score` sheets, the `misses` table, and `--metrics`
+with the manual-CSV join (the logs spreadsheet's weekly tab) and the miss
+attribution.

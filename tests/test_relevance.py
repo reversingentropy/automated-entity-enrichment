@@ -73,8 +73,7 @@ def test_chunked_covers_every_item_without_overlap():
 def test_a_page_that_failed_three_times_is_not_extraction_work():
     """
     An unreadable page used to be retried every night forever. The failure
-    is counted on the row by Job 2, and after three the queue skips it; a row
-    someone gave text by hand is always work.
+    is counted on the row by Job 2, and after three the queue skips it.
     """
     from src.job2_extraction.fetch import MAX_ATTEMPTS
     import inspect
@@ -82,18 +81,19 @@ def test_a_page_that_failed_three_times_is_not_extraction_work():
     src = inspect.getsource(fetch)
     assert MAX_ATTEMPTS == 3 and "fetch_attempts" in src
     readable = [l for l in src.splitlines() if "return [r for r in rows if" in l][0]
-    assert "text" in readable and "MAX_ATTEMPTS" in readable
+    assert "fetch_attempts" in readable and "MAX_ATTEMPTS" in readable
 
 
 def test_relevance_reads_no_page_and_keeps_no_text():
-    """Job 1 judges from the title and description; the body is Job 2's, and
-    is never written to the table."""
+    """Job 1 judges from the title and description; the body is Job 2's, read
+    and dropped: the table has no column for it (sql/21)."""
     import inspect
     from src.job1_relevance import fetch as f1, __main__ as m1
     from src.job2_extraction import update as u2
     assert "text" not in f1.UNSCORED_COLUMNS
     assert "prefetch" not in inspect.getsource(m1) and "scrape" not in inspect.getsource(m1)
-    assert '"text": None' in inspect.getsource(u2.save)
+    from src.job2_extraction import fetch as f2
+    assert "text" not in inspect.getsource(u2.save) and "text" not in f2.QUEUE_COLUMNS
 
 
 def test_extraction_prompt_carries_the_publication_date():

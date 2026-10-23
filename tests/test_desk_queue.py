@@ -55,7 +55,7 @@ def db():
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         run_sql("insert into auth.users (id) values " + ",".join(f"('{u}')" for u in (A, B, C, TESTER)))
         # sql/20 after the accounts above, as on the live project: those were made before it, so they are approved
-        for f in ("sql/20_self_signup.sql", "sql/20_self_signup.sql"):
+        for f in ("sql/20_self_signup.sql", "sql/20_self_signup.sql", "sql/21_drop_unused.sql", "sql/21_drop_unused.sql"):
             run_sql((ROOT / f).read_text(encoding="utf-8"))
         yield
     finally:
@@ -423,3 +423,15 @@ def test_only_a_waiting_account_can_be_declined_and_accounts_made_by_key_do_not_
     sign_up(NEWCOMER, "test2@nlb.gov.sg", "Tester", {"test": True})                                     # --account --test
     assert call(NEWCOMER, "is_waiting") is False
     run_sql(f"delete from auth.users where id = '{NEWCOMER}';")
+
+
+def test_the_unused_columns_and_tables_are_gone_and_a_function_naming_one_stops_the_drop(db):
+    gone = run_sql("select count(*) from information_schema.tables where table_schema = 'public' "
+                   "and table_name in ('access_requests', 'change_log', 'weekly_log');")
+    assert gone == "0"
+    run_sql("create function public.still_logs() returns int language sql as $$ select 1 /* weekly_log */ $$;")
+    try:
+        with pytest.raises(RuntimeError, match="still named by still_logs"):
+            run_sql((ROOT / "sql/21_drop_unused.sql").read_text(encoding="utf-8"))
+    finally:
+        run_sql("drop function public.still_logs();")

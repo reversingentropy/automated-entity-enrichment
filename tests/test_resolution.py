@@ -27,7 +27,7 @@ MATCH = {
     "resolution_action": "MATCH_AND_UPDATE", "matched_id": "18606295",
     "confidence": "high", "reasoning": "exact match",
     "field_updates": [{"field": "Description", "strategy": "REPLACE", "value": "x"}],
-    "inverse_updates": [], "re_query_term": None, "duplicate_db_ids": [],
+    "re_query_term": None, "duplicate_db_ids": [],
 }
 
 

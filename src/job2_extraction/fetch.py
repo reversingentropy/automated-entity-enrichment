@@ -8,9 +8,8 @@ TABLE = "article"
 # Job 2's work queue: Job 1 judged the article relevant, and extraction has not
 # been done yet. `processed_extraction` only flips to True once entities are
 # safely inserted, so a failed run leaves the article here for the next one.
-# `text` is only ever present on a row someone filled by hand; the job fetches
-# the page itself and does not keep it.
-QUEUE_COLUMNS = "id, url, title, text, pubDate"
+# The job fetches the page itself and does not keep it.
+QUEUE_COLUMNS = "id, url, title, pubDate"
 FETCH_COLUMNS = ", fetch_error, fetch_attempts"   # sql/06
 MAX_ATTEMPTS = 3
 
@@ -39,7 +38,7 @@ def fetch_unextracted_articles(limit: int | None = None) -> list[dict]:
         # job. Before the count existed such rows failed again every night.
         # Filtered here rather than in the query so the job still runs before
         # sql/06 has been applied.
-        return [r for r in rows if r.get("text") or (r.get("fetch_attempts") or 0) < MAX_ATTEMPTS]
+        return [r for r in rows if (r.get("fetch_attempts") or 0) < MAX_ATTEMPTS]
 
     if limit is not None:
         return readable(build().limit(limit).execute().data or [])

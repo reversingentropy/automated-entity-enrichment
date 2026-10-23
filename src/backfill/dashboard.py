@@ -36,12 +36,11 @@ from src.shared.supabase_client import get_client
 MAX_BYTES = 6_000_000
 
 ARTICLE_COLUMNS = ["url", "title", "description", "category", "pubDate", "relevant", "reason",
-                   "text", "processed_extraction", "backfill"]
+                   "processed_extraction", "backfill"]
 ENTITY_FIELDS = ["article_id", "entity_name", "entity_name_en", "entity_type", "summary",
                  "evidence", "evidence_en", "fields", "confidence", "backfill"]
 MATCH_COLUMNS = ["extracted_id", "resolution_action", "matched_uid", "confidence", "reasoning",
-                 "field_updates", "inverse_updates", "re_query_term", "duplicate_uids",
-                 "candidates", "applied"]
+                 "field_updates", "re_query_term", "duplicate_uids", "candidates"]
 
 
 def cell(value):
@@ -125,7 +124,7 @@ def articles(csvs: list[str], out: Path | str) -> dict:
             "url": row["url"], "title": row.get("title") or None,
             "description": row.get("description") or None, "category": row.get("category") or None,
             "pubDate": published, "relevant": True, "reason": row.get("reason") or None,
-            "text": None, "processed_extraction": True, "backfill": True,
+            "processed_extraction": True, "backfill": True,
         })
     files = write_parts(Path(out), "import-articles", ARTICLE_COLUMNS, rows)
     return {"valid": len(kept), "new": len(rows), "already_present": present,
@@ -186,8 +185,6 @@ def resolutions(csvs: list[str], out: Path | str,
                 continue
             with contextlib.redirect_stdout(io.StringIO()):
                 built = match_rows(resp, ents, {e["id"]: offered.get(e["id"], []) for e in ents}, search=search)
-            for r in built:
-                r["applied"] = False
             rows.extend(built)
             closed.extend(e["id"] for e in ents)
             n_articles += 1

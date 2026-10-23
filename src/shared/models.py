@@ -76,13 +76,6 @@ class FieldUpdate(BaseModel):
     value: str
 
 
-class InverseUpdate(BaseModel):
-    target_db_id: str
-    field: str
-    strategy: Literal["INSERT_RELATION"]
-    value: str
-
-
 class ResolutionResult(BaseModel):
     """One entity's resolution. The prompt returns one of these per entity."""
 
@@ -101,7 +94,6 @@ class ResolutionResult(BaseModel):
     confidence: Literal["high", "medium", "low"]
     reasoning: str
     field_updates: list[FieldUpdate]
-    inverse_updates: list[InverseUpdate] = Field(default_factory=list)
     re_query_term: Optional[str] = None
     duplicate_db_ids: list[str] = Field(default_factory=list)
 

@@ -11,9 +11,8 @@ laptop, and would run unchanged from a static host later.
 
 1. **Run `sql/11_desk_online.sql`** in the SQL editor. It turns on row level
    security on every table (the page carries the public anon key, and RLS is
-   what keeps that key from reading anything), creates `deck`, `reviews`,
-   `claims` and `access_requests`, the two claim functions, and the private
-   `desk` bucket.
+   what keeps that key from reading anything), creates `deck`, `reviews`
+   and `claims`, the two claim functions, and the private `desk` bucket.
 
    The news feed is Job 0 in this repository and writes `article` with the
    service role key, which RLS does not apply to.
@@ -156,16 +155,8 @@ python -m src.export --holds                    # who has which card
 python -m src.export --release glenn@nlb.gov.sg # back in the pile
 ```
 
-Someone without an account sees **No account? Ask for one** on the sign-in
-screen. The request lands in `access_requests`:
-
-```bash
-python -m src.export --requests
-```
-
-lists the open ones with the SQL to mark them handled once the account is
-made. There is no email from the system; the person making the account
-writes to them.
+Someone without an account makes one on the sign-in screen, and it waits
+for approval (step 3 above). There is no email from the system.
 
 ## The week's changes, for the reviewers
 
@@ -182,22 +173,13 @@ applies their own rows in TTE by hand and sets **Status** to Done. A record
 reported by several articles is one card, so each change appears once. Test
 accounts are left out.
 
-## Your sheet: done in TTE, and the evaluation's logs
+## Your sheet: done in TTE
 
 Each approved record on **Your sheet** has a **mark done in TTE** button: press
 it once the change is made in TTE. It is saved with the decision, so the
 weekly file's Status column comes out already saying Done, and the team page
-counts it.
-
-Below the sheet are the evaluation's two logs (`docs/evaluation.md`): **This
-week**, the minutes spent and changes found, by the way you worked; and **A
-change you found**, one row per change or new record. The sheet shows no
-cards, so someone working by hand can use it without seeing the app's
-proposals. Only the reviewer and the evaluation see these; collect them with
-
-```bash
-python -m src.export --logs            # data/evaluation/change-log.csv and weekly-log.csv
-```
+counts it. (The evaluation's weekly minutes and hand-found changes are kept in
+its logs spreadsheet, `python -m src.eval sheets logs`, not on the desk.)
 
 ## The team page
 
@@ -243,8 +225,6 @@ folder, as before.
 | `deck` | one row per card | reviewers read; the nightly job writes |
 | `reviews` | one decision per proposal, the whole label | reviewers read all; written only through `decide` / `mark_done` (sql/15) |
 | `claims` | who has which card open, and since when | reviewers read; written only through `take_next` / `claim_card` / `renew_card` / `release_card` / `decide` |
-| `access_requests` | who asked for an account | anyone may insert; only the service role reads |
-| `change_log`, `weekly_log` | the evaluation's two logs | each reviewer their own; the service role all |
 | bucket `desk/desk.json` | search index, NPT map, noted list, the pipeline's status | reviewers read |
 
 The browser keeps a copy of a reviewer's own decisions under their account,

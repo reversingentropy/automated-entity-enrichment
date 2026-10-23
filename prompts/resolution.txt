@@ -202,9 +202,6 @@ simply new. An empty list is a valid and common answer.
       "field_updates": [
         { "field": "Exact Allowed Field Name", "strategy": "APPEND | MERGE | REPLACE | INSERT_RELATION", "value": "..." }
       ],
-      "inverse_updates": [
-        { "target_db_id": "...", "field": "Exact Allowed Field Name", "strategy": "INSERT_RELATION", "value": "..." }
-      ],
       "re_query_term": "suggested string or null",
       "duplicate_db_ids": []
     }

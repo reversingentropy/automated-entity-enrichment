@@ -75,5 +75,5 @@ def save(article_id: int, rows: list[dict]) -> None:
         client.from_(ENTITY_TABLE).insert(rows).execute()
 
     client.from_(ARTICLE_TABLE).update(
-        {"processed_extraction": True, "text": None}
+        {"processed_extraction": True}
     ).eq("id", article_id).execute()

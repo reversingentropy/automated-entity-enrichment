@@ -61,23 +61,17 @@ def main(argv: list[str] | None = None) -> int:
         title = article.get("title") or ""
         bar.write(f"[{index}/{len(articles)}] id={article['id']} {title[:66]}")
 
-        # Text on the row means a person supplied it by hand (a paywalled
-        # page, say); otherwise the page is read now and kept only for the
-        # seconds between here and the write.
-        text = article.get("text")
-        if text:
-            bar.write(f"  using text from the row ({len(text):,} chars)")
-        else:
-            try:
-                text = scrape(article["url"])
-            except ScrapeError as exc:
-                attempts = article.get("fetch_attempts") or 0
-                bar.write(f"  Could not read the page (attempt {attempts + 1} of "
-                          f"{MAX_ATTEMPTS}): {exc}")
-                if not args.dry_run:
-                    record_fetch_failure(article["id"], attempts, str(exc))
-                failed += 1
-                continue
+        # The page is read now and kept only for the seconds between here and the write.
+        try:
+            text = scrape(article["url"])
+        except ScrapeError as exc:
+            attempts = article.get("fetch_attempts") or 0
+            bar.write(f"  Could not read the page (attempt {attempts + 1} of "
+                      f"{MAX_ATTEMPTS}): {exc}")
+            if not args.dry_run:
+                record_fetch_failure(article["id"], attempts, str(exc))
+            failed += 1
+            continue
 
         try:
             response = extract(title, text, article.get("pubDate"))

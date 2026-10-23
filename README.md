@@ -158,14 +158,15 @@ editor: `01` to `05` create the tables, the retrieval function and the
 resolution queue; `06` to `10` are the later migrations (body fetch,
 recorded CREATE_NEW, the dropped claim function, the backfill flag, the
 article subject); `11` is the online desk (row level security everywhere,
-the deck, reviews, claims and access-request tables, the bucket); `12` is
-the field test (which model answered, the evaluation's two logs); `13` the
+the deck, reviews and claims tables, the bucket); `12` is
+the field test (which model answered); `13` the
 desk's record lookup; `14` duplicate articles; `15` the desk's queue (holds
 that lapse after an hour, decisions saved only through `decide`); `16` its
 four groups; `17` closes the article table to the page's key; `18` adds
 Berita Harian and Tamil Murasu to the feeds; `19` the evaluation's labelling
 page; `20` lets people make their own account, which waits for an admin's
-approval (docs/online.md). Each ends
+approval (docs/online.md); `21` drops what never held anything (the old
+request form's table, the two log tables, three empty columns). Each ends
 with an explicit `grant ... to service_role`, which Supabase does not always
 do for you.
 
@@ -187,12 +188,10 @@ python -m src.eval online pull                          # their labels back as r
 python -m src.export --package data/dist/tte-desk.zip   # the review desk, as a file
 python -m src.export --publish                          # the deck to the database, nightly
 python -m src.export --site data/dist/site              # the online desk's page, served locally
-python -m src.export --requests                         # who has asked for an account
 python -m src.export --mark-evaluator EMAIL             # give an account the Evaluation page
 python -m src.export --reviews data/reviews/            # collect what they decided (or --reviews table)
 python -m src.export --weekly                           # the week's approved changes, as the reviewers' Excel file
 python -m src.export --notify [--print-only]            # the daily email, only to reviewers with something to do
-python -m src.export --logs                             # the evaluation's change and weekly logs, as CSVs
 python -m src.export                                    # proposals as a CSV
 python -m src.backfill collect all                      # the archives, see docs/backfill.md
 ```

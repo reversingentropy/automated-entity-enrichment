@@ -328,11 +328,9 @@
 
   /* sign-in, tutorial sheet, end of shift */
   .signin{display:flex;flex-direction:column;gap:.8rem;max-width:30rem;margin:2rem auto 0}
-  .signin input[type=email],.signin input[type=password],.request input,.request textarea{font-family:inherit;font-size:1rem;padding:.6rem .8rem;border-radius:4px;
+  .signin input[type=email],.signin input[type=password]{font-family:inherit;font-size:1rem;padding:.6rem .8rem;border-radius:4px;
           border:1.5px solid var(--ui-dim);background:var(--sheet);color:var(--sheet-ink);width:100%}
   .signin a{color:var(--ui-faint)}
-  .request{display:flex;flex-direction:column;gap:.5rem;padding:.8rem;border-radius:4px;background:rgba(0,0,0,.12)}
-  .request textarea{min-height:3.4rem}
   .signin input[type=text],.signin input:not([type]){font-family:inherit;font-size:1.05rem;padding:.7rem .8rem;border-radius:4px;
                 border:1.5px solid var(--ui-dim);background:var(--sheet);color:var(--sheet-ink)}
   .langs{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center}
@@ -387,12 +385,6 @@
   .done-toggle{font:inherit;font-size:.74rem;padding:.2rem .45rem;border-radius:3px;border:1.5px solid #B8AE9C;
                background:#FFFDF8;color:#4A4338;cursor:pointer;white-space:nowrap}
   .done-toggle.on{background:#E3EEDC;border-color:#7FA36A;color:#2F5A1E}
-  .evaluation{margin-top:1.6rem;display:flex;flex-direction:column;gap:.7rem}
-  .evaluation h2{font-size:1.1rem;margin:0}
-  .evaluation label{display:flex;flex-direction:column;gap:.2rem;font-size:.82rem;color:#4A4338}
-  .request select{font-family:inherit;font-size:1rem;padding:.5rem .6rem;border-radius:4px}
-  .form-row{display:flex;gap:.6rem;flex-wrap:wrap}
-  .form-row label{flex:1;min-width:9rem}
 </style>
 
 <div class="wrap">
@@ -2159,38 +2151,10 @@ function authForm(stage) {
   const foot = el("p", "hint");
   const what = el("a", null, "What this is and where the proposals come from");
   what.href = "pipeline.html"; what.target = "_blank"; what.rel = "noopener noreferrer";
-  const ask = el("button", "quiet", "No account? Ask for one");
-  ask.onclick = () => { asking = !asking; render(); };
-  foot.append(what, " · ", ask);
+  foot.append(what);
   box.append(foot);
-  if (asking) box.append(requestForm());
   stage.append(box);
   setTimeout(() => email.focus(), 0);
-}
-
-let asking = false, askedOk = false;
-function requestForm() {
-  const f = el("div", "request");
-  f.append(el("span", "edit-label", "Ask for an account"));
-  if (askedOk) {
-    f.append(el("p", "hint", "Sent. You will hear back by email once the account is made."));
-    return f;
-  }
-  const name = document.createElement("input"); name.placeholder = "Your name"; name.autocomplete = "name";
-  const email = document.createElement("input"); email.type = "email"; email.placeholder = "Your work email"; email.autocomplete = "email";
-  const why = document.createElement("textarea"); why.placeholder = "Anything the person making the account should know (optional)";
-  const err = el("p", "hint amber", "");
-  const send = el("button", "stamp amber");
-  send.append(el("span", "stamp-face", "Send the request"));
-  send.onclick = async () => {
-    if (!name.value.trim() || !/@/.test(email.value)) { err.textContent = "A name and an email address are needed."; return; }
-    if (!sb) { err.textContent = "The page could not reach the database."; return; }
-    const { error } = await sb.from("access_requests").insert({ name: name.value.trim(), email: email.value.trim(), message: why.value.trim() || null });
-    if (error) { err.textContent = "That did not go through. Try again in a moment."; return; }
-    askedOk = true; render();
-  };
-  f.append(name, email, why, err, send);
-  return f;
 }
 
 async function signedIn(user) {
@@ -2436,7 +2400,6 @@ function sheetPage(stage) {
   renderLedger();
   d.append(list);
   d.append(downloadRow());
-  if (sb && me && !testing) d.append(evaluationForms());
   stage.append(d);
 }
 
@@ -2540,78 +2503,6 @@ async function markDone(c, on) {
                                                               verdict: labels[pid].verdict, decision: labels[pid] }));
   render();
   try { await sb.from("reviews").upsert(rows, { onConflict: "pid" }); } catch (e) {}
-}
-
-// The evaluation's two logs (docs/evaluation.md). On the sheet page, where no
-// card is shown, so someone working by hand can use them without seeing the
-// app's proposals. Only the reviewer and the evaluation see what is entered.
-const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const mondayOf = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-function field(label, input) { const l = el("label", null, label); l.append(input); return l; }
-function inputOf(type, value) { const i = document.createElement("input"); i.type = type; i.value = value == null ? "" : value; return i; }
-function selectOf(options, value) {
-  const s = document.createElement("select");
-  options.forEach(([v, label]) => { const o = document.createElement("option"); o.value = v; o.textContent = label; if (v === value) o.selected = true; s.append(o); });
-  s.value = value;
-  return s;
-}
-const WAYS = [["manual", "Reading the news by hand"], ["app", "Using the desk"]];
-function evaluationForms() {
-  const box = el("div", "evaluation");
-  box.append(el("h2", null, "For the evaluation"));
-  box.append(el("p", "hint", "Only you and the evaluation see what you enter here."));
-
-  const week = el("form", "request");
-  week.append(el("b", null, "This week"));
-  const start = inputOf("date", isoDay(mondayOf(new Date())));
-  const way = selectOf(WAYS, "manual");
-  const minutes = inputOf("number"); minutes.min = "0"; minutes.placeholder = "minutes";
-  const changes = inputOf("number"); changes.min = "0"; changes.placeholder = "changes";
-  const r1 = el("div", "form-row"); r1.append(field("Week starting", start), field("How you worked", way));
-  const r2 = el("div", "form-row"); r2.append(field("Minutes spent", minutes), field("Changes identified", changes));
-  const weekSay = el("p", "hint", "");
-  const save = el("button", "stamp grey"); save.append(el("span", "stamp-face", "Save this week"));
-  week.append(r1, r2, save, weekSay);
-  week.onsubmit = async e => {
-    e.preventDefault();
-    if (minutes.value === "" || changes.value === "") { weekSay.textContent = "Fill in the minutes and the changes."; return; }
-    const { error } = await sb.from("weekly_log").upsert({ reviewer: me.id, week_start: isoDay(mondayOf(new Date(start.value))),
-      method: way.value, minutes: Number(minutes.value), changes: Number(changes.value) }, { onConflict: "reviewer,week_start,method" }) || {};
-    weekSay.textContent = error ? "Not saved: " + (error.message || "try again") : "Saved. Saving again for the same week replaces it.";
-  };
-
-  const log = el("form", "request");
-  log.append(el("b", null, "A change you found"));
-  const lway = selectOf(WAYS, "manual");
-  const link = inputOf("url"); link.placeholder = "https://...";
-  const entity = inputOf("text"); entity.placeholder = "as TTE names it, or the new name";
-  const uid = inputOf("text"); uid.placeholder = "if it is already in TTE";
-  const kindSel = selectOf([["amend", "Change to an existing record"], ["new", "A new record"]], "amend");
-  const fld = inputOf("text"); fld.placeholder = "e.g. Affiliations(groupName)";
-  const oldv = inputOf("text"); const newv = inputOf("text");
-  const day = inputOf("date", isoDay(new Date()));
-  const rows = [[field("How you found it", lway), field("Date", day)],
-                [field("Article", link)],
-                [field("TTE record", entity), field("TTE UID", uid)],
-                [field("Kind", kindSel), field("Attribute", fld)],
-                [field("Current value", oldv), field("New value", newv)]];
-  rows.forEach(r => { const row = el("div", "form-row"); r.forEach(x => row.append(x)); log.append(row); });
-  const logSay = el("p", "hint", "");
-  const add = el("button", "stamp grey"); add.append(el("span", "stamp-face", "Log this change"));
-  log.append(add, logSay);
-  log.onsubmit = async e => {
-    e.preventDefault();
-    if (!entity.value.trim()) { logSay.textContent = "Name the record first."; return; }
-    const { error } = await sb.from("change_log").insert({ reviewer: me.id, method: lway.value,
-      article_url: link.value.trim() || null, tte_entity: entity.value.trim(), tte_uid: uid.value.trim() || null,
-      kind: kindSel.value, field: fld.value.trim() || null, old_value: oldv.value.trim() || null,
-      new_value: newv.value.trim() || null, found_on: day.value || isoDay(new Date()) }) || {};
-    if (error) { logSay.textContent = "Not logged: " + (error.message || "try again"); return; }
-    logSay.textContent = `Logged: ${entity.value.trim()}.`;
-    [link, entity, uid, fld, oldv, newv].forEach(x => { x.value = ""; });
-  };
-  box.append(week, log);
-  return box;
 }
 
 function endOfShift(stage) {

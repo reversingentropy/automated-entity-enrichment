@@ -160,7 +160,7 @@ measured max similarity falls 1.00 → 0.78 → 0.68 by rank and then flattens a
 0.62, so candidates beyond the fifth are no likelier to be correct.
 
 Writes go to `candidate_matches` as *proposals*. Nothing mutates `entities`
-automatically; the `applied` column is there for a later review step.
+automatically; people decide them on the review desk.
 
 The adjudication does work that retrieval cannot. In testing it rejected an
 exact-similarity 1.00 name match (a different Jacqueline Loh, affiliated with
@@ -298,7 +298,7 @@ the right answer depends on policy you have not set yet.
 | `extracted_entities` | one row per entity found in an article; `resolved` is Job 3's queue |
 | `entities` | TTE authority records (~51,900), with `canonical_uid` |
 | `tte_imports` | ingestion ledger, keyed by filename + checksum |
-| `candidate_matches` | Job 3 resolution proposals; `applied` gates a review step |
+| `candidate_matches` | Job 3 resolution proposals, decided on the review desk |
 
 ## Design notes
 

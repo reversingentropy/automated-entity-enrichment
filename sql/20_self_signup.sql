@@ -63,8 +63,7 @@ grant execute on function public.is_test_account() to anon, authenticated, servi
 do $$
 declare t text;
 begin
-  foreach t in array array['deck', 'reviews', 'claims', 'change_log', 'weekly_log',
-                           'eval_items', 'eval_labels', 'eval_holds', 'eval_results'] loop
+  foreach t in array array['deck', 'reviews', 'claims', 'eval_items', 'eval_labels', 'eval_holds', 'eval_results'] loop
     if to_regclass('public.' || t) is not null then
       execute format('drop policy if exists "waiting accounts reach nothing" on public.%I', t);
       execute format('create policy "waiting accounts reach nothing" on public.%I as restrictive for all to authenticated '

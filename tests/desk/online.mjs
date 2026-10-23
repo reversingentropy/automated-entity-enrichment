@@ -9,8 +9,8 @@ import fs from "node:fs";
 // The stand-in. `deck` is filled once the page's practice cards exist, since
 // the real cards are cloned from them.
 const db = { deck: null, reviews: [{ pid: 903, card_key: "uid:r3", reviewer: "u2", decision: { verdict: "approve" } }],
-             claims: { "uid:r2": "u2", "uid:r4": "u1" }, rpcs: [], access_requests: [], conflicts: [], failClaim: null,
-             weekly_log: [], change_log: [], meta: null,
+             claims: { "uid:r2": "u2", "uid:r4": "u1" }, rpcs: [], conflicts: [], failClaim: null,
+             meta: null,
              // What was asked for, in order, and the gates a test can hold shut to
              // stand in for a slow connection.
              log: [], gate: null, deskGate: null };
@@ -43,12 +43,6 @@ const fake = {
       insert: async row => { db[table].push(row); return { data: row, error: null }; },
       // As the table does: one decision per proposal, a second refused whole.
       upsert: async (rows, opts) => {
-        if (table === "weekly_log") {
-          const r = rows;
-          const i = db.weekly_log.findIndex(x => x.reviewer === r.reviewer && x.week_start === r.week_start && x.method === r.method);
-          if (i >= 0) db.weekly_log[i] = r; else db.weekly_log.push(r);
-          return { data: r, error: null };
-        }
         db.conflicts.push(opts && opts.onConflict);
         if (rows.some(r => db.reviews.some(x => x.pid === r.pid && x.reviewer !== r.reviewer)))
           return { data: null, error: { code: "23505", message: "duplicate key value violates unique constraint" } };
@@ -106,14 +100,6 @@ const inputs = () => stage.all().filter(n => n.tagName === "INPUT");
   await settle();
   must(inputs().some(n => n.type === "email") && inputs().some(n => n.type === "password"), "an account sign-in, not a name box");
   must(stage.all().some(n => n.tagName === "A" && n.href === "pipeline.html"), "the explainer is a link away");
-  click("No account?");
-  const req = stage.querySelector(".request");
-  must(!!req, "someone without an account can ask for one");
-  req.all().find(n => n.tagName === "INPUT" && !n.type).value = "New Person";
-  req.all().find(n => n.tagName === "INPUT" && n.type === "email").value = "new@nlb.gov.sg";
-  req.all().find(n => n.tagName === "TEXTAREA").value = "Cataloguing, organisations";
-  click("Send the request"); await settle();
-  must(db.access_requests.length === 1 && db.access_requests[0].email === "new@nlb.gov.sg" && /Sent/.test(stage.querySelector(".request").textContent), "the request reaches the table and the screen says so");
   inputs().find(n => n.type === "email").value = "glenn@nlb.gov.sg";
   inputs().find(n => n.type === "password").value = "wrong";
   click("Sign in"); await settle();
@@ -178,19 +164,7 @@ const inputs = () => stage.all().filter(n => n.tagName === "INPUT");
   doneBtn.click(); await settle();
   must(db.reviews.some(r => r.reviewer === "u1" && r.decision.done) && /done in TTE/.test(stage.textContent),
        "done in TTE is saved with the decision");
-  const forms = stage.all().filter(n => n.tagName === "FORM");
-  must(forms.length === 2, "the sheet carries the evaluation's two logs");
-  const inputsOf = f => f.all().filter(n => n.tagName === "INPUT");
-  const [, weekMinutes, weekChanges] = inputsOf(forms[0]);
-  weekMinutes.value = "140"; weekChanges.value = "6";
-  await forms[0].onsubmit({ preventDefault() {} }); await settle();
-  must(db.weekly_log.length === 1 && db.weekly_log[0].minutes === 140 && db.weekly_log[0].method === "manual"
-       && db.weekly_log[0].reviewer === "u1", "this week's minutes and changes are saved");
-  const log = inputsOf(forms[1]);   // date, article, record, uid, attribute, current, new
-  log[1].value = "https://x/khaw"; log[2].value = "Khaw Boon Wan"; log[4].value = "Affiliations(groupName)"; log[6].value = "SPH Media Trust";
-  await forms[1].onsubmit({ preventDefault() {} }); await settle();
-  must(db.change_log.length === 1 && db.change_log[0].tte_entity === "Khaw Boon Wan" && db.change_log[0].method === "manual"
-       && db.change_log[0].kind === "amend", "a change found by hand is logged");
+  must(!stage.all().some(n => n.tagName === "FORM"), "the sheet carries no log forms: the evaluation keeps its logs in a spreadsheet");
   byId.sheet.click(); await settle();
 
   // The team page: everyone's progress and the pipeline's, no one's own numbers.

@@ -44,15 +44,14 @@ file an issue against it.
  │  article ──▶ extracted_entities ──▶ candidate_matches               │
  │  entities (TTE mirror) ◀── load_tte (nightly, new uploads only)    │
  │  deck ──▶ claims / reviews                                          │
- │  access_requests                                                    │
  └───────────────────┬─────────────────────────────┬───────────────────┘
                       │ anon key (RLS-gated)        │ authenticated (Auth session + RLS)
                       ▼                              ▼
         ┌──────────────────────────┐    ┌─────────────────────────────┐
         │ desk page, signed out      │    │ desk page, signed in         │
-        │ - insert `access_requests`  │    │ - read deck / reviews / claims│
-        │   (length-checked by RLS)   │    │ - take_next, decide and the   │
-        │ - nothing else             │    │   other queue functions only  │
+        │ - sign in, or make an      │    │ - read deck / reviews / claims│
+        │   account that waits for   │    │ - take_next, decide and the   │
+        │   approval (sql/20)        │    │   other queue functions only  │
         └──────────────────────────┘    └───────────────┬─────────────┘
                                                           │ authenticated (Storage RLS)
                                                           ▼
@@ -85,13 +84,10 @@ it, and the desk shows it the deck read-only.
 | `extracted_entities` | `id`, `article_id → article` | Job 2 (delete-then-insert per article) | `entity_name`, `entity_name_en`, `entity_type` (8-way check), `fields` jsonb, `role` (subject/mentioned, null before `sql/10`), `resolved`, `backfill`, `extraction_model` |
 | `entities` | `uid` (TTE's own Key UID) | `load_tte`, nightly when a new export is uploaded | `fields` jsonb (pivoted from TTE's EAV export), `canonical_uid → entities.uid` (precomputed at load), `is_active` (false only for a removed record something still points at), `language`, `vocabulary` |
 | `tte_imports` | `filename` | `load_tte` | `checksum`, `snapshot` date, `rows_loaded` -- the ingestion ledger |
-| `candidate_matches` | `id`, `extracted_id → extracted_entities` | Job 3 | `resolution_action` (5-way check, `CREATE_NEW` written explicitly since `sql/07`), `matched_uid → entities`, `field_updates`/`inverse_updates` jsonb, `candidates` jsonb (what retrieval offered, kept for audit), `resolution_model`, `applied` (**defined, never set true by any code path today**) |
+| `candidate_matches` | `id`, `extracted_id → extracted_entities` | Job 3 | `resolution_action` (5-way check, `CREATE_NEW` written explicitly since `sql/07`), `matched_uid → entities`, `field_updates` jsonb, `candidates` jsonb (what retrieval offered, kept for audit), `resolution_model` |
 | `deck` | `key` (`uid:<record>` or `new:<type>:<name>`) | `publish`, full rebuild nightly | `card` jsonb -- keyed so a card that gains a new article keeps its row and its history; kept by the database for the queue: `newest`, `langs`, `grp`, `ord` (generated from the card) and `settled` (every proposal finally decided, kept by triggers) |
 | `reviews` | `id`; `unique(pid)` -- one decision per proposal | `decide()` and `mark_done()` only (`sql/15`) | `card_key`, `reviewer → auth.users`, `verdict`, `decision` jsonb |
 | `claims` | `card_key` | `take_next()`, `claim_card()`, `renew_card()`, `release_card()`, `decide()` | `reviewer → auth.users`, `claimed_at`; a hold not renewed for 60 minutes has lapsed, and one reviewer holds at most one record |
-| `change_log` | `id` | a reviewer, from Your sheet | the evaluation's log of changes found (method, record, uid, kind, attribute, old and new value); each reviewer reads and writes only their own |
-| `weekly_log` | `id`; `unique(reviewer, week_start, method)` | a reviewer, from Your sheet | minutes and changes per week and way of working; own rows only |
-| `access_requests` | `id` | the sign-in screen's request form (anon) | `name`, `email`, `message`, `handled`; the only thing the anon key may write outside `reviews`, and it cannot read the table back |
 
 `entities.fields` is the one deliberate denormalisation: TTE ships EAV (one
 row per attribute), and the loader pivots each entity's rows into a single
@@ -117,11 +113,9 @@ extracted_entities row(s)              (zero or more -- one per entity Job 2 kep
                                                                      │
 candidate_matches row                  (one per entity that needs one -- CREATE_NEW
                                          is written explicitly, not implied by absence)
-  .applied                                     false ── nothing ever sets this true
 
 deck row                               rebuilt from scratch every night by `publish`,
-                                        from every candidate_matches + entities row,
-                                        independent of `.applied`
+                                        from every candidate_matches + entities row
      │
      ▼ a reviewer opens the card
 claims row                             take_next() deals it; one per reviewer; lapses after
@@ -137,10 +131,9 @@ CSV, or a read of the `reviews` table  nothing writes back to TTE; a human appli
 Two things worth being exact about, because prose elsewhere in this repo
 states them more gently: a false negative in `article.relevant` is not
 "usually fine", it is **permanent** -- the row leaves the `IS NULL` queue and
-no later stage ever sees it again. And `candidate_matches.applied` is not a
-half-built feature with a TODO; it is a column three migrations have
-grown around that no code path writes. Reading it as "gates something" would
-be wrong.
+no later stage ever sees it again. Nothing marks a proposal as having
+reached TTE either: an `applied` column meant for that was never written,
+and `sql/21` dropped it.
 
 ## Stage contracts
 
@@ -206,8 +199,8 @@ is the database's grants and policies, not the host.
 
 Everything in this section is a real, current limitation, not a hedge:
 
-- `candidate_matches.applied` is unused -- nothing marks a proposal as
-  having reached TTE, because nothing writes to TTE automatically at all.
+- Nothing marks a proposal as having reached TTE, because nothing writes to
+  TTE automatically at all.
 - The zip still carries the first desk and the online page is the second;
   reviewers on a zip cannot see or collide with reviewers online, because
   the zip has no holds at all.
