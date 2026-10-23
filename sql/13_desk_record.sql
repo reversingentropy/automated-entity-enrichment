@@ -6,6 +6,7 @@
 -- The page now asks for the rest when the record is chosen. It gets the same
 -- fields a candidate card carries, in the same order, as key/value pairs.
 -- Signed-in reviewers only; the table itself stays closed to them.
+-- 20_self_signup.sql redefines it so that an account waiting for approval gets nothing: rerun 20 after this.
 create or replace function public.desk_record(record_uid text)
 returns jsonb
 language sql

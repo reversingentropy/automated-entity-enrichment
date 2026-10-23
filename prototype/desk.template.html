@@ -378,6 +378,7 @@
   .signin .fld input{display:block;width:100%;box-sizing:border-box;margin-top:.25rem;padding:.55rem .6rem;border:1.5px solid #BDB6A4;border-radius:8px;font:inherit}
   .signin .err{color:#B3261E;font-size:.88rem;margin:.4rem 0}
   .signin .alt{margin:.9rem 0 0;font-size:.88rem;color:var(--ink2)}
+  .signin .sub + .go{margin-top:1.1rem}
   .signin .alt button,.who button{background:none;border:none;padding:0;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
   .notice.acct{text-align:left}
   .acctrow{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between;padding:.45rem 0 0;margin-top:.45rem;border-top:1px solid rgba(0,0,0,.1)}
@@ -1209,7 +1210,7 @@ function signInPage(message) {
       <label class="fld">Password<input id="pw" type="password" autocomplete="current-password" required></label>
       ${message ? `<p class="err">${esc(message)}</p>` : ""}
       <button class="go" data-act="signin">Sign in</button>
-      <p class="alt">No account yet? <button type="button" data-act="signup">Make one</button></p></form>`
+      <p class="alt">No account yet? <button type="button" data-act="signup">Make one</button><br>Forgot your password? Ask Ashwin for a new one.</p></form>`
     : `<div class="welcome small" role="dialog"><h2>TTE Review Desk</h2><p class="sub">The desk cannot reach its database. Check the internet connection and reload the page.</p></div>`;
   document.body.appendChild(v);
   const em = v.querySelector("#em"); if (em) em.focus();

@@ -163,7 +163,9 @@ the field test (which model answered, the evaluation's two logs); `13` the
 desk's record lookup; `14` duplicate articles; `15` the desk's queue (holds
 that lapse after an hour, decisions saved only through `decide`); `16` its
 four groups; `17` closes the article table to the page's key; `18` adds
-Berita Harian and Tamil Murasu to the feeds. Each ends
+Berita Harian and Tamil Murasu to the feeds; `19` the evaluation's labelling
+page; `20` lets people make their own account, which waits for an admin's
+approval (docs/online.md). Each ends
 with an explicit `grant ... to service_role`, which Supabase does not always
 do for you.
 

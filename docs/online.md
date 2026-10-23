@@ -24,49 +24,68 @@ laptop, and would run unchanged from a static host later.
    finds by search. Then `sql/14` to `sql/17`: duplicate articles, the
    desk's queue, its four groups, and `article` and `rss_feeds` closed to
    the page's key (they had a policy and a grant from before this
-   repository). Then `sql/18`: the Malay and Tamil feeds. Every file is
-   safe to re-run.
+   repository). Then `sql/18`: the Malay and Tamil feeds; `sql/19`: the
+   evaluation's labelling; `sql/20`: accounts made on the page wait for
+   approval. Every file is safe to re-run.
 
-2. **Turn sign-ups off**: Authentication > Sign In / Providers > "Allow new
-   users to sign up" off. Accounts are made by hand. This matters more than
-   anything in the SQL: every signed-in account is treated as a reviewer, so
-   with sign-ups on, anyone with an email address can read the deck and save
-   decisions. It was found still on on 15 Oct 2026.
+2. **Sign-ups stay off until `sql/20` has run**: Authentication > Sign In /
+   Providers > "Allow new users to sign up". Without `sql/20`, every
+   signed-in account is treated as a reviewer, so with sign-ups on, anyone
+   with an email address could read the deck and save decisions (it was
+   found on on 15 Oct 2026, before `sql/20` existed). With it, a new
+   account reaches nothing until approved, and sign-ups can go on (step 3).
 
-3. **Create the accounts**, one line each, with the service role key
-   already in `.env`:
+3. **Accounts.** Colleagues make their own on the sign-in screen ("No
+   account yet? Make one"): name, email, and a password they choose. The
+   account is made at once but waits, reaching nothing, until an admin
+   approves it (`sql/20_self_signup.sql`). Supabase's free email reaches
+   only the project's own team, so no confirmation link can prove who owns
+   an address: check with the person before approving. Once signed in, a
+   reviewer can change their own password from the line at the top of the
+   page.
+
+   To set it up, once: run `sql/20_self_signup.sql`; in the dashboard,
+   Authentication > Sign In / Providers, turn "Allow new users to sign up"
+   on, and under Email turn "Confirm email" off; then make your own account
+   the admin and sign in again:
 
    ```bash
-   python -m src.export --account glenn@nlb.gov.sg "Glenn Hong"
+   python -m src.export --mark-admin you@example.com
+   ```
+
+   Waiting accounts then show on the admin's home page and Team page, each
+   with Approve and Decline. Decline removes the account, and that email can
+   sign up again. `python -m src.export --approve EMAIL` approves from the
+   command line, and `--accounts` marks who is waiting.
+
+   Accounts can still be made directly, approved as they are made:
+
+   ```bash
+   python -m src.export --account someone@nlb.gov.sg "Their Name"
    python -m src.export --account test@nlb.gov.sg "Test account" --test
-   python -m src.export --accounts
    ```
 
    The password is generated and printed once; pass it on in person or by
    message, and keep no copy. Add `--password` to type one yourself instead:
-   it is asked twice at a hidden prompt and never printed.
+   it is asked twice at a hidden prompt and never printed. Supabase stores
+   only a hash, so a forgotten password is replaced rather than looked up:
+   `python -m src.export --reset-password EMAIL` prints a new one (with
+   `--password`, you type it) and the old one stops working. The person can
+   then change it on the page. (Supabase's own "forgot password" email
+   cannot reach colleagues, for the reason above.)
 
-   The Supabase dashboard works too: Authentication > Users > Add user >
-   Create new user, with "Auto Confirm User" ticked. It asks only for the
-   email and password, so the desk shows the part of the email before the
-   @ until a name is set. Either set it, or mark a test account, in the SQL
-   editor:
+   The Supabase dashboard works too (Authentication > Users > Add user,
+   "Auto Confirm User" ticked), but such an account waits for approval like
+   one made on the page, and has no name until one is set; the desk shows
+   the part of the email before the @ until then. To set it, or to mark a
+   test account, in the SQL editor:
 
    ```sql
    update auth.users set raw_user_meta_data = coalesce(raw_user_meta_data, '{}') || '{"name": "Their Name"}'
    where email = 'someone@nlb.gov.sg';
    update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}') || '{"test": true}'
    where email = 'test@nlb.gov.sg';
-   ``` Supabase stores only a hash of it, so a
-   forgotten password is replaced rather than looked up:
-   `python -m src.export --reset-password glenn@nlb.gov.sg` prints a new one
-   and the old one stops working. (Supabase's own "forgot password" email
-   needs a reset link back to the page, which a page opened from a folder or
-   `localhost` cannot give it.) Supabase signs
-   people in by email and password; a "username" is the part before the
-   `@`, and the name on the desk is the one given here (the user's metadata
-   `name`). The dashboard does the same by hand (Authentication > Users >
-   Add user, "Auto confirm user" ticked).
+   ```
 
    A **test account** (`--test`) can look but not touch: it sees the real
    deck and can try the stamps, but holds no card and saves nothing, and
