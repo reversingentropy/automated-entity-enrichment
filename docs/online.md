@@ -25,7 +25,8 @@ laptop, and would run unchanged from a static host later.
    the page's key (they had a policy and a grant from before this
    repository). Then `sql/18`: the Malay and Tamil feeds; `sql/19`: the
    evaluation's labelling; `sql/20`: accounts made on the page wait for
-   approval. Every file is safe to re-run.
+   approval; `sql/21`: columns that never held anything, dropped. Every
+   file is safe to re-run.
 
 2. **Sign-ups stay off until `sql/20` has run**: Authentication > Sign In /
    Providers > "Allow new users to sign up". Without `sql/20`, every

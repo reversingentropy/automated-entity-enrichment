@@ -77,6 +77,10 @@
     out.newRecordLeftOutStruck = /class="nvi out"/.test(create(nc, nst));
     out.newRecordLeftOutOffSheet = nx.leftOut.length === 1 && nx.leftOut[0].field === "Awards"
       && !changesRows([nx]).some(r => r[2] === "Awards") && changesRows([nx]).some(r => r[2] === "Affiliations(groupName)");
+    // a quote says which language it is in, so Chinese and Tamil get their own fonts and Tamil its wider lines
+    const zc = CARDS.find(x => (x.sources[0].link || "").includes("zaobao") && x.sources[0].original);
+    const zhtml = newsBlock(zc, { i: 0, pills: [0], act: "src", names: [zc.entity] });
+    out.quoteSaysItsLanguage = /<blockquote lang="zh">/.test(zhtml) && /<p class="tr" lang="en">/.test(zhtml);
     out.newRecordLeftOutSaved = toDecision(nx, nc).leftOut.length === 1 && fromDecision(toDecision(nx, nc), nc).leftOut.length === 1;
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);

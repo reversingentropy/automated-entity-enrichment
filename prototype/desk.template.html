@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Review desk: every current card, new design</title>
+<!-- Chinese and Tamil, the same on every PC: each listed after the system fonts, so English text never uses them,
+     and the browser fetches only the parts of each font a page's characters need. Blocked, the PC's own fonts are used as before. -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400..700&family=Noto+Sans+Tamil:wght@400..700&family=Noto+Serif+SC:wght@400..600&family=Noto+Serif+Tamil:wght@400..600&display=swap">
 <style>
   :root{
     --bg:#F4F1EA; --ink:#1C2333; --ink2:#47506A; --ink3:#66708A; --line:#DDD8CB;
@@ -13,7 +17,7 @@
     --go:#1F7A46; --no:#C2352D; --grey:#4F5864; --amber:#7A4E06; --amber-bg:#FBE8C8; --amber-line:#C98A1B;
   }
   *,*::before,*::after{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter","IBM Plex Sans",system-ui,-apple-system,"Segoe UI","Noto Sans Tamil","Noto Sans SC",sans-serif;-webkit-font-smoothing:antialiased}
   button,select,input,textarea{font:inherit}
   button{cursor:pointer}
   button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -64,9 +68,11 @@
   .label a,.hl a{color:inherit}
   .label .src a{color:var(--accent);background:#fff;border:1.5px solid var(--accent);border-radius:999px;padding:.02rem .6rem;text-decoration:none;font-weight:650;font-size:.8rem}
   .hl{font-size:.82rem;color:var(--news-soft);margin:-.1rem 0 .45rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Tamil letters carry marks above and below the line: at the spacing set for English, lines crowd */
+  :is(blockquote,.tr):lang(ta){line-height:1.75}
   .hl mark{font-size:inherit}
-  blockquote{margin:0;font:1.2rem/1.45 Newsreader,Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
-  .tr{margin:.45rem 0 0;font:.98rem/1.45 Newsreader,Georgia,serif;color:var(--news-soft);overflow-wrap:anywhere}
+  blockquote{margin:0;font:1.2rem/1.45 Newsreader,Georgia,"Times New Roman","Noto Serif Tamil","Noto Serif SC",serif;overflow-wrap:anywhere}
+  .tr{margin:.45rem 0 0;font:.98rem/1.45 Newsreader,Georgia,"Noto Serif Tamil","Noto Serif SC",serif;color:var(--news-soft);overflow-wrap:anywhere}
   mark{background:#FBDD6A;color:inherit;padding:0 .12em;border-radius:3px}
   mark.v{background:#BFE3C8;box-shadow:0 0 0 1px #2E7A4A inset}
   .pills{display:inline-flex;gap:.25rem;margin-left:.3rem;vertical-align:middle}
@@ -443,7 +449,7 @@
   .evrec div{display:grid;grid-template-columns:9rem 1fr;gap:.6rem;overflow-wrap:anywhere}
   .evrec .k{color:var(--ink3);font-weight:600}
   .evext{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:1rem;align-items:start}
-  .evtext{max-height:72vh;overflow:auto;white-space:pre-wrap;font:1.02rem/1.6 Newsreader,Georgia,serif;padding:1rem 1.2rem;background:var(--news);color:var(--news-ink);border-radius:12px;border:1px solid var(--rule);overflow-wrap:anywhere}
+  .evtext{max-height:72vh;overflow:auto;white-space:pre-wrap;font:1.02rem/1.6 Newsreader,Georgia,"Noto Serif Tamil","Noto Serif SC",serif;padding:1rem 1.2rem;background:var(--news);color:var(--news-ink);border-radius:12px;border:1px solid var(--rule);overflow-wrap:anywhere}
   .evtext h2{font:700 1.15rem/1.35 "Inter",system-ui,sans-serif;margin:0 0 .6rem;white-space:normal}
   .evnames{display:grid;gap:.75rem}
   .evname{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:.8rem 1rem;display:grid;gap:.5rem}
@@ -683,8 +689,8 @@ function newsBlock(c, o) {
   return `<div class="side news${o.small ? " small" : ""}">
     <div class="label"><span>In the news${pills}</span> <span class="src">${esc(outletOf(s.link))}${dayOf(s.date) ? ` &middot; ${esc(dayOf(s.date))}` : ""}${s.link ? ` &middot; <a href="${esc(s.link)}" target="_blank" rel="noopener">Open article &#8599;</a>` : ""}${o.suffix || ""}</span></div>
     ${s.article ? `<div class="hl">${marked(s.article, o.names, o.vals)}</div>` : ""}
-    <blockquote>&ldquo;${marked(translated ? s.original : s.quote, o.names, o.vals)}&rdquo;</blockquote>
-    ${translated ? `<p class="tr">&ldquo;${marked(s.quote, o.names, o.vals)}&rdquo;</p>` : ""}
+    <blockquote lang="${translated ? langOf(s.link || "") : "en"}">&ldquo;${marked(translated ? s.original : s.quote, o.names, o.vals)}&rdquo;</blockquote>
+    ${translated ? `<p class="tr" lang="en">&ldquo;${marked(s.quote, o.names, o.vals)}&rdquo;</p>` : ""}
   </div>`;
 }
 const news = (c, st) => newsBlock(c, { i: st.src || 0, pills: c.sources.map((_, i) => i), act: "src", names: [c.entity, c.entityEn, (c.sources[st.src || 0] || {}).name] });
