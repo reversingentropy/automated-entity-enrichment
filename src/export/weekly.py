@@ -14,6 +14,8 @@ import datetime as dt
 import re
 from pathlib import Path
 
+from src.shared.names import DELIMITER
+
 HEADERS = ["UID", "Descriptor", "Vocab Class", "Attribute", "Current Value",
            "Suggested Value", "Article URL", "Reviewer", "Timestamp", "Status"]
 SGT = dt.timezone(dt.timedelta(hours=8))
@@ -59,8 +61,15 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
 
         if d.get("chose") == "new-entity":
             name = f"{card['entity']} ({card['entityEn']})" if card.get("entityEn") else card["entity"]
-            vocab = vocab_for_type.get(card.get("type", ""), "")
-            fields = card.get("newsFields") or []
+            # The type the reviewer chose on the desk, which may not be the model's.
+            vocab = vocab_for_type.get(d.get("ctype") or card.get("type", ""), "")
+            # A value the reviewer left out (× on the desk) stays off the sheet.
+            out = {(o.get("field"), o.get("value")) for o in d.get("leftOut") or []}
+            fields = []
+            for f in card.get("newsFields") or []:
+                kept = [v for v in str(f.get("value") or "").split(DELIMITER) if v.strip() and (f["key"], v) not in out]
+                if kept:
+                    fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
             for f in fields:
                 add(new, "", name, vocab, f["key"], "", f["value"], None)
             if not fields:
@@ -140,7 +149,8 @@ def build(since: dt.date, out: Path | None = None) -> tuple[Path, int, int]:
         for e in client.from_("entities").select("uid, vocabulary").in_("uid", uids[i:i + 200]).execute().data:
             vocab_of[e["uid"]] = e["vocabulary"]
     vocab_for_type = {}
-    for t in {c.get("type") for c in cards.values()}:
+    # A type a reviewer chose on the desk may be one no card has.
+    for t in {c.get("type") for c in cards.values()} | {d["ctype"] for d in decisions if d.get("ctype")}:
         hit = client.from_("entities").select("vocabulary").eq("entity_type", t).eq("language", "en").limit(1).execute().data
         if hit:
             vocab_for_type[t] = hit[0]["vocabulary"]

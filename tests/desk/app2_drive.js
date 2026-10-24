@@ -65,6 +65,19 @@
     out.fieldNamed = fieldLabel("Day Started (dd)") === "Day started" && fieldLabel("Description") === "Description" && fieldLabel("Affiliations(groupName)") === "Affiliations";
     out.sourceDateHasYear = /2026/.test(dayOf("2026-09-16"));
     out.outletNamed = outletOf("https://www.beritaharian.sg/singapura/x") === "Berita Harian" && outletOf("https://www.tamilmurasu.com.sg/singapore/x") === "Tamil Murasu";
+    // a record to create: a field naming records says whether TTE has each one, and any value can be left out with ×,
+    // which keeps it off the sheet and is saved with the decision
+    const nc = CARDS.find(x => x.isNew && x.newsLinked && x.newsLinked.Awards), nst = fresh(nc);
+    const nShown = nc.newsFields.filter(f => f.key !== "Description").slice(0, 5).reduce((n, f) => n + fieldVals(f).length, 0);
+    out.newRecordValuesCanBeLeftOut = (create(nc, nst).match(/data-act="nout"/g) || []).length === nShown;
+    out.newRecordSaysWhatTteHas = /not in TTE/.test(create(nc, nst));
+    const award = nc.newsFields.findIndex(f => f.key === "Awards");
+    nst.out["n" + award + ":0"] = true;
+    const nx = { kind: "created", entity: nc.entity, entityEn: nc.entityEn, ctype: nc.type, newsFields: nc.newsFields, leftOut: leftOutOf(nc, nst), accepted: [], when: new Date() };
+    out.newRecordLeftOutStruck = /class="nvi out"/.test(create(nc, nst));
+    out.newRecordLeftOutOffSheet = nx.leftOut.length === 1 && nx.leftOut[0].field === "Awards"
+      && !changesRows([nx]).some(r => r[2] === "Awards") && changesRows([nx]).some(r => r[2] === "Affiliations(groupName)");
+    out.newRecordLeftOutSaved = toDecision(nx, nc).leftOut.length === 1 && fromDecision(toDecision(nx, nc), nc).leftOut.length === 1;
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);

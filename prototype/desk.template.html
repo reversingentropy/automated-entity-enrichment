@@ -57,6 +57,8 @@
   .side.news{background:var(--news);color:var(--news-ink)}
   .label{display:flex;justify-content:space-between;gap:.2rem .6rem;flex-wrap:wrap;font-size:.74rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;color:var(--ink2)}
   .side.news .label{color:var(--news-ink)}
+  /* The outlet line always has its own row: sharing the first one, it fitted for CNA and wrapped for The Straits Times, and the source buttons jumped from beside the label to the far right as you clicked through them. */
+  .side.news .label .src{flex-basis:100%}
   .label .src{font-weight:500;letter-spacing:.02em;text-transform:none;color:var(--news-soft);font-size:.82rem}
   .side.tte .label .src,.draftbox .label .src{color:var(--ink3)}
   .label a,.hl a{color:inherit}
@@ -89,6 +91,12 @@
   .full{margin:.5rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--rule);font-size:.9rem;display:grid;gap:.35rem}
   .full div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem;overflow-wrap:anywhere}
   .full .k{color:var(--ink3);font-weight:600}
+  .full .nv{display:grid;gap:.15rem}
+  .full .nvi{display:flex;justify-content:space-between;align-items:baseline;gap:.2rem .6rem;flex-wrap:wrap}
+  .full .nvi.out>span:first-child{text-decoration:line-through;opacity:.5}
+  .full .nvi small{color:var(--tick)} .full .nvi small.nt{color:var(--amber)}
+  .full .nvi .x{background:none;border:none;color:var(--ink3);font-size:1.05rem;line-height:1;padding:0 .2rem}
+  .full .nvi .vtags{margin-left:auto}
   .cands{margin:.9rem 0 0;color:var(--ink2);font-size:.9rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
   .cands button{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.2rem .75rem;font-size:.86rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cands button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -673,7 +681,7 @@ function newsBlock(c, o) {
   const pills = o.pills.length > 1
     ? `<span class="pills">${o.pills.map(i => `<button class="${i === o.i ? "on" : ""}${mixed ? " lg" : ""}" data-act="${o.act}" data-i="${i}" title="${esc(outletOf(c.sources[i].link))}">${i + 1}${mixed ? `<small>${lg(i)}</small>` : ""}</button>`).join("")}</span>` : "";
   return `<div class="side news${o.small ? " small" : ""}">
-    <div class="label">In the news${pills} <span class="src">${esc(outletOf(s.link))}${dayOf(s.date) ? ` &middot; ${esc(dayOf(s.date))}` : ""}${s.link ? ` &middot; <a href="${esc(s.link)}" target="_blank" rel="noopener">Open article &#8599;</a>` : ""}${o.suffix || ""}</span></div>
+    <div class="label"><span>In the news${pills}</span> <span class="src">${esc(outletOf(s.link))}${dayOf(s.date) ? ` &middot; ${esc(dayOf(s.date))}` : ""}${s.link ? ` &middot; <a href="${esc(s.link)}" target="_blank" rel="noopener">Open article &#8599;</a>` : ""}${o.suffix || ""}</span></div>
     ${s.article ? `<div class="hl">${marked(s.article, o.names, o.vals)}</div>` : ""}
     <blockquote>&ldquo;${marked(translated ? s.original : s.quote, o.names, o.vals)}&rdquo;</blockquote>
     ${translated ? `<p class="tr">&ldquo;${marked(s.quote, o.names, o.vals)}&rdquo;</p>` : ""}
@@ -814,6 +822,25 @@ function who(c, st) {
             quiet(st))}`;
 }
 
+// A field of a record to create, value by value. Every value goes on the sheet unless the reviewer leaves it out
+// with ×: the cataloguer types the record from the sheet, so a value the reviewer knows is wrong must not reach it.
+const fieldVals = f => String(f.value || "").split(" | ").filter(v => v.trim());
+const leftOutOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).filter((v, vi) => st.out["n" + fi + ":" + vi]).map(value => ({ field: f.key, value })));
+const keptFields = (fields, out) => (fields || []).map(f => ({ ...f, value: fieldVals(f).filter(v => !(out || []).some(o => o.field === f.key && o.value === v)).join(" | ") }))
+  .filter(f => f.value);
+// A field naming other records (awards, affiliations, parent organisation, founder) says of each name whether TTE
+// has it, as a change to a record does; the card builder has already written a name TTE holds as TTE writes it.
+function newField(c, st, x) {
+  const fi = c.newsFields.indexOf(x), flags = (c.newsLinked || {})[x.key];
+  const linked = new Set((flags || []).filter(f => f.uid).map(f => f.name));
+  const vals = fieldVals(x).map((v, vi) => {
+    const out = st.out["n" + fi + ":" + vi];
+    const tag = flags ? (linked.has(v) || idxHas(v) ? "<small>in TTE</small>" : `<small class="nt">not in TTE</small>`) : "";
+    return `<span class="nvi ${out ? "out" : ""}"><span>${esc(gist(v, st.full ? 400 : 90))}</span><span class="vtags">${tag}<button class="x" data-act="nout" data-i="${fi}" data-j="${vi}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></span></span>`;
+  }).join("");
+  return `<div><span class="k">${esc((FACTS.find(f => f[0] === x.key) || [0, x.key])[1])}</span><span class="nv">${vals}</span></div>`;
+}
+
 function create(c, st) {
   const name = c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity;
   const fresh = c.isNew;
@@ -828,7 +855,7 @@ function create(c, st) {
       <h2 class="name">${esc(c.entityEn || c.entity)}</h2>
       ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
       ${desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
-      ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => `<div><span class="k">${esc((FACTS.find(f => f[0] === x.key) || [0, x.key])[1])}</span><span>${esc(gist(x.value, st.full ? 400 : 90))}</span></div>`).join("")}</div>` : ""}
+      ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => newField(c, st, x)).join("")}</div>` : ""}
       ${nf.length > 5 || (desc && desc.length > 170) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show more &#9662;"}</button>` : ""}
     </div>
   </section>
@@ -1007,6 +1034,7 @@ function finish(c, kind) {
              found: !!(matched && o.thin && !o.cross), done: false });
   const x = LOG[LOG.length - 1];
   x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
+  x.leftOut = k === "created" ? leftOutOf(c, st) : [];
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1090,7 +1118,7 @@ function fromDecision(d, c) {
            title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "other changes",
            kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
            secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
-           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], link: d.link || "", found: !!d.foundBySearch,
+           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], link: d.link || "", found: !!d.foundBySearch,
            done: !!d.done, who: d.reviewer || "" };
 }
 // A decision as the `reviews` table has always held it, plus what this desk needs to show it again.
@@ -1098,7 +1126,7 @@ function toDecision(x, c) {
   const verdict = x.kind === "keep" ? "unsure" : x.kind === "noworth" || x.kind === "discard" ? "reject" : "approve";
   return { verdict, kind: x.kind, entity: c.entity, chose: x.kind === "created" ? "new-entity" : verdict === "approve" ? x.uid : null,
            foundBySearch: !!x.found, reason: x.kind === "discard" ? "discard" : "", note: "",
-           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [],
+           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [],
            rows: x.accepted.map(a => ({ field: a.field, current: a.current, proposed: a.proposed, from: a.link || x.link })),
            record: x.kind === "created" ? "" : x.rec, reviewer: myName, at: x.when.toISOString(),
            languages: (langs || []).slice(), types: group === "all" ? null : [group], seconds: x.secs, seen: x.seen, ctype: x.ctype, link: x.link, done: !!x.done };
@@ -1605,6 +1633,7 @@ function act(a, el) {
   if (a === "src") { st.src = i; return draw(); }
   if (a === "csrc") { st.csrc[k] = i; return draw(); }
   if (a === "out") { const key = k + ":" + i; st.out[key] = !st.out[key]; return draw(); }
+  if (a === "nout") { const key = "n" + i + ":" + el.dataset.j; st.out[key] = !st.out[key]; return draw(); }
   if (a === "edit") { st.edit[k] = !st.edit[k]; return draw(); }
   const ch = (rowsFor(c, chosenOpt(c, st)) || [])[k];
   if (a === "mode") { st.mode[k] = el.dataset.m; return draw(); }
@@ -1874,7 +1903,7 @@ const changesRows = L => {
     if (x.kind === "created") {
       rows.push(["NEW", ent, "Name", "", x.entityEn ? `${x.entity} (${x.entityEn})` : ent, ...tail]);
       rows.push(["NEW", ent, "TTE file", "", (TYPES[x.ctype || x.type] || ["", x.type])[1], ...tail]);
-      (x.newsFields || []).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
+      keptFields(x.newsFields, x.leftOut).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
       return;
     }
     // A record confirmed with nothing to change is no work in TTE: a "(match confirmed)" row put Chee Hong Tat on the

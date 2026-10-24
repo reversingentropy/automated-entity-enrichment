@@ -185,6 +185,21 @@ def test_the_weekly_file_is_the_template_agreed_with_the_reviewers(tmp_path):
     assert wb["New entities"]["B2"].value == "Amos Yee"
 
 
+def test_a_record_to_create_goes_on_the_sheet_as_the_reviewer_left_it():
+    from src.export.weekly import rows_for
+
+    cards = {"5": {"key": "new:ORGANISATION:Kampung Senang", "entity": "Kampung Senang", "type": "ORGANISATION", "pids": [5],
+                   "sources": [{"link": "https://example.com"}],
+                   "newsFields": [{"key": "Affiliations(groupName)", "value": "People's Association | Ministry of Health"},
+                                  {"key": "Year Started (yyyy)", "value": "1999"}]}}
+    # The reviewer made it a programme and left out one affiliation and the year with ×.
+    decisions = [{"pid": 5, "verdict": "approve", "chose": "new-entity", "reviewer": "R", "at": "2026-10-24T03:00:00Z",
+                  "ctype": "PROGRAMME", "leftOut": [{"field": "Affiliations(groupName)", "value": "Ministry of Health"},
+                                                   {"field": "Year Started (yyyy)", "value": "1999"}]}]
+    _, new = rows_for(decisions, cards, {}, {"ORGANISATION": "_Organisations", "PROGRAMME": "_Programmes"})
+    assert [row[2:6] for row in new] == [["_Programmes", "Affiliations(groupName)", "", "People's Association"]]
+
+
 def _desk(n_waiting_people=2):
     cards = [{"key": f"uid:{i}", "type": "PERSON", "entity": f"Person {i}",
               "sources": [{"link": "https://www.straitstimes.com/x"}]} for i in range(n_waiting_people)]
