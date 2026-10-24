@@ -63,13 +63,16 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
             name = f"{card['entity']} ({card['entityEn']})" if card.get("entityEn") else card["entity"]
             # The type the reviewer chose on the desk, which may not be the model's.
             vocab = vocab_for_type.get(d.get("ctype") or card.get("type", ""), "")
-            # A value the reviewer left out (× on the desk) stays off the sheet.
-            out = {(o.get("field"), o.get("value")) for o in d.get("leftOut") or []}
-            fields = []
-            for f in card.get("newsFields") or []:
-                kept = [v for v in str(f.get("value") or "").split(DELIMITER) if v.strip() and (f["key"], v) not in out]
-                if kept:
-                    fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
+            # The fields as the reviewer left them on the desk: edited, and without any left out with ×.
+            # A decision from before the desk saved them names only what was left out.
+            fields = d.get("fields")
+            if fields is None:
+                out = {(o.get("field"), o.get("value")) for o in d.get("leftOut") or []}
+                fields = []
+                for f in card.get("newsFields") or []:
+                    kept = [v for v in str(f.get("value") or "").split(DELIMITER) if v.strip() and (f["key"], v) not in out]
+                    if kept:
+                        fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
             for f in fields:
                 add(new, "", name, vocab, f["key"], "", f["value"], None)
             if not fields:

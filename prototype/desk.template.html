@@ -103,6 +103,8 @@
   .full .nvi small{color:var(--tick)} .full .nvi small.nt{color:var(--amber)}
   .full .nvi .x{background:none;border:none;color:var(--ink3);font-size:1.05rem;line-height:1;padding:0 .2rem}
   .full .nvi .vtags{margin-left:auto}
+  .full .nvi .cin{flex:1;min-width:8rem;font-weight:500}
+  .draftbox .dta.nin{min-height:5rem;margin:.2rem 0 .6rem}
   .cands{margin:.9rem 0 0;color:var(--ink2);font-size:.9rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
   .cands button{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.2rem .75rem;font-size:.86rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cands button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -829,8 +831,15 @@ function who(c, st) {
 }
 
 // A field of a record to create, value by value. Every value goes on the sheet unless the reviewer leaves it out
-// with ×: the cataloguer types the record from the sheet, so a value the reviewer knows is wrong must not reach it.
+// with ×, and as the reviewer edited it: the cataloguer types the record from the sheet, so a value the reviewer
+// knows is wrong must not reach it.
 const fieldVals = f => String(f.value || "").split(" | ").filter(v => v.trim());
+const newVal = (st, fi, vi, v) => { const e = (st.nval || {})[fi + ":" + vi]; return e != null ? e : v; };
+const finalFields = (c, st) => c.newsFields.map((f, fi) => ({ key: f.key, value: fieldVals(f).map((v, vi) => st.out["n" + fi + ":" + vi] ? "" : newVal(st, fi, vi, v).trim())
+  .filter(Boolean).join(" | ") })).filter(f => f.value);
+// What the reviewer changed, kept with the decision: a measure of what the model gets wrong.
+const editedOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).map((v, vi) => ({ field: f.key, from: v, to: newVal(st, fi, vi, v).trim() }))
+  .filter((e, vi) => e.to !== e.from && e.to && !st.out["n" + fi + ":" + vi]));
 const leftOutOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).filter((v, vi) => st.out["n" + fi + ":" + vi]).map(value => ({ field: f.key, value })));
 const keptFields = (fields, out) => (fields || []).map(f => ({ ...f, value: fieldVals(f).filter(v => !(out || []).some(o => o.field === f.key && o.value === v)).join(" | ") }))
   .filter(f => f.value);
@@ -841,6 +850,8 @@ function newField(c, st, x) {
   const linked = new Set((flags || []).filter(f => f.uid).map(f => f.name));
   const vals = fieldVals(x).map((v, vi) => {
     const out = st.out["n" + fi + ":" + vi];
+    if (st.nedit && !out) return `<span class="nvi"><input class="cin nin" data-i="${fi}" data-j="${vi}" value="${esc(newVal(st, fi, vi, v))}" aria-label="${esc(x.key)}"><span class="vtags"><button class="x" data-act="nout" data-i="${fi}" data-j="${vi}" title="Leave out">&times;</button></span></span>`;
+    v = newVal(st, fi, vi, v);
     const tag = flags ? (linked.has(v) || idxHas(v) ? "<small>in TTE</small>" : `<small class="nt">not in TTE</small>`) : "";
     return `<span class="nvi ${out ? "out" : ""}"><span>${esc(gist(v, st.full ? 400 : 90))}</span><span class="vtags">${tag}<button class="x" data-act="nout" data-i="${fi}" data-j="${vi}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></span></span>`;
   }).join("");
@@ -850,8 +861,9 @@ function newField(c, st, x) {
 function create(c, st) {
   const name = c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity;
   const fresh = c.isNew;
-  const nf = c.newsFields.filter(f => f.key !== "Description"), desc = fieldMap(c.newsFields)["Description"];
-  const shown = st.full ? nf : nf.slice(0, 5);
+  const nf = c.newsFields.filter(f => f.key !== "Description"), di = c.newsFields.findIndex(f => f.key === "Description");
+  const desc = di >= 0 ? newVal(st, di, 0, c.newsFields[di].value) : "";
+  const shown = st.full || st.nedit ? nf : nf.slice(0, 5);
   return `<h1>${esc(fresh ? name + " is not in TTE. Create a record?" : "No record for " + name + ". Create one?")}</h1>
   <section class="focus">
     ${news(c, st)}
@@ -860,9 +872,11 @@ function create(c, st) {
       <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Record type">${Object.keys(TYPES).map(t => `<option value="${t}" ${(st.ctype || c.type) === t ? "selected" : ""}>${TYPES[t][0].replace(/ \(.*\)/, "")}${t === "FACILITY" ? " (building)" : t === "LOCATION" ? " (place)" : ""}</option>`).join("")}</select> &middot; new record</span></div>
       <h2 class="name">${esc(c.entityEn || c.entity)}</h2>
       ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
-      ${desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
+      ${desc && st.nedit ? `<textarea class="dta nin" data-i="${di}" data-j="0" aria-label="Description">${esc(desc)}</textarea>`
+        : desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
       ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => newField(c, st, x)).join("")}</div>` : ""}
-      ${nf.length > 5 || (desc && desc.length > 170) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show more &#9662;"}</button>` : ""}
+      ${!st.nedit && (nf.length > 5 || (desc && desc.length > 170)) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show more &#9662;"}</button>` : ""}
+      <button class="editbtn ${st.nedit ? "on" : ""}" data-act="nedit">${st.nedit ? "Done" : "&#9998; Edit"}</button>
     </div>
   </section>
   ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Records it could be:")}
@@ -1041,6 +1055,7 @@ function finish(c, kind) {
   const x = LOG[LOG.length - 1];
   x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
   x.leftOut = k === "created" ? leftOutOf(c, st) : [];
+  if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); }
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1124,7 +1139,7 @@ function fromDecision(d, c) {
            title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "other changes",
            kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
            secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
-           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], link: d.link || "", found: !!d.foundBySearch,
+           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], fields: d.fields, edited: d.edited || [], link: d.link || "", found: !!d.foundBySearch,
            done: !!d.done, who: d.reviewer || "" };
 }
 // A decision as the `reviews` table has always held it, plus what this desk needs to show it again.
@@ -1132,7 +1147,7 @@ function toDecision(x, c) {
   const verdict = x.kind === "keep" ? "unsure" : x.kind === "noworth" || x.kind === "discard" ? "reject" : "approve";
   return { verdict, kind: x.kind, entity: c.entity, chose: x.kind === "created" ? "new-entity" : verdict === "approve" ? x.uid : null,
            foundBySearch: !!x.found, reason: x.kind === "discard" ? "discard" : "", note: "",
-           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [],
+           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [], ...(x.fields ? { fields: x.fields, edited: x.edited || [] } : {}),
            rows: x.accepted.map(a => ({ field: a.field, current: a.current, proposed: a.proposed, from: a.link || x.link })),
            record: x.kind === "created" ? "" : x.rec, reviewer: myName, at: x.when.toISOString(),
            languages: (langs || []).slice(), types: group === "all" ? null : [group], seconds: x.secs, seen: x.seen, ctype: x.ctype, link: x.link, done: !!x.done };
@@ -1535,7 +1550,7 @@ const firstReadable = c => {
   if (reopened(c)) { const n = S.findIndex(s => pidOpen(s.pid) && readsSource(s)); if (n >= 0) return n; }
   return Math.max(0, S.findIndex(readsSource));
 };
-const fresh = c => ({ mode: {}, hist: [], t0: Date.now(), accepted: [], seen: 0, screen: c.isNew ? "create" : "who", cand: 0, chosen: null, ch: 0, src: firstReadable(c), csrc: {}, val: {}, text: {}, edit: {}, out: {},
+const fresh = c => ({ mode: {}, hist: [], t0: Date.now(), accepted: [], seen: 0, screen: c.isNew ? "create" : "who", cand: 0, chosen: null, ch: 0, src: firstReadable(c), csrc: {}, val: {}, text: {}, edit: {}, out: {}, nval: {}, nedit: false,
                       extra: [], finding: false, query: "", full: false, descFull: false, exhausted: false, kind: "" });
 const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest); };
 const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
@@ -1639,6 +1654,7 @@ function act(a, el) {
   if (a === "src") { st.src = i; return draw(); }
   if (a === "csrc") { st.csrc[k] = i; return draw(); }
   if (a === "out") { const key = k + ":" + i; st.out[key] = !st.out[key]; return draw(); }
+  if (a === "nedit") { st.nedit = !st.nedit; st.nval = st.nval || {}; return draw(); }
   if (a === "nout") { const key = "n" + i + ":" + el.dataset.j; st.out[key] = !st.out[key]; return draw(); }
   if (a === "edit") { st.edit[k] = !st.edit[k]; return draw(); }
   const ch = (rowsFor(c, chosenOpt(c, st)) || [])[k];
@@ -1695,6 +1711,7 @@ document.addEventListener("input", e => {
   if (!c) return;
   if (t.id === "q") { st.query = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); }
   else if (t.classList.contains("din")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; dateOf(st, k, ch)[t.dataset.p] = t.value.trim(); }
+  else if (t.classList.contains("nin")) (st.nval = st.nval || {})[t.dataset.i + ":" + t.dataset.j] = t.value;
   else if (t.classList.contains("cin")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; valsOf(st, k, ch)[Number(t.dataset.i)] = t.value; }
   else if (t.classList.contains("dta")) st.text[k] = t.value;
 });
@@ -1909,7 +1926,7 @@ const changesRows = L => {
     if (x.kind === "created") {
       rows.push(["NEW", ent, "Name", "", x.entityEn ? `${x.entity} (${x.entityEn})` : ent, ...tail]);
       rows.push(["NEW", ent, "TTE file", "", (TYPES[x.ctype || x.type] || ["", x.type])[1], ...tail]);
-      keptFields(x.newsFields, x.leftOut).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
+      (x.fields || keptFields(x.newsFields, x.leftOut)).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
       return;
     }
     // A record confirmed with nothing to change is no work in TTE: a "(match confirmed)" row put Chee Hong Tat on the

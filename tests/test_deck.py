@@ -199,6 +199,11 @@ def test_a_record_to_create_goes_on_the_sheet_as_the_reviewer_left_it():
     _, new = rows_for(decisions, cards, {}, {"ORGANISATION": "_Organisations", "PROGRAMME": "_Programmes"})
     assert [row[2:6] for row in new] == [["_Programmes", "Affiliations(groupName)", "", "People's Association"]]
 
+    # Edited on the desk: the sheet carries the fields as the reviewer left them.
+    decisions[0]["fields"] = [{"key": "Affiliations(groupName)", "value": "People's Association (PA)"}]
+    _, new = rows_for(decisions, cards, {}, {"PROGRAMME": "_Programmes"})
+    assert [row[3:6] for row in new] == [["Affiliations(groupName)", "", "People's Association (PA)"]]
+
 
 def _desk(n_waiting_people=2):
     cards = [{"key": f"uid:{i}", "type": "PERSON", "entity": f"Person {i}",

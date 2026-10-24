@@ -81,6 +81,14 @@
     const zc = CARDS.find(x => (x.sources[0].link || "").includes("zaobao") && x.sources[0].original);
     const zhtml = newsBlock(zc, { i: 0, pills: [0], act: "src", names: [zc.entity] });
     out.quoteSaysItsLanguage = /<blockquote lang="zh">/.test(zhtml) && /<p class="tr" lang="en">/.test(zhtml);
+    // and any value can be edited: the sheet carries the edit, and the decision keeps what was changed
+    const ast = fresh(nc), aff = nc.newsFields.findIndex(f => f.key === "Affiliations(groupName)");
+    ast.nedit = true;
+    out.newRecordEditBoxes = (create(nc, ast).match(/class="cin nin"/g) || []).length === nShown && /<textarea class="dta nin"/.test(create(nc, ast));
+    ast.nval[aff + ":0"] = "KK Women's and Children's Hospital";
+    const ex = { kind: "created", entity: nc.entity, newsFields: nc.newsFields, fields: finalFields(nc, ast), edited: editedOf(nc, ast), leftOut: [], accepted: [], when: new Date() };
+    out.newRecordEditOnSheet = changesRows([ex]).some(r => r[2] === "Affiliations(groupName)" && r[4] === "KK Women's and Children's Hospital")
+      && ex.edited.length === 1 && toDecision(ex, nc).fields.length === ex.fields.length && toDecision(ex, nc).edited.length === 1;
     out.newRecordLeftOutSaved = toDecision(nx, nc).leftOut.length === 1 && fromDecision(toDecision(nx, nc), nc).leftOut.length === 1;
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
