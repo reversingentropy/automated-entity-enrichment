@@ -132,6 +132,13 @@ def test_scraper_extraction_is_reusable_without_the_length_check():
     assert text_from(html) == "One. Two words."
 
 
+def test_a_short_chinese_article_is_an_article():
+    from src.job2_extraction.scraper import MIN_TEXT_LENGTH, minimum_for
+    brief = "人民行动党在干部大会上，向前国会议员张有福和司徒宇斌颁发象征党内最高荣誉的功绩奖章。" * 6   # ~260 characters
+    assert len(brief) < MIN_TEXT_LENGTH and len(brief) >= minimum_for(brief)
+    assert minimum_for("Subscribe to read this article. " * 5) == MIN_TEXT_LENGTH
+
+
 def test_ingest_parser_names_each_failure():
     """
     The internal model answered in four shapes. Only the schema's own is

@@ -113,6 +113,7 @@ def extraction_export(limit: int | None) -> tuple[str, dict, str] | None:
     from src.job2_extraction.update import record_fetch_failure
     articles = fetch_unextracted_articles(limit=limit)
     if not articles:
+        print("Nothing waiting for extraction.")
         return None
     blocks, sent, unread, last = [], [], [], {}
     for n, a in enumerate(articles, 1):
@@ -136,6 +137,9 @@ def extraction_export(limit: int | None) -> tuple[str, dict, str] | None:
         blocks.append(f"=== ARTICLE {a['id']} ===\n{when}{a.get('title') or ''}\n\n{text}\n")
         sent.append(a["id"])
     if not sent:
+        if unread:
+            print(f"Nothing to export: {len(unread)} waiting, none could be read (counted, as Job 2 counts them; "
+                  f"given up after {MAX_ATTEMPTS}).")
         return None
     instructions = load_prompt().rstrip()
     if instructions.endswith("Article:"):

@@ -26,6 +26,16 @@ TIMEOUT = 30
 # rather than an article. Zaobao pieces run ~1,300 chars, so this sits well
 # below the real floor.
 MIN_TEXT_LENGTH = 400
+# Chinese says in one character what English needs four or five for: a whole
+# Zaobao brief on two former MPs' party medals (25 Oct 2026) was 316 characters
+# and was turned away as a paywall page.
+MIN_CHINESE_LENGTH = 150
+_CJK = re.compile(r"[\u3400-\u9fff]")
+
+
+def minimum_for(text: str) -> int:
+    """The shortest text that is an article: lower when most of it is Chinese."""
+    return MIN_CHINESE_LENGTH if len(_CJK.findall(text)) * 2 > len(text) else MIN_TEXT_LENGTH
 
 # Boilerplate that survives tag stripping.
 NOISE = (
@@ -55,10 +65,10 @@ def scrape(url: str) -> str:
         raise ScrapeError(f"could not fetch {url}: {exc}") from exc
 
     text = text_from(response.text)
-    if len(text) < MIN_TEXT_LENGTH:
+    if len(text) < minimum_for(text):
         raise ScrapeError(
             f"only {len(text)} chars from {url} "
-            f"(minimum {MIN_TEXT_LENGTH}) -- likely a paywall or error page"
+            f"(minimum {minimum_for(text)}) -- likely a paywall or error page"
         )
     return text
 

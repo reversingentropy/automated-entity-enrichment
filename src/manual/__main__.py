@@ -60,7 +60,8 @@ def export(stage: str, limit: int | None) -> int:
         print(f"(Replacing the {stage} export from {made}, which was never imported.)")
     made = make(limit)
     if made is None:
-        print(f"Nothing waiting for {stage}.")
+        if stage != "extraction":   # extraction says itself when articles were waiting but none could be read
+            print(f"Nothing waiting for {stage}.")
         return 0
     prompt, sent, what = made
     model = getattr(SETTINGS, settings).models[0]
