@@ -7,8 +7,11 @@ python -c "from src.export.cards import write_cards; write_cards('data/cards.jso
 ```
 
 `src/export/cards.py` builds one card per **decision** straight from
-`candidate_matches`, `extracted_entities`, `article` and `entities`. The data is
-embedded in a published Artifact that presents them one at a time.
+`candidate_matches`, `extracted_entities`, `article` and `entities`. Every
+night `python -m src.export --publish` writes them to the `deck` table, and the
+online desk (`prototype/desk.template.html`, `docs/online.md`) deals them one
+at a time. The first version was a published Artifact with the data embedded;
+what follows keeps the lessons from it and from the zip desk.
 
 A card asks two questions in the order a reviewer answers them: which record is
 this, then what should change on it. Proposals resolving to the same record are
@@ -77,10 +80,14 @@ canonical records when the retriever offered none that fit. A choice made that
 way records `foundBySearch`, which is worth more than the match itself: it
 marks a case retrieval should have found.
 
-Decisions are written to the artifact's own database, so they can be read back
-without passing a file around.
+Decisions are written to the `reviews` table as they are made (the Artifact
+had its own database for this), so they can be read back without passing a
+file around.
 
 ## Sending it to reviewers
+
+The reviewers now use the online desk (`docs/online.md`). The zip below is the
+first desk, still built for working without an account or network.
 
 ```bash
 python -m src.export --package data/dist/tte-desk.zip
@@ -138,14 +145,20 @@ with "which field is this?", and the date was wrong: the model had taken the
 day an agency launched some courses for the day it was set up, which the
 extraction prompt now rules out (START AND END DATES).
 
-When the CSVs come back:
+Online, the decisions are read straight from the table:
+
+```bash
+python -m src.export --reviews table --out data/decisions.csv
+```
+
+From a zip round, when the CSVs come back:
 
 ```bash
 python -m src.export --reviews data/reviews/ --out data/decisions.csv
 ```
 
-One row per reviewer per proposal, from the desk's own CSVs or from documents
-saved out of the artifact's database (stored per reviewer at
+One row per reviewer per proposal, from the desk's own CSVs or, in the
+Artifact days, from documents saved out of the artifact's database (stored per reviewer at
 `labels/<proposal>/reviews/<name>`, because a single document per proposal
 means the second verdict silently replaces the first, and disagreement between
 reviewers is the most useful signal in the file).
@@ -182,7 +195,7 @@ exact hit through the article's own spelling is now the identity question,
 folded into the card another article's match produced where there is one.
 Four cards in that deck; see `docs/gotchas.md`.
 
-The team meeting of 21 September 2026 (Glenn, Yaw Huah, Min Hoon) set how
+The team meeting of 21 September 2026 set how
 five people will run the desk for a three-to-six-month parallel test against
 their manual reading. On the desk itself:
 

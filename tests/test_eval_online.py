@@ -115,18 +115,18 @@ def labels():
 def test_the_labels_come_back_as_sheets_the_scorer_reads(folder, capsys):
     from src.eval.score import report
 
-    done = online.returned(folder, labels(), {"aaaa1111-0000": "Glenn Hong", "bbbb2222-0000": "Glenn Hong"})
-    assert done == {"Glenn-Hong": {"relevance": 2, "matching": 2, "extraction": 1}, "Glenn-Hong-bbbb": {"matching": 1}}
+    done = online.returned(folder, labels(), {"aaaa1111-0000": "Alex Tan", "bbbb2222-0000": "Alex Tan"})
+    assert done == {"Alex-Tan": {"relevance": 2, "matching": 2, "extraction": 1}, "Alex-Tan-bbbb": {"matching": 1}}
     back = folder / "returned"
-    rel = pd.read_excel(back / "1-relevance-Glenn-Hong.xlsx", sheet_name="rows", dtype=str, keep_default_na=False)
+    rel = pd.read_excel(back / "1-relevance-Alex-Tan.xlsx", sheet_name="rows", dtype=str, keep_default_na=False)
     assert list(rel.relevant) == ["TRUE", "FALSE"]
-    assert pd.read_excel(back / "1-relevance-Glenn-Hong.xlsx", sheet_name="start here").iloc[0, 0] == 4   # 260 seconds
-    ext = pd.read_excel(back / "3-extraction-Glenn-Hong.xlsx", sheet_name="rows", dtype=str, keep_default_na=False)
+    assert pd.read_excel(back / "1-relevance-Alex-Tan.xlsx", sheet_name="start here").iloc[0, 0] == 4   # 260 seconds
+    ext = pd.read_excel(back / "3-extraction-Alex-Tan.xlsx", sheet_name="rows", dtype=str, keep_default_na=False)
     assert list(ext.verdict) == ["ok", "not_worth", "ok", "", "", ""]
     assert list(ext.field_errors) == ["Founder", "", "Founder", "", "", ""]
     # the missed names on the article's blank last row, one per line, and nowhere else
     assert list(ext.missed) == ["", "", "", "Lim Bee Hoon\nTan Ah Kow", "", ""]
-    assert not (back / "3-extraction-Glenn-Hong-bbbb.xlsx").exists()
+    assert not (back / "3-extraction-Alex-Tan-bbbb.xlsx").exists()
 
     capsys.readouterr()
     assert report(back, folder) == 0
@@ -137,12 +137,12 @@ def test_the_labels_come_back_as_sheets_the_scorer_reads(folder, capsys):
 
 
 def test_pull_leaves_out_test_accounts(folder, monkeypatch):
-    users = [SimpleNamespace(id="aaaa1111-0000", email="glenn@nlb.gov.sg", user_metadata={"name": "Glenn"}, app_metadata={"evaluator": True}),
+    users = [SimpleNamespace(id="aaaa1111-0000", email="alex@nlb.gov.sg", user_metadata={"name": "Alex"}, app_metadata={"evaluator": True}),
              SimpleNamespace(id="bbbb2222-0000", email="test@nlb.gov.sg", user_metadata={}, app_metadata={"test": True, "evaluator": True})]
     client = SimpleNamespace(auth=SimpleNamespace(admin=SimpleNamespace(list_users=lambda: users)), from_=None)
     monkeypatch.setattr("src.shared.supabase_client.get_client", lambda: client)
     monkeypatch.setattr("src.shared.pagination.fetch_all", lambda build, order="id": labels())
-    assert online.pull(folder) == {"Glenn": {"relevance": 2, "matching": 2, "extraction": 1}}
+    assert online.pull(folder) == {"Alex": {"relevance": 2, "matching": 2, "extraction": 1}}
     assert not list((folder / "returned").glob("*test*"))
 
 
@@ -159,13 +159,13 @@ def test_the_real_sheets_go_up_without_their_keys():
 def test_marking_an_evaluator_keeps_the_accounts_other_marks(monkeypatch):
     from src.export import accounts
 
-    users = [SimpleNamespace(id="u1", email="Glenn@nlb.gov.sg", app_metadata={"test": True, "provider": "email"}, user_metadata={})]
+    users = [SimpleNamespace(id="u1", email="Alex@nlb.gov.sg", app_metadata={"test": True, "provider": "email"}, user_metadata={})]
     sent = []
     admin = SimpleNamespace(list_users=lambda: users, update_user_by_id=lambda uid, attrs: sent.append((uid, attrs)))
     monkeypatch.setattr(accounts, "get_client", lambda: SimpleNamespace(auth=SimpleNamespace(admin=admin)))
-    assert accounts.mark_evaluator(" glenn@nlb.gov.sg ") == "u1"
+    assert accounts.mark_evaluator(" alex@nlb.gov.sg ") == "u1"
     assert sent == [("u1", {"app_metadata": {"test": True, "provider": "email", "evaluator": True}})]
-    accounts.mark_evaluator("glenn@nlb.gov.sg", on=False)
+    accounts.mark_evaluator("alex@nlb.gov.sg", on=False)
     assert sent[-1][1]["app_metadata"]["evaluator"] is False
     with pytest.raises(ValueError):
         accounts.mark_evaluator("nobody@nlb.gov.sg")

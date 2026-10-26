@@ -15,14 +15,14 @@
   const idle = () => until(() => !EV.busy);
   const labelOf = (task, item, who = "u1") => (F.evalLabels.find(l => l.task === task && l.item === item && l.labeller === who) || {}).label;
   const as = async (id, meta) => {
-    const u = { id, email: id + "@nlb.gov.sg", user_metadata: { name: id === "u9" ? "Tester" : "Glenn" }, app_metadata: meta };
+    const u = { id, email: id + "@nlb.gov.sg", user_metadata: { name: id === "u9" ? "Tester" : "Alex" }, app_metadata: meta };
     F.setUser(u); await signedIn(u); await until(() => !loading && CARDS.length);
   };
   const rel = F.evalItems.filter(i => i.task === "relevance").sort((a, b) => a.ord - b.ord).map(i => i.item);
   try {
     // a reviewer: no Evaluation in the sidebar, and the page itself asks nothing of the database
     await until(() => document.querySelector("#veil .signin"));
-    q("#em").value = "glenn@nlb.gov.sg"; q("#pw").value = "pw";
+    q("#em").value = "alex@nlb.gov.sg"; q("#pw").value = "pw";
     act("signin");
     out.loaded = await until(() => !loading && CARDS.length);
     out.reviewerNoNav = q("#evalnav").hidden === true;
@@ -52,7 +52,7 @@
       && /you have done 0 of the 49 in your languages/.test(stage()) && /50 headlines, 50 pairs, 20 articles/.test(stage())
       && /Relevance<\/h3>[\s\S]*Extraction<\/h3>[\s\S]*Matching<\/h3>/.test(stage()) && !/data-act="ev-guide"/.test(stage()) && /2 are only in languages you do not read/.test(stage());
     out.reportShown = stage().includes("precision 0.91 &lt;weighted&gt;") && !F.readLabels;
-    // Glenn accepted the date started and the description, and left out the founder: one change per date, by language
+    // Alex accepted the date started and the description, and left out the founder: one change per date, by language
     const acc = stage().slice(stage().indexOf("Changes accepted on the desk"));
     out.acceptanceShown = /<table class="evacc">/.test(acc) && /Date started<\/td><td>100%/.test(acc) && /Founder<\/td><td>0%/.test(acc)
       && /Description<\/td><td>100%/.test(acc) && /<th>Chinese<\/th>/.test(acc) && !/Month started/.test(acc);

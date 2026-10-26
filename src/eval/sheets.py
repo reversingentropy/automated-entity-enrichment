@@ -372,10 +372,10 @@ def logs(out: Path) -> None:
         "method": "manual", "article_url": "https://www.straitstimes.com/…",
         "tte_entity": "Khaw Boon Wan", "tte_uuid": "18533710", "kind": "amend",
         "field": "Affiliations", "old": "People's Action Party",
-        "new": "People's Action Party | SPH Media Trust", "date": "2026-10-14", "who": "Yaw Huah",
+        "new": "People's Action Party | SPH Media Trust", "date": "2026-10-14", "who": "Reviewer A",
     }])
     weekly = pd.DataFrame([{"week_start": "2026-10-05", "minutes": 140, "changes": 6,
-                            "method": "manual", "user": "Yaw Huah"}])
+                            "method": "manual", "user": "Reviewer A"}])
     issues = pd.DataFrame([{"date": "2026-10-06", "what happened": "The deck was empty this morning",
                             "what you were doing": "signed in at 9am", "blocked you": "yes"}])
     path = out / "4-logs.xlsx"

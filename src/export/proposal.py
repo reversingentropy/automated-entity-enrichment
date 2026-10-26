@@ -155,10 +155,10 @@ CONTENT = [
 
     ("h1", "3. Efficiency: what does it cost?"),
     ("p", "The desk records how long each card was on it. For the manual side, two numbers a week "
-          "on the desk (Your sheet → This week)."),
+          "on the weekly tab of the logs spreadsheet."),
     ("table", [["week_start", "minutes", "changes", "method", "user"],
-               ["2026-10-05", "140", "6", "manual", "Yaw Huah"],
-               ["2026-10-12", "95", "3", "app", "Yaw Huah"]]),
+               ["2026-10-05", "140", "6", "manual", "Reviewer A"],
+               ["2026-10-12", "95", "3", "app", "Reviewer A"]]),
     ("tldr", "TL;DR: log it once a week, for whichever arm you are on."),
     ("produces", "Produces: seconds per change on the desk against minutes per change by hand, for "
                  "the same people in both arms; days from article to change, both ways; running "

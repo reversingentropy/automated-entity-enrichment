@@ -11,10 +11,10 @@ file an issue against it.
 | Component | What it is | Talks to |
 |---|---|---|
 | GitHub Actions | ingestion every two hours (`job0_ingest.yml`); one nightly workflow at midnight SGT: the TTE load, the three jobs, the publish and the reviewers' email in sequence (the single-job workflows run by hand) | Supabase (`service_role`), Gemini |
-| Supabase Postgres | 12 tables, RLS on all of them; until `sql/17`, a policy and a grant from before this repository let the page's key read `article` | everything |
+| Supabase Postgres | 14 tables, RLS on all of them; until `sql/17`, a policy and a grant from before this repository let the page's key read `article` | everything |
 | Supabase Storage | 2 private buckets. `desk` is created by `sql/11`; `tte-imports` is **not provisioned by any script here** -- it's a bare constant in `src/load_tte/source.py` and has to be created by hand in the dashboard | load_tte (write), desk page (read) |
-| Supabase Auth | reviewer accounts, created by hand, no self-signup. Sign-up is a dashboard switch (Authentication, "Allow new users to sign up"), not something the SQL can set; every signed-in account is a reviewer, so it must be off | the desk page |
-| Gemini API | 3 independent prompts: relevance, extraction, resolution | Jobs 1-3 |
+| Supabase Auth | reviewer accounts, made on the sign-in screen and approved by the admin (`sql/20`), or made by command already approved. Sign-up is a dashboard switch (Authentication, "Allow new users to sign up"), not something the SQL can set; before `sql/20` every signed-in account was a reviewer, so the switch goes on only after `sql/20` has run | the desk page |
+| Gemini API | 4 independent prompts: relevance, extraction, resolution, and the desk's one-line greeting (`desk_greeting`), written at publish | Jobs 1-3, publish |
 | The desk page | two templates: the first desk (`src/export/desk_template.html`), still built as a zip, and the second (`prototype/desk.template.html`), the online desk: a static page with the anon key baked in, served by Cloudflare Workers from `dist/` on every push | Postgres + Storage, direct from the browser |
 | RSS ingestion | `src/job0_ingest`, Job 0: reads every feed in `rss_feeds` (CNA, the Straits Times, Zaobao, and from `sql/18` Berita Harian and Tamil Murasu, whose all-section feeds are cut to their Singapore sections by `rss_feeds.keep`) and inserts the articles it has not stored; a story already stored at another address is kept as a copy marked judged (`duplicate_of`). Replaces the Supabase Edge Function `rss-ingest-v5`, whose cron job has to be switched off by hand | the feeds (HTTP), Postgres, before Job 1 runs |
 
@@ -88,6 +88,10 @@ it, and the desk shows it the deck read-only.
 | `deck` | `key` (`uid:<record>` or `new:<type>:<name>`) | `publish`, full rebuild nightly | `card` jsonb -- keyed so a card that gains a new article keeps its row and its history; kept by the database for the queue: `newest`, `langs`, `grp`, `ord` (generated from the card) and `settled` (every proposal finally decided, kept by triggers) |
 | `reviews` | `id`; `unique(pid)` -- one decision per proposal | `decide()` and `mark_done()` only (`sql/15`) | `card_key`, `reviewer → auth.users`, `verdict`, `decision` jsonb |
 | `claims` | `card_key` | `take_next()`, `claim_card()`, `renew_card()`, `release_card()`, `decide()` | `reviewer → auth.users`, `claimed_at`; a hold not renewed for 60 minutes has lapsed, and one reviewer holds at most one record |
+| `rss_feeds` | `id` | from before this repository; `sql/18` added Berita Harian and Tamil Murasu | `source`, `url`, `category`, `keep` (the sections kept from an all-section feed); read by Job 0 |
+| `account_gate` | one row | `sql/20` | `since`: accounts made after it wait for approval; the approval itself is in the account's `app_metadata` |
+| `eval_items`, `eval_labels`, `eval_holds` | `(task, item)`; labels add `labeller` | `python -m src.eval online` loads items; the Evaluation page writes labels and holds | what a labeller is shown (never the app's answer), each labeller's answer and seconds, who holds which item (`sql/19`) |
+| `eval_results` | `id` | `python -m src.eval online results` | the scored report the Evaluation page shows; scoring happens where the key files are, never in the page |
 
 `entities.fields` is the one deliberate denormalisation: TTE ships EAV (one
 row per attribute), and the loader pivots each entity's rows into a single
@@ -124,8 +128,8 @@ claims row                             take_next() deals it; one per reviewer; l
      ▼ the reviewer decides, through decide()
 reviews row                            one per pid; verdict + full decision json
      │
-     ▼ `python -m src.export --reviews`
-CSV, or a read of the `reviews` table  nothing writes back to TTE; a human applies it
+     ▼ `python -m src.export --reviews`, or `--weekly` for the reviewers' Excel file
+CSV or Excel, from the `reviews` table  nothing writes back to TTE; a human applies it
 ```
 
 Two things worth being exact about, because prose elsewhere in this repo

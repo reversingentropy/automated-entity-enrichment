@@ -4,7 +4,7 @@ The week's approved changes, as the Excel file the reviewers work from.
     python -m src.export --weekly                     # the last seven days
     python -m src.export --weekly --since 2026-09-21  # from a date
 
-Agreed with Yaw Huah, 28 Sep 2026: one file a week, two sheets (existing
+Agreed with the reviewers, 28 Sep 2026: one file a week, two sheets (existing
 entities and new ones), one row per change, and a Status column each reviewer
 sets to Done once the change is in TTE. Each reviewer applies their own
 changes by hand, so rows are grouped by reviewer. Test accounts are left out.

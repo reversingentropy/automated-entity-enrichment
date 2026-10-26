@@ -1,9 +1,10 @@
 """
 Fetch article text from a news URL.
 
-A generic <p>-tag extraction, which was verified to work on all three sources
-currently in the feed (Channel NewsAsia, Straits Times, Zaobao). None of them
-blocked a plain request, so no per-site handling is needed yet.
+A generic <p>-tag extraction, verified on the first three sources (Channel
+NewsAsia, Straits Times, Zaobao) and used unchanged for Berita Harian and
+Tamil Murasu since 18 October 2026. None of them blocked a plain request, so
+no per-site handling is needed yet.
 """
 
 import re

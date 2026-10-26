@@ -26,7 +26,7 @@ const fake = {
         return { data: { user }, error: null };
       }
       if (password !== "pw") return { data: null, error: { message: "bad" } };
-      user = { id: "u1", email, user_metadata: { name: "Glenn" } };
+      user = { id: "u1", email, user_metadata: { name: "Alex" } };
       return { data: { user }, error: null };
     },
     updateUser: async ({ data }) => { db.meta = { ...(db.meta || {}), ...data }; return { data: { user }, error: null }; },
@@ -100,7 +100,7 @@ const inputs = () => stage.all().filter(n => n.tagName === "INPUT");
   await settle();
   must(inputs().some(n => n.type === "email") && inputs().some(n => n.type === "password"), "an account sign-in, not a name box");
   must(stage.all().some(n => n.tagName === "A" && n.href === "pipeline.html"), "the explainer is a link away");
-  inputs().find(n => n.type === "email").value = "glenn@nlb.gov.sg";
+  inputs().find(n => n.type === "email").value = "alex@nlb.gov.sg";
   inputs().find(n => n.type === "password").value = "wrong";
   click("Sign in"); await settle();
   must(/not accepted/.test(stage.textContent), "a wrong password is refused");
@@ -183,7 +183,7 @@ const inputs = () => stage.all().filter(n => n.tagName === "INPUT");
   stage.replaceChildren();
   byId.me.all().find(n => n.tagName === "BUTTON" && n.textContent === "Sign out").click(); await settle();
   must(inputs().some(n => n.type === "email") && api.REAL.length === 0, "sign out clears the desk");
-  inputs().find(n => n.type === "email").value = "glenn@nlb.gov.sg";
+  inputs().find(n => n.type === "email").value = "alex@nlb.gov.sg";
   inputs().find(n => n.type === "password").value = "pw";
   click("Sign in"); await settle();
   must(!/Before you start/.test(ask()) && api.labels[904] && /2 of 2 records reviewed/.test(byId.count.textContent), "signed in again, the decision is back and the questions are not asked twice");

@@ -20,7 +20,7 @@
   };
   try {
     out.signInShown = await until(() => document.querySelector("#veil .signin"));
-    document.querySelector("#em").value = "glenn@nlb.gov.sg"; document.querySelector("#pw").value = "pw";
+    document.querySelector("#em").value = "alex@nlb.gov.sg"; document.querySelector("#pw").value = "pw";
     act("signin");
     out.loaded = await until(() => !loading && CARDS.length && NPT_READY);
     out.cards = CARDS.length;
@@ -195,7 +195,7 @@
     act("stopnow");
     // each person's count, for fairness
     PAGE = "results"; VIEW = "team"; draw();
-    out.perPerson = /Who decided how many/.test(stage()) && /Glenn/.test(stage()) && /Jo/.test(stage());
+    out.perPerson = /Who decided how many/.test(stage()) && /Alex/.test(stage()) && /Jo/.test(stage());
     PAGE = "home"; draw();
     // the reader's language first: an English reader sees the English article of a mixed card
     langs = ["en"];
@@ -210,14 +210,14 @@
     out.noConfirmOnlyRows = changesRows([{ kind: "uptodate", uid: "1", entity: "X", accepted: [], when: new Date() }]).length === 1;
     // the sheet after a reload: earlier decisions come back from the table
     const before = LOG.length;
-    F.setUser({ id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} });
-    await signedIn({ id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} });
+    F.setUser({ id: "u1", email: "alex@nlb.gov.sg", user_metadata: { name: "Alex" }, app_metadata: {} });
+    await signedIn({ id: "u1", email: "alex@nlb.gov.sg", user_metadata: { name: "Alex" }, app_metadata: {} });
     out.resumed = LOG.length === before && LOG.every(x => DECIDED.has(x.key));
     if (!out.resumed) out.resumedDetail = [before, LOG.length, LOG.map(x => x.key + ":" + x.kind)];
     // the languages decide what is offered: a record held from before, in a language no longer chosen, is given back
     // rather than offered first; a type with nothing in those languages cannot be picked; and one picked anyway sends
     // the reviewer home saying so, where Continue deals any type rather than asking for that one again
-    const u1 = { id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: {} };
+    const u1 = { id: "u1", email: "alex@nlb.gov.sg", user_metadata: { name: "Alex" }, app_metadata: {} };
     const zhOnly = CARDS.find(c => cardLangs(c).join() === "zh" && openFor(c) && !HELD.has(c.key));
     out.zhOnlyOpen = !!zhOnly;
     if (zhOnly) {
@@ -265,7 +265,7 @@
     out.stillWaiting = await until(() => /Not approved yet/.test(suVeil()));
     const suId = F.accounts[0].id;
     F.accounts.push({ id: "u99", email: "stranger@example.com", name: "Who", made: new Date().toISOString(), waiting: true });
-    const suBoss = { id: "u1", email: "glenn@nlb.gov.sg", user_metadata: { name: "Glenn" }, app_metadata: { admin: true } };
+    const suBoss = { id: "u1", email: "alex@nlb.gov.sg", user_metadata: { name: "Alex" }, app_metadata: { admin: true } };
     F.setUser(suBoss); await signedIn(suBoss);
     out.adminSeesWaiting = await until(() => /2 new accounts are waiting/.test(stage()) && /new@nlb\.gov\.sg/.test(stage()));
     document.querySelector(`[data-act="approve"][data-id="${suId}"]`).click();

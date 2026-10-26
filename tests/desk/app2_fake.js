@@ -149,7 +149,7 @@
         if (password !== "pw") return { data: null, error: { message: "bad" } };
         user = email.startsWith("test")
           ? { id: "u9", email, user_metadata: { name: "Tester" }, app_metadata: { test: true } }
-          : { id: "u1", email, user_metadata: { name: "Glenn" }, app_metadata: {} };
+          : { id: "u1", email, user_metadata: { name: "Alex" }, app_metadata: {} };
         return { data: { user }, error: null };
       },
       signOut: async () => { user = null; return {}; },

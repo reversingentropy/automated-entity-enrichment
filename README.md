@@ -79,19 +79,22 @@ src/
   export/           cards (the review data), desk_template.html (the first
                     desk, still the zip's), package (a zip for reviewers),
                     proposals (CSV), reviews (collect decisions), site (the
-                    online page)
-prototype/          desk.template.html: the second desk, the one online
-  eval/             the resolution prompt against frozen cases (cases.json)
+                    online page), weekly (the reviewers' Excel file),
+                    notify (the daily email)
+  eval/             the resolution prompt against frozen cases (cases.json);
+                    the evaluation's sheets, scoring and Evaluation page
   backfill/         the outlets' archives: collect, split, bodies, prompts
                     for an internal model, ingest and resolve by CSV
+prototype/          desk.template.html: the second desk, the one online
 config/             pipeline.toml: models, thinking, batching and pacing
-prompts/            relevance, extraction, resolution; tte/ holds what the
+prompts/            relevance, extraction, resolution, desk_greeting; tte/ holds what the
                     code injects into them or enforces after
 sql/                numbered setup scripts, run in order
 tests/              unit tests, no network; the desk in headless Chrome, the
                     queue in a throwaway Postgres (Docker)
-docs/               design.md, gotchas.md, review.md, backfill.md, the
-                    explainer page and the paper
+docs/               design.md, architecture.md, online.md, review.md,
+                    evaluation*.md, backfill.md, gotchas.md, numbers.md and
+                    the explainer page
 data/               ignored: the archive, the model's answers, built packages
 .github/workflows/  one workflow per job, plus tests
 ```
@@ -128,6 +131,8 @@ Copy `.env.example` to `.env` and fill in. `.env` is gitignored.
 | `SUPABASE_KEY` | `.env` + GitHub secret | **the `sb_secret_` key**: full access, used by the jobs and exports, never put in a page |
 | `GEMINI_API_KEY` | `.env` + GitHub secret | from aistudio.google.com/apikey |
 | `SUPABASE_ANON_KEY` | `.env` only | the public key; read only when building the online desk's page (`--site`) |
+| `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` | GitHub secrets only | the reviewers' daily email (`--notify`); without them the run prints the emails in its log ([docs/online.md](docs/online.md#the-daily-email)) |
+| `SEALION_API_KEY` | `.env` only | only for `scripts/sealion_trial.py`, the Malay and Tamil trial; nothing live reads it |
 
 Everything that changes what the pipeline does (which model answers each
 job, how hard it thinks, how work is batched and paced) is in one file,
@@ -219,29 +224,34 @@ between is left alone. The details are at the top of
 - [docs/backfill.md](docs/backfill.md): the archives and the internal model, with what the round trips returned
 - [docs/gotchas.md](docs/gotchas.md): what cost an evening
 - [docs/pipeline.html](docs/pipeline.html): the explainer for someone who has never seen any of this
-- [docs/paper.md](docs/paper.md): the paper for the IFLA Symposium on AI 2026
+- [docs/load-balancing.md](docs/load-balancing.md): how the desk shares records out, for the team
+- [docs/numbers.md](docs/numbers.md): the funnel's figures, dated
 
 ## Where it stands
 
-Figures as of 28 September 2026; [docs/numbers.md](docs/numbers.md) has the full
+Figures as of 26 October 2026; [docs/numbers.md](docs/numbers.md) has the full
 funnel, regenerated with `python -m src.export --numbers`.
 
 | Stage | State |
 |---|---|
-| 1. Relevance | nightly (midnight SGT; articles collected every two hours), queue drained; 149 of 3,511 live articles relevant |
-| 2. Extraction | nightly; 309 entities from the live articles |
-| 3. Resolution | nightly; all 309 resolved (101 matched, 206 new, 2 unsure) |
+| 1. Relevance | nightly (midnight SGT; articles collected every two hours from five outlets, about 120 a day); 324 of 7,173 live articles relevant |
+| 2. Extraction | nightly; 650 entities from the live articles |
+| 3. Resolution | nightly; all 650 resolved (205 matched, 143 of them with a change; 441 new; 2 unsure) |
 | TTE loader | first step of each run, for any new dump uploaded; 52,437 records from TTE-DELTA_20260901 |
 | 4. Consolidation | merged into the card layer; not a pipeline stage yet |
-| 5. Review | the desk online (accounts; the database deals one record at a time, and a hold lapses after an hour) and as a zip; 170 cards, none decided yet; two trial rounds on the offline desk (14 and 38 records) |
+| 5. Review | the desk online (accounts made on the page and approved; the database deals one record at a time, and a hold lapses after an hour) and as a zip; 351 cards (242 new entities), none decided for real yet; two trial rounds on the offline desk (14 and 38 records) |
 | 6. Export | `--weekly`: the week's approved changes as the reviewers' Excel file; no automatic apply, by design |
 | Archive | 295,279 articles (2015 on), 27,941 relevant, 12,447 through extraction (48,387 entities), all answered by the internal model. The answers are kept in files; the articles and entities are still in the database, about 100 MB, until moved out. `python -m src.backfill proposals` writes the unreviewed spreadsheet |
 
-Since then (to 15 October): five cataloguers tried both desks and chose the
-second, which is now the online desk; two rounds of their feedback are in it.
-The online desk shares records out through the database
+Since late September: five cataloguers tried both desks and chose the
+second, which is now the online desk, served by Cloudflare Workers; three
+rounds of their feedback are in it (the third on 21 October). Berita Harian
+and Tamil Murasu joined the feeds on 18 October, with a SEA-LION trial for
+them that replaces nothing live. The evaluation's labelling has its own page
+on the desk. The online desk shares records out through the database
 ([docs/load-balancing.md](docs/load-balancing.md)) and has not yet been used
-for real.
+for real. Most failed nights are Gemini's "high demand" (503), not the daily
+allowance.
 
 Known and unfinished:
 

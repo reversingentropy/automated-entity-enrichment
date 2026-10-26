@@ -3,9 +3,10 @@
 Since October 2026 the online page is the second desk (`prototype/desk.template.html`), which the reviewers chose; the zip still carries the first. Either way it is the same database behind it: the deck comes from a
 table after sign-in, every decision goes to a table as it is made, and a
 record is one reviewer's while it is on their desk. Up to a handful of
-reviewers work the same deck without doing anything twice. Nothing here
-depends on where the page is served from; it runs from a folder on a
-laptop, and would run unchanged from a static host later.
+reviewers work the same deck without doing anything twice. The page is
+served by Cloudflare Workers and rebuilt on every push to `main`; nothing in
+it depends on where it is served from, so it also runs from a folder on a
+laptop.
 
 ## Once
 
@@ -18,7 +19,8 @@ laptop, and would run unchanged from a static host later.
    service role key, which RLS does not apply to.
 
    Then **run `sql/12_field_test.sql`**: the columns that record which model
-   answered, and the evaluation's two logs. Then **`sql/13_desk_record.sql`**:
+   answered (the two log tables it also made were never used, and `sql/21`
+   drops them). Then **`sql/13_desk_record.sql`**:
    the function the desk calls for the properties of a record a reviewer
    finds by search. Then `sql/14` to `sql/17`: duplicate articles, the
    desk's queue, its four groups, and `article` and `rss_feeds` closed to
@@ -103,7 +105,8 @@ laptop, and would run unchanged from a static host later.
 
 ## Every night
 
-`.github/workflows/publish_deck.yml` runs after Job 3 and writes the deck:
+The publish step of `.github/workflows/nightly.yml` runs after Job 3 and
+writes the deck (`publish_deck.yml` does the same step alone, run by hand):
 
 ```bash
 python -m src.export --publish
@@ -122,22 +125,38 @@ python -m http.server -d data/dist/site 8000
 ```
 
 then open `http://localhost:8000`. The folder holds `index.html` and the
-explainer. It is built once and again only when the template changes; the
-data is fetched each time someone signs in. Opening `index.html` straight
-from the folder also works in Chrome and Edge; serving it is the safer
-habit, since some browsers keep a `file://` page from remembering the
-session.
+explainer. It changes only when the template changes; the data is fetched
+each time someone signs in. Opening `index.html` straight from the folder
+also works in Chrome and Edge; serving it is the safer habit, since some
+browsers keep a `file://` page from remembering the session.
 
-To put it on a host later, the folder is the whole site. Nothing in it needs
-a build step.
+The live copy is the same folder: `wrangler.jsonc` serves `dist/` on
+Cloudflare Workers, rebuilt on every push to `main`. Nothing in it needs a
+build step beyond `--site`.
 
 ## What a reviewer sees
 
-Sign in, then once per browser: the languages they read and which groups to
-work on (people, organisations, other vocab changes, create new records), changeable
-under **settings** in the masthead. Then the desk, as in the zip: three
-practice records the first time, **How this works** in the tray, **Your
-sheet** at the top with every decision, the filters and the two downloads.
+Sign in, and the first time, **How this works** and then the languages they
+read: English, Chinese, Malay and Tamil, by the outlet of each article.
+Both can be opened again from the foot of the side rail (**How this works**,
+**Languages**). The rail holds the pages:
+
+- **Home**: how many records wait, by group (all records, people,
+  organisations, other vocab changes, create new records), and a button to
+  start or continue.
+- **Review**: one record at a time, as the database deals it.
+- **Results**: under **Mine**, every decision with **Change** and **Mark
+  done in TTE**; under **Everyone's**, the team's view (below).
+- **Analytics**: your outcomes and time per record beside everyone's.
+- **Downloads**: the approved changes and every decision, yours or the
+  team's, as CSV.
+
+Evaluators also see an **Evaluation** page (`docs/evaluation-method.md`).
+
+On a record to create, each value the model found can be left out with ×,
+and **Edit** opens every value and the description for correcting; the
+record type can be changed too. The sheets carry the record as the reviewer
+left it, and the decision keeps what was left out and what was edited.
 
 Nothing is pre-assigned: there is one pile, latest news first, and the
 database deals the next card that matches your groups and languages, that
@@ -153,7 +172,7 @@ A hold left behind lapses by itself after the hour. To put one back sooner:
 
 ```bash
 python -m src.export --holds                    # who has which card
-python -m src.export --release glenn@nlb.gov.sg # back in the pile
+python -m src.export --release someone@nlb.gov.sg # back in the pile
 ```
 
 Someone without an account makes one on the sign-in screen, and it waits
@@ -167,29 +186,33 @@ python -m src.export --weekly --since 2026-09-21  # from a date
 ```
 
 writes `data/changes/approved-changes-<date>.xlsx`, the template agreed with
-Yaw Huah: two sheets (existing entities, new entities), one row per change
+the reviewers: two sheets (existing entities, new entities), one row per change
 with UID, Descriptor, Vocab Class, Attribute, Current Value, Suggested Value,
-Article URL, Reviewer and Timestamp, grouped by reviewer. Each reviewer
+Article URL, Reviewer, Timestamp and Status, grouped by reviewer. A record
+to create carries the type and the values the reviewer chose on the desk. Each reviewer
 applies their own rows in TTE by hand and sets **Status** to Done. A record
 reported by several articles is one card, so each change appears once. Test
 accounts are left out.
 
-## Your sheet: done in TTE
+## Results: done in TTE
 
-Each approved record on **Your sheet** has a **mark done in TTE** button: press
-it once the change is made in TTE. It is saved with the decision, so the
+Each approved record under **Results > Mine** has a **Mark done in TTE**
+button: press it once the change is made in TTE. After that the decision is
+fixed; a correction is a new edit in TTE. It is saved with the decision, so the
 weekly file's Status column comes out already saying Done, and the team page
 counts it. (The evaluation's weekly minutes and hand-found changes are kept in
 its logs spreadsheet, `python -m src.eval sheets logs`, not on the desk.)
 
-## The team page
+## The team's view
 
-**the team** in the masthead: every card by group (decided, kept for review,
-on someone's desk, waiting), what waits by language, this week's approvals
-and how many are done in TTE, and how the pipeline's last run went (when the
-cards were published, the newest news, the TTE dump loaded, each step's
-outcome). No one's individual numbers are shown. It also downloads the whole
-team's decisions.
+**Results > Everyone's**: every card by group (decided, kept for review, on
+someone's desk, waiting), what waits by language, this week's approvals and
+how many are done in TTE, how the pipeline's last run went (when the cards
+were published, the newest news, the TTE dump loaded, each step's outcome),
+and **who decided how many**: each reviewer's records decided today, in the
+last 7 days and in all, and how many they kept for review. The admin also
+sees accounts waiting for approval there. **Downloads** has the whole team's
+decisions.
 
 ## The daily email
 

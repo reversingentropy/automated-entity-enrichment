@@ -143,8 +143,8 @@ def test_the_evaluation_page_deals_rows_and_saves_labels(tmp_path):
                      "text": ""}}]
     an_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
     card = cards[0]
-    # Glenn's one desk decision: the date started (two parts) and the description accepted, the founder left out
-    decision = {"verdict": "approve", "kind": "approved", "reviewer": "Glenn", "at": an_hour_ago,
+    # One reviewer's desk decision: the date started (two parts) and the description accepted, the founder left out
+    decision = {"verdict": "approve", "kind": "approved", "reviewer": "Alex", "at": an_hour_ago,
                 "link": "https://www.zaobao.com/news/singapore/x",
                 "rows": [{"field": "Day Started (dd)", "current": "01", "proposed": "16", "from": "https://www.zaobao.com/news/singapore/x"},
                          {"field": "Description", "current": "", "proposed": "A maker of robots.", "from": "https://www.zaobao.com/news/singapore/x"}],

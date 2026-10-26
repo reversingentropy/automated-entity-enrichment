@@ -71,14 +71,16 @@ python -m src.job2_extraction --limit 3 --dry-run
 For each relevant, unprocessed article, one at a time: read the page, extract
 entities, write them, mark processed. The text lives in memory for the seconds
 between the fetch and the write and is never stored: the table keeps what was
-extracted, not what was read. Only the four or five articles a night that
-passed relevance are fetched at all.
+extracted, not what was read. Only the two or three articles a night that
+passed relevance are fetched at all (week to 26 October 2026: 18 of 855).
 
 A page that cannot be read (paywall, dead link) is recorded on the row,
 `fetch_error` and `fetch_attempts` from `sql/06_article_fetch.sql`, and after
 three nights the queue leaves it alone; before the count existed such rows
-failed again every night with nothing reporting them. A person can put text
-on the row by hand for one of these, and the job will use it and clear it.
+failed again every night with nothing reporting them. To try one again, set
+its `fetch_attempts` back to 0. A page that is mostly Chinese counts as an
+article from 150 characters rather than 400: a whole Zaobao brief can be
+shorter than the English floor.
 
 Writes are **delete-then-insert per article**, so a re-run replaces rather than
 duplicates. `processed_extraction` is set last. An empty result is a success,
@@ -94,7 +96,8 @@ and the deck falls back to the headline.
 Not storing text has one cost: re-extracting after a prompt change means
 fetching the pages again, and a page that has rotted or gone behind a paywall
 since is lost to the re-run. Text was stored for the first two months for
-that reason; the space was judged not worth it against a 500 MB database.
+that reason; the space was judged not worth it against a 500 MB database, and
+`sql/21` dropped the column.
 
 The prompt also returns `entity_name_en`, an English or romanised form of any
 non-English name. This is the single biggest lever on match quality: Chinese
@@ -294,11 +297,15 @@ the right answer depends on policy you have not set yet.
 
 | Table | Purpose |
 |---|---|
-| `article` | ingested articles; `relevant`, `reason`, `processed_extraction`, `text` |
+| `article` | ingested articles; `relevant`, `reason`, `processed_extraction`; never the text |
 | `extracted_entities` | one row per entity found in an article; `resolved` is Job 3's queue |
-| `entities` | TTE authority records (~51,900), with `canonical_uid` |
+| `entities` | TTE authority records (52,437 from the September dump), with `canonical_uid` |
 | `tte_imports` | ingestion ledger, keyed by filename + checksum |
 | `candidate_matches` | Job 3 resolution proposals, decided on the review desk |
+
+The pipeline's tables. The desk's (`deck`, `reviews`, `claims`, `account_gate`)
+and the evaluation's (`eval_items`, `eval_labels`, `eval_holds`,
+`eval_results`) are in [architecture.md](architecture.md#data-model).
 
 ## Design notes
 
@@ -421,25 +428,21 @@ miss; it costs two reads a run and no tokens.
 The working approach is therefore fuzzy retrieval on both the source name and
 `entity_name_en`, with the LLM discriminating on fields.
 
-**Model settings are ordered chains**, strongest first, set in
-`config/pipeline.toml` and nowhere else. A later entry is reached only when an earlier model's quota is exhausted; any
-other failure surfaces immediately, since trying three models against the same
-real bug just burns three models.
+**Models are set in `config/pipeline.toml` and nowhere else**, one list per
+job, strongest first. A later entry is reached only when an earlier model's
+daily allowance is spent; any other failure surfaces immediately, since trying
+several models against the same real bug just burns them all. Each list now
+holds one model:
 
-The order follows how many requests a job makes, not which model is best:
-
-| Job | Requests | Chain |
+| Job | Requests | Model |
 |---|---|---|
-| Relevance | one a night | `3.7-flash → 3.6-flash → flash-lite` |
-| Extraction | one per article | `flash-lite → 3.6-flash → 3.7-flash` |
-| Resolution | one per article | `3.7-flash → 3.6-flash → flash-lite` |
+| Relevance | one a night (100 articles a request) | `gemini-3.8-flash` |
+| Extraction | one per relevant article | `gemini-3.8-flash` |
+| Resolution | one per article | `gemini-3.5-flash-lite` |
 
-Relevance is a single call, so it leads with the strongest model and will never
-reach the rest. Extraction leads with headroom instead. Flash Lite allows 500
-requests a day against 20 for the full Flash models, keeping the others as a
-reserve large enough to finish a nightly run after a backfill has drained it.
-Resolution is per-article too, but it is the highest-stakes judgement here, so
-it leads with strength and falls back to headroom.
+The full Flash models allow 20 requests a day, Flash Lite 500. Relevance and
+extraction share the one Flash model's 20, which a normal night (one
+relevance request, two or three articles) is well inside.
 
 They used to be overridable from `.env` and from GitHub variables, and the
 three drifted: the nightly ran 3.7-flash first while a laptop `.env` ran every
@@ -453,11 +456,17 @@ minutes each: Job 3 took about ten minutes an article and hit its hour limit
 with nine entities left. A per-minute limit still gets the short wait Gemini
 asks for.
 
-**Batch size rarely matters at current volume.** At ~65 articles/day, a
-`batch_size` of 100 and of 1000 both cost exactly one request per
-day; they only diverge when the queue exceeds 100, i.e. after an outage. Larger
-batches do measurably cost recall (batch 100 found 16 relevant articles where
-batch 548 found 6), so the smaller value is free insurance, and 100 is what the
-pipeline uses. The price shows only after a long outage: each 100 articles of
-backlog is one request, against 20 a day on the full Flash models. The pipeline
-uses roughly 8 of 500 daily requests; throughput has never been the constraint.
+**What stops a night is mostly the model being busy.** In the week to
+26 October 2026, five of eight nightly runs failed: all five on Gemini's 503
+"high demand", two of them also on the daily allowance (429). The batch or
+article is left queued, and the next night, or a run by hand in AI Studio
+(`python -m src.manual`), picks it up.
+
+**Batch size rarely matters at current volume.** At about 120 articles a day
+(855 in the week to 26 October 2026, five outlets), a `batch_size` of 100 costs
+one or two requests a day, and 1000 one. They only diverge when the queue
+exceeds 100, i.e. after an outage. Larger batches do measurably cost recall
+(batch 100 found 16 relevant articles where batch 548 found 6), so the smaller
+value is cheap insurance, and 100 is what the pipeline uses. The price shows
+after a long outage: each 100 articles of backlog is one request, against 20 a
+day on the full Flash model.

@@ -1,12 +1,12 @@
 """
 Reviewer accounts for the online desk, made from the command line.
 
-    python -m src.export --account glenn@nlb.gov.sg "Glenn Hong"
+    python -m src.export --account someone@nlb.gov.sg "Their Name"
     python -m src.export --account test@nlb.gov.sg "Test account" --test
     python -m src.export --accounts
-    python -m src.export --reset-password glenn@nlb.gov.sg
+    python -m src.export --reset-password someone@nlb.gov.sg
     python -m src.export --account someone@nlb.gov.sg "Their Name" --password   # choose it yourself
-    python -m src.export --mark-evaluator glenn@nlb.gov.sg
+    python -m src.export --mark-evaluator someone@nlb.gov.sg
     python -m src.export --mark-admin EMAIL     # Approve and Decline on the Team page
     python -m src.export --approve EMAIL        # the same Approve, from here
 

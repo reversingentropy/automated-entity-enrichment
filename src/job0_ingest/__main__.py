@@ -11,8 +11,8 @@ it in the list.
   python -m src.job0_ingest              # full run (what CI does)
   python -m src.job0_ingest --dry-run    # fetch and parse, write nothing
 
-Runs before Job 1 in nightly.yml, on both of its schedules: articles a feed
-carries now are what Job 1 scores next. An article that is a story already
+Runs every two hours from job0_ingest.yml, so the articles a feed carries
+are waiting when the nightly Job 1 scores them. An article that is a story already
 stored at another address is stored as already judged, so no job works on it
 twice (src/shared/stories.py).
 """

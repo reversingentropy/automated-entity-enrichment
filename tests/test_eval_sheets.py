@@ -43,7 +43,7 @@ def test_a_marked_sheet_scores_against_the_key(tmp_path):
     back.mkdir()
     rows = pd.DataFrame([{"id": 1, "same": "Y"}, {"id": 2, "same": "N"},
                          {"id": 3, "same": "Y"}, {"id": 4, "same": "?"}])
-    with pd.ExcelWriter(back / "2-matching-glenn.xlsx", engine="openpyxl") as w:
+    with pd.ExcelWriter(back / "2-matching-alex.xlsx", engine="openpyxl") as w:
         rows.to_excel(w, sheet_name="rows", index=False)
     assert report(back, tmp_path) == 0
 
@@ -146,6 +146,6 @@ def test_a_weighted_miss_counts_for_more_than_one(tmp_path):
     rows = pd.DataFrame([{"url": "a", "source": "cna", "relevant": "TRUE"},
                          {"url": "b", "source": "cna", "relevant": "TRUE"},
                          {"url": "c", "source": "cna", "relevant": "TRUE"}])
-    with pd.ExcelWriter(back / "1-relevance-glenn.xlsx", engine="openpyxl") as w:
+    with pd.ExcelWriter(back / "1-relevance-alex.xlsx", engine="openpyxl") as w:
         rows.to_excel(w, sheet_name="rows", index=False)
     assert report(back, tmp_path) == 0
