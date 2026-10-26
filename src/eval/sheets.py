@@ -155,7 +155,7 @@ def relevance(out: Path) -> None:
     _write(out, "1-relevance", sheet, key,
            "Fill in 'relevant' with TRUE or FALSE for every row. TRUE = the article names an "
            "entity the authority file holds or should hold, AND reports a fact that would change "
-           "or create its record. A mention alone is FALSE. The full rules: docs/labelling-guide.md.",
+           "or create its record. A mention alone is FALSE. The full rules: docs/evaluation.md, On the Evaluation page.",
            f"{SHARED['relevance']} rows")
     _record(out, "relevance", groups)
 
@@ -277,7 +277,7 @@ def matching(out: Path) -> None:
     _write(out, "2-matching", pd.DataFrame(rows), pd.DataFrame(key),
            "Fill in 'same' with Y, N or ? for every row. Y = the sentence and the TTE record "
            "describe one and the same person or thing. ? = the row does not carry enough to "
-           "decide; it is a real answer and is counted. The full rules: docs/labelling-guide.md.",
+           "decide; it is a real answer and is counted. The full rules: docs/evaluation.md, On the Evaluation page.",
            f"{SHARED['matching']} rows")
     _record(out, "matching", groups)
 
@@ -360,7 +360,7 @@ def extraction(out: Path, fetch: bool = True) -> None:
            "For each name the app found, put ok / wrong / not_worth in 'verdict', and any field "
            "whose value is wrong in 'field_errors'. On each article's blank last row, put in "
            "'missed' any name the article carries that the app should have found, one per line. "
-           "The full rules: docs/labelling-guide.md.",
+           "The full rules: docs/evaluation.md, On the Evaluation page.",
            f"{SHARED['extraction']} articles")
     _record(out, "extraction", groups)
 

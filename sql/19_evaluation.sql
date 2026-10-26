@@ -1,7 +1,7 @@
 -- The evaluation's three labelled sheets, labelled on the desk's Evaluation page instead of in Excel.
 -- Run after 18_malay_tamil_feeds.sql. Re-runnable.
 --
--- The sheets are the ones `python -m src.eval sheets` built (docs/evaluation-method.md): relevance,
+-- The sheets are the ones `python -m src.eval sheets` built (docs/evaluation.md): relevance,
 -- matching and extraction, drawn from every year the AI has handled. `python -m src.eval online publish` puts
 -- their rows here; `python -m src.eval online pull` writes the labels back out as the returned sheets
 -- `python -m src.eval score` has always read, so the scoring is unchanged.

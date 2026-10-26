@@ -70,6 +70,7 @@
       && /one of everyone\u2019s 50/.test(stage()) && !/app_said|AI said/.test(stage()) && !/Open article/.test(stage());
     // the row alone, and its rules a click away
     out.rowIsShort = !/class="evguide"/.test(stage()) && /data-act="ev-guide">Rules</.test(stage());
+    out.relGreenRight = stage().indexOf('data-v="n"') < stage().indexOf('data-v="y"');
     act("ev-guide");
     out.fullGuideOpens = !!q("#veil .evguide") && /Not relevant:/.test(q("#veil").innerHTML);
     key("y"); await tick(40);
@@ -111,6 +112,7 @@
     act("ev-start", { dataset: { t: "matching" } }); await tick(40);
     out.matchGuide = EV.guide && /A matching name alone is not enough/.test(stage()) && /prompts\/resolution.txt/.test(stage()) && !/Not relevant/.test(stage());
     act("ev-guide-done"); await until(() => EV.item);
+    out.matchGreenRight = /data-v="N"[\s\S]*data-v="\?"[\s\S]*data-v="Y"/.test(stage());
     out.matchShown = /same\?/.test(stage()) && /Lee, Theng Kiat/.test(stage()) && /<mark>Lee Theng Kiat<\/mark>/.test(stage()) && /Can\u2019t tell/.test(stage()) && /Open article/.test(stage());
     const m = F.evalItems.filter(i => i.task === "matching").sort((a, b) => a.ord - b.ord).map(i => i.item);
     key("?"); await until(() => EV.item && EV.item.ord === 2);
@@ -125,6 +127,7 @@
     act("ev-guide-done"); await until(() => EV.item);
     const x1 = EV.item, [n0, n1] = x1.body.names.map(n => n.entity);
     out.extSharedTwenty = /one of everyone\u2019s 20/.test(stage());
+    out.extGreenRight = /data-v="wrong"[\s\S]*?data-v="not_worth"[\s\S]*?data-v="ok"/.test(q(".ev3").innerHTML);
     out.extHighlights = /<mark>Acme Robotics<\/mark>/.test(stage()) && /<mark>Chng Siew Hern<\/mark>/.test(stage()) && !/<mark>Lim Bee Hoon/.test(stage());
     out.extWaits = q('[data-act="ev-save"]').disabled && /2 names still to mark/.test(stage()) && !q('[data-act="ev-field"]');
     act("ev-verdict", { dataset: { i: "0", v: "ok" } });

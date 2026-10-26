@@ -770,7 +770,8 @@ const stepper = (mode, c, st) => {
   return `<ol class="steps">${first}${second ? `<li class="bar" aria-hidden="true"></li>${second}` : ""}</ol>`;
 };
 const stamp = (a, cls) => `<button class="stamp ${cls}" data-act="${a[0]}"><b>${a[1]}</b>${a[2] ? `<span>${a[2]}</span>` : ""}</button>`;
-const actions = (a, b, quiet) => `<div class="actions"><div class="pair">${stamp(a, a[3] || "go")}${stamp(b, b[3] || "grey")}</div>
+// the way forward on the right, in green; the other on the left
+const actions = (a, b, quiet) => `<div class="actions"><div class="pair">${stamp(b, b[3] || "grey")}${stamp(a, a[3] || "go")}</div>
   <div class="qrow">${quiet.map(q => `<button class="quiet" data-act="${q[0]}">${q[1]}</button>`).join("")}</div></div>`;
 
 // search: every record of the card's type, ranked as the desk ranks it
@@ -1968,8 +1969,8 @@ const EV_TASKS = {
   extraction: { name: "Extraction", ask: "Did the AI find the right names, with the right details?" },
   matching: { name: "Matching", ask: "Is the one in the news the same as this TTE record?" },
 };
-const EV_VERDICTS = [["ok", "OK"], ["wrong", "Wrong"], ["not_worth", "Not worth a record"]];
-// The labelling guide (docs/labelling-guide.md, read by src/eval/guide.py), put in by the site build: per sheet, the
+const EV_VERDICTS = [["wrong", "Wrong"], ["not_worth", "Not worth a record"], ["ok", "OK"]];   // red on the left, green on the right
+// The page's text (docs/evaluation.md, read by src/eval/guide.py), put in by the site build: per sheet, the
 // rules the AI was given, in plain words, and the version of each prompt they were written from.
 const EV_GUIDE = /*__EVAL_GUIDE__*/{};
 // Shown each time a sheet is chosen, to accept before the first row; a click away on every row after.
@@ -1984,7 +1985,7 @@ function evGuideVeil(t) {
   document.body.appendChild(v);
   v.querySelector(".go").focus({ preventScroll: true });   // read from the top; Enter or Escape still closes it
 }
-// How the evaluation works, and the maths behind its numbers (docs/evaluation-how.md): by itself the first time an
+// How the evaluation works, and the maths behind its numbers (docs/evaluation.md): by itself the first time an
 // evaluator opens the page in this browser, and from the page's button after.
 function evHowVeil() {
   if ($("#veil") || !EV_GUIDE.how) return;
@@ -2192,17 +2193,17 @@ function evScreen() {
   const ask = `<p class="evq">${T.ask}</p>`;
   if (EV.task === "relevance") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, false)}</div>
       <blockquote>${esc(b.title)}</blockquote>${b.description ? `<p class="evdesc">${esc(b.description)}</p>` : ""}</div></section>${ask}
-    <div class="actions"><div class="pair"><button class="stamp go${was("relevant", true)}" data-act="ev-rel" data-v="y"><b>Yes, relevant</b><span>Key Y</span></button>
-      <button class="stamp red${was("relevant", false)}" data-act="ev-rel" data-v="n"><b>No</b><span>Key N</span></button></div></div>`;
+    <div class="actions"><div class="pair"><button class="stamp red${was("relevant", false)}" data-act="ev-rel" data-v="n"><b>No</b><span>Key N</span></button>
+      <button class="stamp go${was("relevant", true)}" data-act="ev-rel" data-v="y"><b>Yes, relevant</b><span>Key Y</span></button></div></div>`;
   if (EV.task === "matching") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, true)}</div>
       <blockquote>${evMark(b.evidence, [b.name, b.name_en])}</blockquote>
       <p class="tr">${esc(b.name)}${b.name_en && b.name_en !== b.name ? ` (${esc(b.name_en)})` : ""}${b.article ? ` &middot; from &ldquo;${esc(gist(b.article, 90))}&rdquo;` : ""}</p></div>
     <div class="join">same?</div>
     <div class="side tte"><div class="label"><span>In TTE now</span><span class="src">no. ${esc(b.tte_id)}</span></div><p class="name">${esc(b.tte_name)}</p>
       ${(b.tte_fields || []).length ? `<div class="evrec">${b.tte_fields.map(([k, v]) => `<div><span class="k">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>` : `<p class="ident">Nothing else on the record.</p>`}</div></section>${ask}
-    <div class="actions"><div class="evtrio"><button class="stamp go${was("same", "Y")}" data-act="ev-same" data-v="Y"><b>Same</b><span>Key Y</span></button>
-      <button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b><span>Key N</span></button>
-      <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b><span>Key ?</span></button></div></div>`;
+    <div class="actions"><div class="evtrio"><button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b><span>Key N</span></button>
+      <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b><span>Key ?</span></button>
+      <button class="stamp go${was("same", "Y")}" data-act="ev-same" data-v="Y"><b>Same</b><span>Key Y</span></button></div></div>`;
   const names = (b.names || []).map((n, i) => {
     const g = L.names[n.entity];
     return `<div class="evname"><div><b>${esc(n.entity)}</b><span class="tt">${esc(kind({ type: n.type || "" }))}</span></div>

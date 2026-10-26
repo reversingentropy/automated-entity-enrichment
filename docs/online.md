@@ -151,7 +151,7 @@ Both can be opened again from the foot of the side rail (**How this works**,
 - **Downloads**: the approved changes and every decision, yours or the
   team's, as CSV.
 
-Evaluators also see an **Evaluation** page (`docs/evaluation-method.md`).
+Evaluators also see an **Evaluation** page (`docs/evaluation.md`).
 
 On a record to create, each value the model found can be left out with ×,
 and **Edit** opens every value and the description for correcting; the

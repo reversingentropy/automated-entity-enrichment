@@ -183,7 +183,9 @@ def test_the_guide_has_rules_for_every_sheet_and_names_its_prompts():
     from src.eval.guide import ROOT, sections
 
     got = sections()
-    assert set(got) == {"general", *online.TASKS}
+    assert set(got) == {"how", "maths", "general", *online.TASKS}
+    # the plan around them, in the same document, stays off the page
+    assert "Not measured" not in json.dumps(got) and "Option A" not in json.dumps(got)
     for task in online.TASKS:
         sec = got[task]
         assert sec["html"].count("<b>") >= 2 and len(sec["html"]) < 1500          # a few lines, not a manual

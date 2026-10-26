@@ -36,6 +36,9 @@
     out.allFourLanguagesOffered = [...document.querySelectorAll("#veil .lang input")].map(x => x.value).join() === "en,zh,ms,ta";
     act("savelangs");
     out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && F.rpcs.length === 0;
+    // a card's two stamps: the other choice on the left, the way forward on the right in green
+    const pair = actions(["same", "Same record", "", "go"], ["discard", "No thanks", "", "red"], []);
+    out.greenOnTheRight = pair.indexOf("stamp red") < pair.indexOf("stamp go");
     // Feedback 3: a date's day, month and year are one change, TTE's parts kept in grey; accepted, each part that
     // changes is its own field on the sheet
     const dc = CARDS.find(x => !x.isNew && ordered(x).length && !reopened(x) && x.picked !== ordered(x)[0].uid) || CARDS.find(x => !x.isNew && ordered(x).length);

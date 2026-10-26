@@ -218,9 +218,7 @@ between is left alone. The details are at the top of
 - [docs/design.md](docs/design.md): what each stage does and the measurements behind each decision
 - [docs/review.md](docs/review.md): the cards, the desk, sending it out, what comes back
 - [docs/online.md](docs/online.md): the desk with the database behind it: accounts, one reviewer per card, collecting
-- [docs/evaluation.md](docs/evaluation.md): the evaluation for the team: accuracy, effectiveness, efficiency, satisfaction, reliability
-- [docs/evaluation-method.md](docs/evaluation-method.md): the method in full: sampling, labelling rules, formulas, commands
-- [docs/evaluation-how.md](docs/evaluation-how.md): the Evaluation page's "How this works", and the maths behind it
+- [docs/evaluation.md](docs/evaluation.md): the evaluation plan: accuracy, satisfaction, reliability, and efficiency still to discuss; with the Evaluation page's text
 - [docs/backfill.md](docs/backfill.md): the archives and the internal model, with what the round trips returned
 - [docs/gotchas.md](docs/gotchas.md): what cost an evening
 - [docs/pipeline.html](docs/pipeline.html): the explainer for someone who has never seen any of this

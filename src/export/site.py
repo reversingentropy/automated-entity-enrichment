@@ -25,12 +25,11 @@ GUIDE_MARK = "/*__EVAL_GUIDE__*/{}"
 
 
 def online_page(template: str, url: str, anon_key: str) -> str:
-    """The template as the online page: the client library and the keys in the head, and for the Evaluation
-    page the labelling guide (docs/labelling-guide.md) and how the evaluation works (docs/evaluation-how.md)."""
+    """The template as the online page: the client library and the keys in the head, and the Evaluation
+    page's text from docs/evaluation.md (src/eval/guide.py)."""
     if GUIDE_MARK in template:
-        from src.eval.guide import GUIDE, HOW, sections
-        text = {**sections(GUIDE), **sections(HOW)}
-        template = template.replace(GUIDE_MARK, json.dumps(text, ensure_ascii=False).replace("</", "<\\/"))
+        from src.eval.guide import sections
+        template = template.replace(GUIDE_MARK, json.dumps(sections(), ensure_ascii=False).replace("</", "<\\/"))
     config = {"url": url, "anonKey": anon_key}
     head = (f'<script src="{SUPABASE_JS}"></script>\n'
             f"<script>window.__ONLINE__ = {json.dumps(config)};</script>\n")

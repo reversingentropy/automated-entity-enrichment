@@ -1,15 +1,16 @@
 """
-The labelling guide (docs/labelling-guide.md), as the desk's Evaluation page shows it.
+The Evaluation page's text, read from the sections of docs/evaluation.md marked with an `{#id}`: how the
+evaluation works and its maths, and each sheet's rules for labellers.
 
-The guide is the prompts' rules in plain words, so a labeller checks the AI against what it was told. Each
-task's section names the prompt files it was written from, with the first eight characters of each file's
-SHA-256; `stale()` lists any that have changed since, and the tests stop on them, so a rule changed in a
-prompt is never labelled against the old one without anyone noticing.
+Each sheet's rules are the prompts' rules in plain words, so a labeller checks the AI against what it was
+told. The section names the prompt files it was written from, with the first eight characters of each
+file's SHA-256; `stale()` lists any that have changed since, and the tests stop on them, so a rule changed
+in a prompt is never labelled against the old one without anyone noticing.
 
-The site build (`python -m src.export --site`) puts the sections into the page, with those of
-docs/evaluation-how.md, the page's "How this works"; this reads only the little
-Markdown the guide uses: `##` sections with an `{#id}`, `###` headings, `-` lists (nested by two spaces),
-paragraphs, **bold**, *italic* and `code`.
+The site build (`python -m src.export --site`) puts the sections into the page; this reads only the little
+Markdown they use: `##` sections with an `{#id}`, `###` headings, `-` lists (nested by two spaces),
+paragraphs, **bold**, *italic* and `code`. A `##` heading without an `{#id}` ends a section, so the rest
+of the document stays off the page.
 """
 
 import hashlib
@@ -18,8 +19,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GUIDE = ROOT / "docs" / "labelling-guide.md"
-HOW = ROOT / "docs" / "evaluation-how.md"         # the page's "How this works", and the maths
+GUIDE = ROOT / "docs" / "evaluation.md"
 SECTION = re.compile(r"^## (.+?) \{#(\w+)\}\s*$")
 SOURCE = re.compile(r"`(prompts/[\w/.-]+)` \(version ([0-9a-f]{8})\)")
 
@@ -76,13 +76,15 @@ def to_html(text: str) -> str:
 
 
 def sections(path: Path = GUIDE) -> dict[str, dict]:
-    """Each section by its id: its title, the prompts it was written from, and its rules."""
+    """Each marked section by its id: its title, the prompts it was written from, and its text."""
     found, key = {}, None
     for line in path.read_text(encoding="utf-8").splitlines():
         m = SECTION.match(line)
         if m:
             key = m.group(2)
             found[key] = {"title": m.group(1), "lines": []}
+        elif line.startswith(("# ", "## ")):
+            key = None
         elif key:
             found[key]["lines"].append(line)
     out = {}
