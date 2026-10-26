@@ -93,6 +93,24 @@
     out.newRecordEditOnSheet = changesRows([ex]).some(r => r[2] === "Affiliations(groupName)" && r[4] === "KK Women's and Children's Hospital")
       && ex.edited.length === 1 && toDecision(ex, nc).fields.length === ex.fields.length && toDecision(ex, nc).edited.length === 1;
     out.newRecordLeftOutSaved = toDecision(nx, nc).leftOut.length === 1 && fromDecision(toDecision(nx, nc), nc).leftOut.length === 1;
+    // a record to create from a Chinese article: the Chinese name goes on the sheet as its own row, and Edit opens
+    // both names; emptied, the Chinese name stays off the sheet
+    const zn = { ...nc, entity: "陈劲龙", entityEn: "Chen, Jinlong" }, zst = fresh(zn);
+    const zrows = st => changesRows([{ kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, st), names: namesOf(zn, st), leftOut: [], accepted: [], when: new Date() }]);
+    out.newRecordVariantRow = zrows(zst).some(r => r[2] === "Non-English name" && r[4] === "陈劲龙") && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
+      && /<p class="orig">陈劲龙<\/p>/.test(create(zn, zst));
+    zst.nedit = true;
+    out.newRecordNamesEditable = (create(zn, zst).match(/class="cin nin nname/g) || []).length === 2;
+    zst.nval["name:en"] = "Chen, Jin Long"; zst.nval["name:zh"] = "陈锦龙";
+    const zx = { kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, zst), edited: editedOf(zn, zst), names: namesOf(zn, zst), leftOut: leftOutOf(zn, zst), accepted: [], when: new Date() };
+    const zd = toDecision(zx, zn);
+    out.newRecordNamesSaved = zd.names.name === "Chen, Jin Long" && zd.names.variant === "陈锦龙" && fromDecision(zd, zn).names.variant === "陈锦龙"
+      && zd.edited.some(e => e.field === "Name" && e.to === "Chen, Jin Long") && zd.edited.some(e => e.field === "Non-English name" && e.to === "陈锦龙")
+      && zrows(zst).some(r => r[2] === "Non-English name" && r[4] === "陈锦龙");
+    zst.nval["name:zh"] = " "; zst.nval["name:en"] = "";
+    out.newRecordVariantEmptied = !zrows(zst).some(r => r[2] === "Non-English name") && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
+      && leftOutOf(zn, zst).some(o => o.field === "Non-English name" && o.value === "陈劲龙");
+    out.englishRecordNoVariantRow = !changesRows([{ ...ex, entityEn: "", names: namesOf(nc, ast) }]).some(r => r[2] === "Non-English name");
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);

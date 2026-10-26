@@ -205,6 +205,44 @@ def test_a_record_to_create_goes_on_the_sheet_as_the_reviewer_left_it():
     assert [row[3:6] for row in new] == [["Affiliations(groupName)", "", "People's Association (PA)"]]
 
 
+def test_a_chinese_name_for_a_record_tte_has_is_on_the_sheet_only_as_accepted():
+    from src.export.weekly import rows_for
+
+    link = "https://www.zaobao.com.sg/x"
+    cards = {"7": {"key": "uid:18773908", "entity": "雪城", "entityEn": "Snow City", "type": "FACILITY", "pids": [7],
+                   "sources": [{"link": link}]}}
+    d = {"pid": 7, "verdict": "approve", "chose": "18773908", "record": "Snow City", "reviewer": "R",
+         "at": "2026-10-26T03:00:00Z", "rows": []}
+    # No change to its names: nothing on the sheet.
+    existing, _ = rows_for([d], cards, {"18773908": "_Geobuildings"}, {})
+    assert existing == []
+    # Accepted as edited, once, under the sheet's own name for it.
+    d["rows"] = [{"field": "Non-English name", "current": "", "proposed": "雪城 (edited)", "from": link}]
+    existing, _ = rows_for([d], cards, {"18773908": "_Geobuildings"}, {})
+    assert [row[3:6] for row in existing] == [["Variant name", "", "雪城 (edited)"]]
+
+
+def test_a_new_records_chinese_name_is_a_variant_name_row_as_the_reviewer_left_it():
+    from src.export.weekly import rows_for
+
+    cards = {"6": {"key": "new:PERSON:陈劲龙", "entity": "陈劲龙", "entityEn": "Chen, Jinlong", "type": "PERSON", "pids": [6],
+                   "sources": [{"link": "https://www.zaobao.com.sg/x"}], "newsFields": [{"key": "Title", "value": "Dr"}]}}
+    decisions = [{"pid": 6, "verdict": "approve", "chose": "new-entity", "reviewer": "R", "at": "2026-10-26T03:00:00Z"}]
+    # A decision from before the desk saved the names: the model's.
+    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
+    assert [row[1:6:2] for row in new] == [["陈劲龙 (Chen, Jinlong)", "Title", "Dr"],
+                                           ["陈劲龙 (Chen, Jinlong)", "Variant name", "陈劲龙"]]
+    # Both names corrected on the desk.
+    decisions[0]["names"] = {"name": "Chen, Jin Long", "variant": "陈锦龙"}
+    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
+    assert [row[1:6:2] for row in new] == [["陈锦龙 (Chen, Jin Long)", "Title", "Dr"],
+                                           ["陈锦龙 (Chen, Jin Long)", "Variant name", "陈锦龙"]]
+    # Emptied on the desk: no variant name row.
+    decisions[0]["names"] = {"name": "Chen, Jinlong", "variant": ""}
+    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
+    assert [row[3] for row in new] == ["Title"] and new[0][1] == "Chen, Jinlong"
+
+
 def _desk(n_waiting_people=2):
     cards = [{"key": f"uid:{i}", "type": "PERSON", "entity": f"Person {i}",
               "sources": [{"link": "https://www.straitstimes.com/x"}]} for i in range(n_waiting_people)]

@@ -170,6 +170,8 @@
   .nohits{color:var(--ink3);font-size:.9rem}
   .draftbox{padding:1rem 1.3rem}
   .draftbox .orig{color:var(--ink2);font-size:.95rem;margin:0 0 .6rem}
+  .draftbox .nname{width:min(100%,22rem);vertical-align:middle}
+  .draftbox .nname.alt{display:block;font-size:.95rem;margin:.2rem 0 .6rem}
   .focus .draftbox{background:repeating-linear-gradient(135deg,#fff,#fff 10px,#FAF8F2 10px,#FAF8F2 20px)}
 
   .actions{position:sticky;bottom:0;margin:1.1rem 0 0;padding:.9rem 0;background:linear-gradient(rgba(244,241,234,0),var(--bg) 30%);display:grid;gap:.55rem}
@@ -838,12 +840,23 @@ function who(c, st) {
 // knows is wrong must not reach it.
 const fieldVals = f => String(f.value || "").split(" | ").filter(v => v.trim());
 const newVal = (st, fi, vi, v) => { const e = (st.nval || {})[fi + ":" + vi]; return e != null ? e : v; };
+// The record's names, as the reviewer left them: the English name it is filed under and, when the article gives the
+// name in another script, that name as written, which goes on the sheet as a non-English name. Emptied, the
+// non-English name stays off the sheet; the English name falls back to the model's, as a record needs one.
+const hasOther = c => !!c.entityEn && c.entity !== c.entityEn;
+const namesOf = (c, st) => {
+  const nv = st.nval || {}, en = String(nv["name:en"] || "").trim();
+  return { name: en || c.entityEn || c.entity, variant: hasOther(c) ? (nv["name:zh"] != null ? nv["name:zh"] : c.entity).trim() : "" };
+};
+const namesEdited = (c, n) => [["Name", c.entityEn || c.entity, n.name], ["Non-English name", hasOther(c) ? c.entity : "", n.variant]]
+  .filter(([, from, to]) => from && to && to !== from).map(([field, from, to]) => ({ field, from, to }));
 const finalFields = (c, st) => c.newsFields.map((f, fi) => ({ key: f.key, value: fieldVals(f).map((v, vi) => st.out["n" + fi + ":" + vi] ? "" : newVal(st, fi, vi, v).trim())
   .filter(Boolean).join(" | ") })).filter(f => f.value);
 // What the reviewer changed, kept with the decision: a measure of what the model gets wrong.
-const editedOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).map((v, vi) => ({ field: f.key, from: v, to: newVal(st, fi, vi, v).trim() }))
-  .filter((e, vi) => e.to !== e.from && e.to && !st.out["n" + fi + ":" + vi]));
-const leftOutOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).filter((v, vi) => st.out["n" + fi + ":" + vi]).map(value => ({ field: f.key, value })));
+const editedOf = (c, st) => namesEdited(c, namesOf(c, st)).concat(c.newsFields.flatMap((f, fi) => fieldVals(f).map((v, vi) => ({ field: f.key, from: v, to: newVal(st, fi, vi, v).trim() }))
+  .filter((e, vi) => e.to !== e.from && e.to && !st.out["n" + fi + ":" + vi])));
+const leftOutOf = (c, st) => c.newsFields.flatMap((f, fi) => fieldVals(f).filter((v, vi) => st.out["n" + fi + ":" + vi]).map(value => ({ field: f.key, value })))
+  .concat(hasOther(c) && !namesOf(c, st).variant ? [{ field: "Non-English name", value: c.entity }] : []);
 const keptFields = (fields, out) => (fields || []).map(f => ({ ...f, value: fieldVals(f).filter(v => !(out || []).some(o => o.field === f.key && o.value === v)).join(" | ") }))
   .filter(f => f.value);
 // A field naming other records (awards, affiliations, parent organisation, founder) says of each name whether TTE
@@ -867,14 +880,16 @@ function create(c, st) {
   const nf = c.newsFields.filter(f => f.key !== "Description"), di = c.newsFields.findIndex(f => f.key === "Description");
   const desc = di >= 0 ? newVal(st, di, 0, c.newsFields[di].value) : "";
   const shown = st.full || st.nedit ? nf : nf.slice(0, 5);
+  const n = namesOf(c, st);
   return `<h1>${esc(fresh ? name + " is not in TTE. Create a record?" : "No record for " + name + ". Create one?")}</h1>
   <section class="focus">
     ${news(c, st)}
     <div class="join">would become a new record</div>
     <div class="draftbox">
       <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Record type">${Object.keys(TYPES).map(t => `<option value="${t}" ${(st.ctype || c.type) === t ? "selected" : ""}>${TYPES[t][0].replace(/ \(.*\)/, "")}${t === "FACILITY" ? " (building)" : t === "LOCATION" ? " (place)" : ""}</option>`).join("")}</select> &middot; new record</span></div>
-      <h2 class="name">${esc(c.entityEn || c.entity)}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(c.entityEn || c.entity)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
-      ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
+      <h2 class="name">${st.nedit ? `<input class="cin nin nname" data-i="name" data-j="en" value="${esc(n.name)}" aria-label="Name">` : esc(n.name)}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(n.name)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
+      ${!hasOther(c) ? "" : st.nedit ? `<input class="cin nin nname alt" data-i="name" data-j="zh" value="${esc(n.variant)}" aria-label="Non-English name" placeholder="Non-English name (left out)">`
+        : n.variant ? `<p class="orig">${esc(n.variant)}</p>` : ""}
       ${desc && st.nedit ? `<textarea class="dta nin" data-i="${di}" data-j="0" aria-label="Description">${esc(desc)}</textarea>`
         : desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
       ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => newField(c, st, x)).join("")}</div>` : ""}
@@ -1058,7 +1073,7 @@ function finish(c, kind) {
   const x = LOG[LOG.length - 1];
   x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
   x.leftOut = k === "created" ? leftOutOf(c, st) : [];
-  if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); }
+  if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); x.names = namesOf(c, st); }
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1142,7 +1157,7 @@ function fromDecision(d, c) {
            title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "other changes",
            kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
            secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
-           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], fields: d.fields, edited: d.edited || [], link: d.link || "", found: !!d.foundBySearch,
+           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], fields: d.fields, edited: d.edited || [], names: d.names, link: d.link || "", found: !!d.foundBySearch,
            done: !!d.done, who: d.reviewer || "" };
 }
 // A decision as the `reviews` table has always held it, plus what this desk needs to show it again.
@@ -1150,7 +1165,7 @@ function toDecision(x, c) {
   const verdict = x.kind === "keep" ? "unsure" : x.kind === "noworth" || x.kind === "discard" ? "reject" : "approve";
   return { verdict, kind: x.kind, entity: c.entity, chose: x.kind === "created" ? "new-entity" : verdict === "approve" ? x.uid : null,
            foundBySearch: !!x.found, reason: x.kind === "discard" ? "discard" : "", note: "",
-           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [], ...(x.fields ? { fields: x.fields, edited: x.edited || [] } : {}),
+           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [], ...(x.fields ? { fields: x.fields, edited: x.edited || [] } : {}), ...(x.names ? { names: x.names } : {}),
            rows: x.accepted.map(a => ({ field: a.field, current: a.current, proposed: a.proposed, from: a.link || x.link })),
            record: x.kind === "created" ? "" : x.rec, reviewer: myName, at: x.when.toISOString(),
            languages: (langs || []).slice(), types: group === "all" ? null : [group], seconds: x.secs, seen: x.seen, ctype: x.ctype, link: x.link, done: !!x.done };
@@ -1721,12 +1736,7 @@ document.addEventListener("input", e => {
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { const v = $("#veil"); if (v && !v.querySelector(".signin")) v.remove(); }
   if (["SELECT", "INPUT", "TEXTAREA"].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
-  if (PAGE === "evaluation") {
-    if ($("#veil") || EV.guide) return;
-    const k = e.key.toLowerCase(), v = EV.task === "relevance" ? { y: "y", n: "n" }[k] : EV.task === "matching" ? { y: "Y", n: "N", "?": "?" }[k] : null;
-    if (v) act(EV.task === "relevance" ? "ev-rel" : "ev-same", { dataset: { v } });
-    return;
-  }
+  if (PAGE === "evaluation") return;   // no shortcut keys: a stray key must never answer a row
   if (e.key === "Backspace" && PAGE === "review") { e.preventDefault(); act("back"); return; }
   if (e.key === "ArrowRight") act("next"); else if (e.key === "ArrowLeft") act("prev");
 });
@@ -1927,7 +1937,11 @@ const changesRows = L => {
   L.forEach(x => {
     const ent = x.entity || x.name, tail = [x.link || "", REVIEWER, stampTime(x.when)];
     if (x.kind === "created") {
-      rows.push(["NEW", ent, "Name", "", x.entityEn ? `${x.entity} (${x.entityEn})` : ent, ...tail]);
+      // the non-English name on its own row, as on a change to a record; a decision from before the desk saved the
+      // names has the model's
+      const n = x.names || { name: x.entityEn || ent, variant: x.entityEn && x.entityEn !== x.entity ? x.entity : "" };
+      rows.push(["NEW", ent, "Name", "", n.name, ...tail]);
+      if (n.variant) rows.push(["NEW", ent, "Non-English name", "", n.variant, ...tail]);
       rows.push(["NEW", ent, "TTE file", "", (TYPES[x.ctype || x.type] || ["", x.type])[1], ...tail]);
       (x.fields || keptFields(x.newsFields, x.leftOut)).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
       return;
@@ -2193,17 +2207,17 @@ function evScreen() {
   const ask = `<p class="evq">${T.ask}</p>`;
   if (EV.task === "relevance") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, false)}</div>
       <blockquote>${esc(b.title)}</blockquote>${b.description ? `<p class="evdesc">${esc(b.description)}</p>` : ""}</div></section>${ask}
-    <div class="actions"><div class="pair"><button class="stamp red${was("relevant", false)}" data-act="ev-rel" data-v="n"><b>No</b><span>Key N</span></button>
-      <button class="stamp go${was("relevant", true)}" data-act="ev-rel" data-v="y"><b>Yes, relevant</b><span>Key Y</span></button></div></div>`;
+    <div class="actions"><div class="pair"><button class="stamp red${was("relevant", false)}" data-act="ev-rel" data-v="n"><b>No</b></button>
+      <button class="stamp go${was("relevant", true)}" data-act="ev-rel" data-v="y"><b>Yes, relevant</b></button></div></div>`;
   if (EV.task === "matching") return head + `<section class="focus"><div class="side news"><div class="label"><span>In the news</span>${src(b.url, true)}</div>
       <blockquote>${evMark(b.evidence, [b.name, b.name_en])}</blockquote>
       <p class="tr">${esc(b.name)}${b.name_en && b.name_en !== b.name ? ` (${esc(b.name_en)})` : ""}${b.article ? ` &middot; from &ldquo;${esc(gist(b.article, 90))}&rdquo;` : ""}</p></div>
     <div class="join">same?</div>
     <div class="side tte"><div class="label"><span>In TTE now</span><span class="src">no. ${esc(b.tte_id)}</span></div><p class="name">${esc(b.tte_name)}</p>
       ${(b.tte_fields || []).length ? `<div class="evrec">${b.tte_fields.map(([k, v]) => `<div><span class="k">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>` : `<p class="ident">Nothing else on the record.</p>`}</div></section>${ask}
-    <div class="actions"><div class="evtrio"><button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b><span>Key N</span></button>
-      <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b><span>Key ?</span></button>
-      <button class="stamp go${was("same", "Y")}" data-act="ev-same" data-v="Y"><b>Same</b><span>Key Y</span></button></div></div>`;
+    <div class="actions"><div class="evtrio"><button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b></button>
+      <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b></button>
+      <button class="stamp go${was("same", "Y")}" data-act="ev-same" data-v="Y"><b>Same</b></button></div></div>`;
   const names = (b.names || []).map((n, i) => {
     const g = L.names[n.entity];
     return `<div class="evname"><div><b>${esc(n.entity)}</b><span class="tt">${esc(kind({ type: n.type || "" }))}</span></div>

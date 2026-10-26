@@ -154,8 +154,11 @@ Both can be opened again from the foot of the side rail (**How this works**,
 Evaluators also see an **Evaluation** page (`docs/evaluation.md`).
 
 On a record to create, each value the model found can be left out with ×,
-and **Edit** opens every value and the description for correcting; the
-record type can be changed too. The sheets carry the record as the reviewer
+and **Edit** opens the names, every value and the description for correcting;
+the record type can be changed too. A name the article gives in another
+script, such as 陈劲龙 for Chen, Jinlong, goes on the sheets as its own row
+(Variant name on the weekly sheet, Non-English name on the desk's download);
+emptied in Edit, it stays off. The sheets carry the record as the reviewer
 left it, and the decision keeps what was left out and what was edited.
 
 Nothing is pre-assigned: there is one pile, latest news first, and the

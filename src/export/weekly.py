@@ -60,7 +60,13 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
                 sheet.append([uid, name, vocab, attr, current, proposed, link or src.get("link", ""), who, when, status])
 
         if d.get("chose") == "new-entity":
-            name = f"{card['entity']} ({card['entityEn']})" if card.get("entityEn") else card["entity"]
+            # The names as the reviewer left them; a decision from before the desk saved them has the model's.
+            # A name the article gives in another script is a variant name, on its own row as for a record TTE has.
+            names = d.get("names") or {}
+            english = names.get("name") or card.get("entityEn") or card["entity"]
+            other = card.get("entityEn") and card["entityEn"] != card["entity"]
+            variant = names["variant"] if "variant" in names else card["entity"] if other else ""
+            name = f"{variant} ({english})" if variant else english
             # The type the reviewer chose on the desk, which may not be the model's.
             vocab = vocab_for_type.get(d.get("ctype") or card.get("type", ""), "")
             # The fields as the reviewer left them on the desk: edited, and without any left out with ×.
@@ -75,18 +81,20 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
                         fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
             for f in fields:
                 add(new, "", name, vocab, f["key"], "", f["value"], None)
+            if variant:
+                add(new, "", name, vocab, "Variant name", "", variant, None)
             if not fields:
-                add(new, "", name, vocab, "Name", "", name, None)
+                add(new, "", name, vocab, "Name", "", english, None)
             continue
 
         uid, record = d.get("chose") or "", d.get("record") or ""
         vocab = vocab_of.get(uid, "")
-        # A Chinese name confirmed against an English record is a variant name
-        # TTE lacks; once added, the next article in that language matches it.
-        if _NON_LATIN.search(card["entity"]) and record and not _NON_LATIN.search(record):
-            add(existing, uid, record, vocab, "Variant name", "", card["entity"], None)
+        # Only what the reviewer accepted. A Chinese name TTE lacks is asked on the desk
+        # as a change like any other, so it is here when accepted, as edited; this
+        # sheet has always called it a variant name.
         for r in d.get("rows") or []:
-            add(existing, uid, record, vocab, r["field"], r.get("current", ""), r.get("proposed", ""), r.get("from"))
+            attr = "Variant name" if r["field"] == "Non-English name" else r["field"]
+            add(existing, uid, record, vocab, attr, r.get("current", ""), r.get("proposed", ""), r.get("from"))
 
     order = lambda row: (row[7], row[1], row[3])
     return sorted(existing, key=order), sorted(new, key=order)

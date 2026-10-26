@@ -1,6 +1,6 @@
 // Drives the desk's Evaluation page against the stand-in (app2_fake.js): hidden from a reviewer; for an evaluator,
 // how the evaluation works, by itself on the first visit and from its button after; the three sheets in the pipeline's order, the scored report and the desk's acceptance; each sheet's own rules,
-// accepted before its rows every time it is chosen and a click away on every row; relevance by key and by click, Back, the shared rows
+// accepted before its rows every time it is chosen and a click away on every row; relevance by click and never by a key, Back, the shared rows
 // then the dealt ones, a row a colleague labelled first or holds, a lapsed hold, Stop for now; matching's three
 // answers; extraction's marks, wrong details, a missed name selected in the article or typed in; and a test account
 // that saves nothing. Writes one line, RESULT {...} or ERROR ..., into #selftest.
@@ -77,8 +77,12 @@
     out.keysWaitForGuide = !F.evalLabels.length && EV.item.ord === 1;
     act("ev-guide-close");
     out.guideCloses = !q("#veil");
-    key("y"); await until(() => EV.item && EV.item.ord === 2);
-    out.relKeySaved = labelOf("relevance", rel[0]).relevant === true && F.evalLabels[0].seconds >= 0;
+    // no shortcut keys: a stray key answers nothing
+    for (const k of ["y", "n", "?", "Y", "N"]) key(k);
+    await tick(60);
+    out.keysAnswerNothing = !F.evalLabels.length && EV.item.ord === 1 && !/Key [YN?]/.test(stage());
+    act("ev-rel", { dataset: { v: "y" } }); await until(() => EV.item && EV.item.ord === 2);
+    out.relClickSaved = labelOf("relevance", rel[0]).relevant === true && F.evalLabels[0].seconds >= 0;
     act("ev-rel", { dataset: { v: "n" } }); await until(() => EV.item && EV.item.ord !== 2);
     out.relOtherLanguageSkipped = EV.item.ord === 4 && labelOf("relevance", rel[1]).relevant === false;
     // Back: the last row again, its answer shown; answered again, the label is replaced, not added
@@ -115,10 +119,12 @@
     out.matchGreenRight = /data-v="N"[\s\S]*data-v="\?"[\s\S]*data-v="Y"/.test(stage());
     out.matchShown = /same\?/.test(stage()) && /Lee, Theng Kiat/.test(stage()) && /<mark>Lee Theng Kiat<\/mark>/.test(stage()) && /Can\u2019t tell/.test(stage()) && /Open article/.test(stage());
     const m = F.evalItems.filter(i => i.task === "matching").sort((a, b) => a.ord - b.ord).map(i => i.item);
-    key("?"); await until(() => EV.item && EV.item.ord === 2);
-    key("n"); await until(() => EV.item && EV.item.ord === 3);
-    key("y"); await until(() => !EV.item && !EV.busy);
-    out.matchKeys = [0, 1, 2].map(i => (labelOf("matching", m[i]) || {}).same).join() === "?,N,Y";
+    key("y"); await tick(40);
+    out.matchKeysAnswerNothing = !labelOf("matching", m[0]) && EV.item.ord === 1;
+    act("ev-same", { dataset: { v: "?" } }); await until(() => EV.item && EV.item.ord === 2);
+    act("ev-same", { dataset: { v: "N" } }); await until(() => EV.item && EV.item.ord === 3);
+    act("ev-same", { dataset: { v: "Y" } }); await until(() => !EV.item && !EV.busy);
+    out.matchAnswers = [0, 1, 2].map(i => (labelOf("matching", m[i]) || {}).same).join() === "?,N,Y";
     act("ev-stop"); await until(() => !EV.task);
 
     // extraction: each name marked, any wrong detail tapped, and who it missed
@@ -175,7 +181,7 @@
     out.rulesEveryTime = EV.guide && !EV.item;      // the rules again, though accepted before in this browser
     act("ev-guide-done"); await until(() => EV.item);
     const t1 = EV.item.ord;
-    key("y"); await until(() => EV.item && EV.item.ord !== t1);
+    act("ev-rel", { dataset: { v: "y" } }); await until(() => EV.item && EV.item.ord !== t1);
     out.testWalks = t1 === 1 && EV.item.ord === 2 && /nothing you label is saved/.test(stage());
     out.testSavesNothing = F.evalLabels.length === nL && F.evalHolds.length === nH && !F.rpcs.slice(nR).some(r => /^eval_(take|save)/.test(r));
     out.noDirectWrites = !F.direct && !F.readLabels;

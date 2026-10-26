@@ -413,9 +413,9 @@ Over 73 confirmed matches the right record was first by name in 68, second in
 all 73 and the five sent to the resolver keep all 73 after the field re-rank;
 replayed over every nightly entity the deeper fetch sends 2.73 → 3.11
 candidates per entity, about 350 tokens a night. And the review closes the
-gap: a Chinese name confirmed against an English record goes on the
-approved-changes sheet as a variant name for the cataloguer to add, after
-which the next Zaobao article matches on it directly. The desk also refuses a
+gap: a Chinese name confirmed against an English record is asked as a
+change, and once the reviewer accepts it goes on the approved-changes sheet
+as a variant name for the cataloguer to add, after which the next Zaobao article matches on it directly. The desk also refuses a
 blind create: for a non-Latin name it says the spelling was a guess and opens
 a search that matches occupation and description as well as name, so
 "Environment Agency" finds him whatever he was called.
