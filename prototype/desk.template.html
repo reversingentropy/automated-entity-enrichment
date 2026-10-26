@@ -123,7 +123,8 @@
   .arrow .ln{flex:1;height:1px;background:var(--rule)}
   .editbtn{background:#fff;color:var(--ink);border:1.5px solid var(--ink3);border-radius:8px;padding:.25rem .8rem;font-size:.86rem;font-weight:650;letter-spacing:0;text-transform:none}
   .editbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-  a.osbtn{display:inline-block;margin-left:.4rem;text-decoration:none}
+  a.osbtn{display:inline-block;vertical-align:middle;margin-left:.6rem;background:var(--accent);color:#fff;border-radius:8px;padding:.25rem .8rem;font-size:.86rem;font-weight:650;letter-spacing:0;line-height:1.5;text-decoration:none}
+  a.osbtn:hover{filter:brightness(1.1)}
 
   .vrows{display:grid;gap:.45rem}
   .vrow{display:flex;justify-content:space-between;align-items:center;gap:.4rem .8rem;flex-wrap:wrap;padding:.55rem .75rem;border-radius:10px;border:1.5px solid var(--add);background:var(--add-bg);color:var(--add)}
@@ -871,13 +872,13 @@ function create(c, st) {
     <div class="join">would become a new record</div>
     <div class="draftbox">
       <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Record type">${Object.keys(TYPES).map(t => `<option value="${t}" ${(st.ctype || c.type) === t ? "selected" : ""}>${TYPES[t][0].replace(/ \(.*\)/, "")}${t === "FACILITY" ? " (building)" : t === "LOCATION" ? " (place)" : ""}</option>`).join("")}</select> &middot; new record</span></div>
-      <h2 class="name">${esc(c.entityEn || c.entity)}</h2>
+      <h2 class="name">${esc(c.entityEn || c.entity)}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(c.entityEn || c.entity)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
       ${c.entityEn && c.entity !== c.entityEn ? `<p class="orig">${esc(c.entity)}</p>` : ""}
       ${desc && st.nedit ? `<textarea class="dta nin" data-i="${di}" data-j="0" aria-label="Description">${esc(desc)}</textarea>`
         : desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
       ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => newField(c, st, x)).join("")}</div>` : ""}
       ${!st.nedit && (nf.length > 5 || (desc && desc.length > 170)) ? `<button class="more" data-act="full">${st.full ? "Show less &#9652;" : "Show more &#9662;"}</button>` : ""}
-      <button class="editbtn ${st.nedit ? "on" : ""}" data-act="nedit">${st.nedit ? "Done" : "&#9998; Edit"}</button><a class="editbtn osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(c.entity)}" target="_blank" rel="noopener">OneSearch &#8599;</a>
+      <button class="editbtn ${st.nedit ? "on" : ""}" data-act="nedit">${st.nedit ? "Done" : "&#9998; Edit"}</button>
     </div>
   </section>
   ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Records it could be:")}
