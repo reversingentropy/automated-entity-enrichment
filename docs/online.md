@@ -181,6 +181,17 @@ python -m src.export --release someone@nlb.gov.sg # back in the pile
 Someone without an account makes one on the sign-in screen, and it waits
 for approval (step 3 above). There is no email from the system.
 
+The usability survey shows on everyone's home screen only while it is
+switched on. The link goes into the desk file in the private bucket, not
+into this public repository, and the nightly publish keeps it as it is. A
+reviewer who opens it stops seeing it; switched on again for the next round,
+it shows to everyone again.
+
+```bash
+python -m src.export --survey https://form.gov.sg/...  # on
+python -m src.export --survey off                      # off
+```
+
 ## The week's changes, for the reviewers
 
 ```bash

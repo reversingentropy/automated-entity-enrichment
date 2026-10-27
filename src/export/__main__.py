@@ -53,6 +53,7 @@ The online desk:
   python -m src.export --approve EMAIL         # approve one from here instead
   python -m src.export --holds               # which card each reviewer has on their desk
   python -m src.export --release EMAIL       # put someone's held card back in the pile
+  python -m src.export --survey LINK         # the survey on the home screen, until --survey off
 """
 
 import argparse
@@ -84,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--publish", action="store_true",
                         help="write the deck to the database and the search index to the bucket, "
                              "for the online desk")
+    parser.add_argument("--survey", metavar="LINK",
+                        help="show the survey link on the desk's home screen; 'off' takes it away")
     parser.add_argument("--site", metavar="DIR",
                         help="write index.html for the online desk into DIR")
     parser.add_argument("--account", nargs=2, metavar=("EMAIL", "NAME"),
@@ -164,6 +167,17 @@ def main(argv: list[str] | None = None) -> int:
         done = publish(backfill=args.backfill)
         print(f"Published {done['cards']} cards to the deck ({done['removed']} stale removed), "
               f"{done['noted']} noted, {done['index']:,} searchable records to the bucket")
+        return 0
+
+    if args.survey:
+        from src.export.deck import set_survey
+        on = args.survey.lower() != "off"
+        if on and not args.survey.startswith("https://"):
+            print("The survey link must start with https://", file=sys.stderr)
+            return 2
+        got = set_survey(args.survey if on else None)
+        print(f"The survey is on the desk's home screen: {got['url']}" if got
+              else "The survey is off the desk's home screen.")
         return 0
 
     if args.site:

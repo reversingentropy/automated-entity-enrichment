@@ -425,6 +425,8 @@
   .teamline p{margin:.6rem 0 0;display:flex;justify-content:center;flex-wrap:wrap;gap:.2rem .9rem;font-size:.82rem;color:var(--ink3)}
   .teamline p span{display:inline-flex;align-items:center;gap:.35rem} .teamline .of{color:var(--ink3)}
   .hm > .minor{margin-top:2.4rem;font-size:.84rem}
+  .hm .survey{margin:1.6rem auto 0;max-width:30rem;padding:.6rem 1rem;border:1px solid var(--rule);border-radius:10px;background:#fff;color:var(--ink2);font-size:.95rem}
+  .hm .survey a{color:var(--accent);font-weight:650;white-space:nowrap}
   :is(.tl2,.teamline) .you{background:var(--accent)} :is(.tl2,.teamline) .them{background:#7A859B} :is(.tl2,.teamline) .wait{background:#E4DFD2}
   :is(.tl2,.teamline) .held{background:repeating-linear-gradient(135deg,#7A859B 0 2px,#fff 2px 5px);box-shadow:inset 0 0 0 1px #7A859B}
   [data-tip]{position:relative}
@@ -1704,6 +1706,7 @@ function act(a, el) {
 document.addEventListener("click", e => {
   if (!e.target.closest("#panel")) $("#panel").classList.remove("open");
   const nv = e.target.closest("button[data-nav]"); if (nv) return act("nav", nv);
+  if (e.target.closest("a[data-survey]")) { try { localStorage.setItem(SURVEY_SEEN, surveyKey(STATUS.survey)); } catch (x) {} return; }
   const b = e.target.closest("button[data-act]"); if (b) act(b.dataset.act, b);
 });
 document.addEventListener("change", e => {
@@ -1812,6 +1815,16 @@ const nameOf = c => c.entityEn && c.entityEn !== c.entity ? c.entityEn : c.entit
 const warnNote = d => testing ? "Test account: nothing you do here is saved." : ONLINE && d.pending ? `${d.pending} decision${d.pending === 1 ? " is" : "s are"} not saved yet. Check the connection.` : "";
 // The line of the day, written by the model in the nightly publish; shown only on the day it was written.
 const dayLine = () => { const l = STATUS && STATUS.line; if (!l || !l.text) return ""; const t = new Date(), d = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; return l.date === d ? l.text : ""; };
+// The usability survey, only while it is switched on (python -m src.export --survey LINK); gone for a reviewer once
+// opened, until it is switched on again for the next round.
+const SURVEY_SEEN = "desk2-survey";
+const surveyKey = s => s.url + "|" + s.since;
+function surveyNow() {
+  const s = STATUS && STATUS.survey;
+  if (!s || !/^https:\/\//.test(s.url || "")) return null;
+  try { if (localStorage.getItem(SURVEY_SEEN) === surveyKey(s)) return null; } catch (e) {}
+  return s;
+}
 const startLabel = d => LOG.length || d.back ? "Continue" : "Start";
 const otherLine = d => d.other ? ` ${d.other} more ${d.other === 1 ? "is" : "are"} only in other languages.` : "";
 const subLine = d => d.n ? (d.back ? `${d.back === 1 ? "One is" : d.back + " are"} on your desk from last time.` : "In the languages you read.") + otherLine(d)
@@ -1832,6 +1845,7 @@ function homeMinimal(d) {
   ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b>${d.next ? `<small>${esc(gist(nameOf(d.next), 40))}</small>` : ""}</span><i aria-hidden="true">&rarr;</i></button>`
         : !ONLINE && LOG.length ? `<button class="cta" data-act="restart"><span><b>Start over</b><small>clears this session</small></span></button>` : ""}
   ${d.n ? `<div class="chips">${d.types.filter(t => t[2]).map(([k, label, v]) => `<button data-act="startgroup" data-g="${k}">${label} <b>${v}</b></button>`).join("")}</div>` : ""}
+  ${surveyNow() ? `<p class="survey">How is the desk working for you? <a href="${esc(surveyNow().url)}" target="_blank" rel="noopener" data-survey>Two-minute survey &#8599;</a></p>` : ""}
   <div class="teamline">
     <div class="tl2" role="img" aria-label="${shown.map(s => s[1] + " " + s[2]).join(", ")}">${shown.map(([k, v, lab]) => `<i class="${k}" style="flex:${v}" data-tip="${v} ${lab}"></i>`).join("")}</div>
     <p>${shown.map(([k, v, lab]) => `<span><i class="sw ${k}"></i>${v} ${lab}</span>`).join("")}<span class="of">${d.total} in all</span></p>

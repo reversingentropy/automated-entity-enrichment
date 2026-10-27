@@ -109,7 +109,10 @@ extraction (about 3 minutes an article). Five hours each for two labellers.
 At month one and month three, everyone using the desk completes the
 standard usability survey (SUS) on Form.gov.sg: ten statements, each scored
 1 (strongly disagree) to 5 (strongly agree). Two minutes.
-`python -m src.eval sheets --only sus` writes the statements.
+`python -m src.eval sheets --only sus` writes the statements. The form asks
+which round it is (month 1 or month 3) and no names. It reaches the team as
+a line on the desk's home screen, shown only while switched on
+(`python -m src.export --survey LINK`, then `--survey off`).
 
 Scoring: odd statements score the answer minus 1, even ones 5 minus the
 answer; the ten added and multiplied by 2.5 give a score out of 100. About

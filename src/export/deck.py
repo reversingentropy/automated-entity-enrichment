@@ -22,13 +22,47 @@ BUCKET = "desk"
 DESK_FILE = "desk.json"
 
 
-def published_line(client) -> dict:
-    """The line of the day in the desk file now in the bucket, or {} if there is none to read."""
+def published_status(client) -> dict:
+    """The status in the desk file now in the bucket, or {} if there is none to read."""
     try:
         data = client.storage.from_(BUCKET).download(DESK_FILE)
-        return (json.loads(data).get("status") or {}).get("line") or {}
+        return json.loads(data).get("status") or {}
     except Exception:
         return {}
+
+
+def published_line(client) -> dict:
+    """The line of the day in the desk file now in the bucket, or {} if there is none to read."""
+    return published_status(client).get("line") or {}
+
+
+def carried(before: dict) -> dict:
+    """What a new desk file keeps of the one it replaces: the survey link, on or off as it was switched."""
+    return {"survey": before["survey"]} if before.get("survey") else {}
+
+
+def set_survey(link: str | None, client=None, today: str | None = None) -> dict:
+    """
+    Put the survey link on the desk's home screen, or take it off (None), in
+    the desk file now in the bucket; the nightly publish keeps it as it is.
+    The link stays out of the repository, which is public: only signed-in
+    reviewers read the bucket. Each switch-on is dated, so a reviewer who
+    opened the survey in an earlier round is asked again.
+    """
+    from datetime import date
+    client = client or get_client()
+    try:
+        body = json.loads(client.storage.from_(BUCKET).download(DESK_FILE))
+    except Exception as e:
+        raise SystemExit(f"No desk file to change ({e}); publish the deck first.")
+    status = body["status"] = body.get("status") or {}
+    if link:
+        status["survey"] = {"url": link, "since": today or date.today().isoformat()}
+    else:
+        status.pop("survey", None)
+    client.storage.from_(BUCKET).upload(DESK_FILE, json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
+                                        {"content-type": "application/json", "upsert": "true"})
+    return status.get("survey") or {}
 
 
 def deck_rows(cards: list[dict]) -> list[dict]:
@@ -80,7 +114,9 @@ def publish(backfill: bool = False) -> dict:
     status = pipeline_status(cards, os.environ.get("PIPELINE_STEPS"), dump)
     # The home screen's line of the day: today's is kept if the file already has it.
     from src.export.greeting import daily_line
-    status["line"] = daily_line(published_line(client))
+    before = published_status(client)
+    status["line"] = daily_line(before.get("line") or {})
+    status.update(carried(before))
     client.storage.from_(BUCKET).upload(DESK_FILE, desk_file(index, variants, noted, status),
                                         {"content-type": "application/json", "upsert": "true"})
     return {"cards": len(rows), "removed": len(stale), "noted": len(noted), "index": len(index)}

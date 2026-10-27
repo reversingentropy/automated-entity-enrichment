@@ -58,3 +58,24 @@ def test_the_published_line_is_read_back_from_the_desk_file():
     assert published_line(_Client(json.dumps({"status": {"line": line}}).encode())) == line
     assert published_line(_Client(json.dumps({"status": {}}).encode())) == {}
     assert published_line(_Client(RuntimeError("no file yet"))) == {}
+
+
+class _Store(_Bucket):
+    def upload(self, path, body, options):
+        self.body = body
+
+
+def test_the_survey_is_switched_on_and_off_in_the_desk_file_and_kept_by_the_nightly_publish():
+    from src.export.deck import carried, published_status, set_survey
+
+    line = {"date": "2026-10-27", "text": "Hello"}
+    client = _Client(json.dumps({"index": [], "status": {"line": line}}).encode())
+    client.storage = _Store(client.storage.body)
+    on = {"url": "https://form.gov.sg/x", "since": "2026-10-27"}
+    assert set_survey("https://form.gov.sg/x", client, today="2026-10-27") == on
+    # Nothing else in the file changes.
+    assert published_status(client) == {"line": line, "survey": on} and "index" in json.loads(client.storage.body)
+    # The nightly publish writes a new file and carries the switch over.
+    assert carried(published_status(client)) == {"survey": on}
+    assert set_survey(None, client) == {} and published_status(client) == {"line": line}
+    assert carried(published_status(client)) == {}

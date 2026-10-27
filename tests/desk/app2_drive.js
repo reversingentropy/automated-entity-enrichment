@@ -32,6 +32,18 @@
     STATUS.line.date = "2000-01-01"; draw();
     out.staleLineHidden = !stage().includes("A quiet Saturday");
     out.noAllSaved = !/all saved/i.test(stage());
+    // the survey: on Home only while switched on, and gone for a reviewer once opened, until the next round
+    out.noSurveyWhenOff = !/data-survey/.test(stage());
+    STATUS.survey = { url: "https://form.gov.sg/example", since: "2026-10-27" }; draw();
+    const sv = document.querySelector("a[data-survey]");
+    out.surveyShownWhenOn = !!sv && sv.getAttribute("href") === "https://form.gov.sg/example" && sv.target === "_blank";
+    sv.addEventListener("click", e => e.preventDefault()); sv.click(); draw();
+    out.surveyGoneOnceOpened = !/data-survey/.test(stage());
+    STATUS.survey = { url: "https://form.gov.sg/example", since: "2027-01-27" }; draw();
+    out.surveyBackNextRound = /data-survey/.test(stage());
+    STATUS.survey = { url: "javascript:alert(1)", since: "2027-01-28" }; draw();
+    out.surveyOnlyHttps = !/data-survey/.test(stage());
+    delete STATUS.survey; try { localStorage.removeItem(SURVEY_SEEN); } catch (e) {} draw();
     act("settings");
     out.allFourLanguagesOffered = [...document.querySelectorAll("#veil .lang input")].map(x => x.value).join() === "en,zh,ms,ta";
     act("savelangs");
