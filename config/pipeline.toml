@@ -29,7 +29,7 @@ seconds_between_articles = 5
 
 [resolution]
 # The highest-stakes judgement: a wrong match corrupts an authority record.
-models = ["gemini-3.5-flash-lite"]
+models = ["gemini-3.8-flash"]
 thinking = "high"
 seconds_between_articles = 5
 # Articles per request. One keeps each decision in a small context; raise it
@@ -39,8 +39,8 @@ articles_per_request = 1
 [greeting]
 # The line of the day on the desk's home screen (src/export/greeting.py):
 # written once a day by the nightly publish, kept for the noon run.
-models = ["gemini-3.5-flash-lite"]
-thinking = "high"
+models = ["gemini-3.8-flash"]
+thinking = "low"
 
 [notify]
 # The daily email ends with a link to the desk. Put its address here once it
