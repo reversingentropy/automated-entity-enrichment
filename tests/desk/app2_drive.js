@@ -50,7 +50,7 @@
     out.dateIsOneChange = drows.filter(r => r.date).length === 1 && !drows.some(r => /\((dd|mm|yyyy)\)$/.test(r.field));
     Object.assign(dst, { screen: "change", chosen: 0, cand: 0, ch: dk });
     const dhtml = change(dc, dst);
-    out.dateShownWhole = /Set date started to this\?/.test(dhtml) && /Date started in TTE now/.test(dhtml) && /<s>1 Jul 2026<\/s>/.test(dhtml)
+    out.dateShownWhole = /Set date started to this\?/.test(dhtml) && /Date started after you accept/.test(dhtml) && /<s class="old">1 Jul 2026<\/s>/.test(dhtml)
       && /class="newv">16<\/span> <span class="newv">Sep<\/span> <span class="old" title="Kept from TTE[^"]*">2026<\/span>/.test(dhtml) && /leave date started as it is/.test(dhtml);
     const sheet = acceptedOf(dc, dst, drows[dk], dk).filter(a => a.proposed !== a.current).map(a => `${a.field}:${a.current}>${a.proposed}`).join();
     out.dateAcceptWritesParts = sheet === "Day Started (dd):01>16,Month Started (mm):07>09";
@@ -116,7 +116,7 @@
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);
     const vc = cOf(F.mineKey), vrow = rowsFor(vc, ordered(vc)[0]).findIndex(r => r.variant);
     const vst = Object.assign(fresh(vc), { screen: "change", chosen: 0, ch: vrow }), vhtml = change(vc, vst);
-    out.variantEditable = /data-act="edit"/.test(vhtml) && /data-m="replace"/.test(vhtml) && /Non-English names in TTE now/.test(vhtml);
+    out.variantEditable = /data-act="edit"/.test(vhtml) && /data-m="replace"/.test(vhtml) && /Non-English names after you accept/.test(vhtml) && !/in TTE now/.test(vhtml);
     vst.val[vrow] = ["雪城 (edited)"]; vst.mode[vrow] = "replace";
     const vgot = acceptedOf(vc, vst, rowsFor(vc, ordered(vc)[0])[vrow], vrow);
     out.variantEditSaved = vgot.field === "Non-English name" && vgot.proposed === "雪城 (edited)";

@@ -115,10 +115,6 @@
 
   .ba{padding:1rem 1.3rem 1.2rem;display:grid;gap:.75rem}
   .ba .row{display:grid;gap:.3rem}
-  .tag{font-size:.74rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
-  .was{color:var(--ink2);font-size:1rem;overflow-wrap:anywhere}
-  .was em{font-style:normal;opacity:.75}
-  .was s{text-decoration-color:var(--del);text-decoration-thickness:2px}
   .arrow{display:flex;align-items:center;gap:.6rem;color:var(--ink2);font-size:.8rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
   .arrow .ln{flex:1;height:1px;background:var(--rule)}
   .editbtn{background:#fff;color:var(--ink);border:1.5px solid var(--ink3);border-radius:8px;padding:.25rem .8rem;font-size:.86rem;font-weight:650;letter-spacing:0;text-transform:none}
@@ -126,7 +122,6 @@
   a.osbtn{display:inline-block;vertical-align:middle;margin-left:.6rem;background:var(--accent);color:#fff;border-radius:8px;padding:.25rem .8rem;font-size:.86rem;font-weight:650;letter-spacing:0;line-height:1.5;text-decoration:none}
   a.osbtn:hover{filter:brightness(1.1)}
 
-  .vrows{display:grid;gap:.45rem}
   .vrow{display:flex;justify-content:space-between;align-items:center;gap:.4rem .8rem;flex-wrap:wrap;padding:.55rem .75rem;border-radius:10px;border:1.5px solid var(--add);background:var(--add-bg);color:var(--add)}
   .vrow.new{border-color:var(--amber-line);background:var(--amber-bg);color:var(--amber)}
   .vrow.out{opacity:.5} .vrow.out .vmain b{text-decoration:line-through}
@@ -146,6 +141,14 @@
   .dta{width:100%;font:1rem/1.55 inherit;font-family:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--ink3);border-radius:10px;padding:.6rem .7rem;min-height:9rem}
   .final{font-size:1.02rem;line-height:1.65;overflow-wrap:anywhere;padding:.55rem .75rem;border-radius:10px;background:#F7F5EF;border:1px solid var(--rule)}
   .final .old{color:var(--ink2)}
+  .final s.old{text-decoration-color:var(--del);text-decoration-thickness:2px}
+  .final .none{font-style:normal;color:var(--ink3);font-size:.92rem;margin-right:.4rem}
+  .final .sep{color:var(--ink3)}
+  /* a list: TTE's values and the new ones as chips, side by side in the one line */
+  .final.line{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .4rem}
+  .final.line .vrow{flex:0 1 auto;gap:.3rem .6rem;padding:.2rem .55rem;border-radius:8px}
+  .final.line .vrow .cin{min-width:11rem}
+  .desc .none{display:block;font-style:normal;color:var(--ink3);font-size:.92rem;margin-bottom:.2rem}
   .final .newv{background:var(--add-bg);color:var(--add);border-radius:5px;padding:.05rem .35rem;font-weight:650}
   .final .newv.nt{background:var(--amber-bg);color:var(--amber)}
   .dparts{display:flex;gap:.6rem;flex-wrap:wrap} .dparts label{display:grid;gap:.2rem;font-size:.75rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
@@ -371,8 +374,6 @@
   .cands{margin-top:.6rem}
   .ba{padding:.75rem 1.1rem .9rem;gap:.5rem}
   .final{padding:.4rem .65rem;font-size:.98rem;line-height:1.55}
-  .vrow{padding:.4rem .65rem}
-  .vrows{gap:.35rem}
   .draftbox{padding:.75rem 1.1rem}
   .actions{margin-top:.6rem;padding:.55rem 0 .45rem;gap:.3rem}
   .pair{gap:.6rem}
@@ -380,10 +381,6 @@
   .stamp b{font-size:1rem} .stamp span{font-size:.8rem}
   .quiet{font-size:.85rem;padding:.1rem 0}
   .qrow{gap:1rem}
-  /* the values being added sit side by side, not one to a line */
-  .vrows{display:flex;flex-wrap:wrap;gap:.35rem}
-  .vrow{flex:0 1 auto;gap:.3rem .6rem;padding:.3rem .6rem}
-  .vrow .cin{min-width:11rem}
   .noproto .proto{display:none}
   .noproto .rail{top:0;height:100vh}
   @container (max-width:52rem){.noproto .rail{height:auto}}   /* the reviewers' build, on a phone: the menu is a top bar */
@@ -973,6 +970,8 @@ function sentDiff(was, now) {
   return B.map(x => inA.has(x) ? `<span class="fade">${esc(x)}</span>` : `<span class="add">${esc(x)}</span>`).join(" ")
     + A.filter(x => !inB.has(x)).map(x => ` <del>${esc(x)}</del>`).join("");
 }
+// a field TTE holds nothing for says so, rather than leaving the reviewer to infer it from a line with nothing grey
+const NONE = `<em class="none">nothing in TTE yet</em>`;
 const srcIdxOf = (c, links) => [...new Set((links || []).map(l => c.sources.findIndex(s => s.link === l)).filter(i => i >= 0))].sort((a, b) => a - b);
 
 function change(c, st) {
@@ -989,13 +988,13 @@ function change(c, st) {
 
   let title, body, tools = "";
   const was = (ch.existing || []).join(" ");
+  const afterLabel = `<div class="arrow"><span>${ch.variant ? "Non-English names" : esc(fieldLabel(ch.field))} after you accept</span><i class="ln"></i>`;
   if (isText) {
     title = ch.diff.some(d => d.op === "out") ? `Rewrite ${fq(ch.field)} like this?` : `Add this to ${fq(ch.field)}?`;
     const long = was.length > 260 || ch.diff.some(d => d.op === "same" && d.text.length > 260);
-    body = `<div class="row"><div class="tag">${esc(fieldLabel(ch.field))} in TTE now</div><div class="desc fade">${st.descFull ? esc(was) : (was.length > 260 ? `<span class="gap">… </span>${esc(tail(was, 220))}` : esc(was) || "<em>no description</em>")}</div></div>
-      <div class="arrow"><span>after you accept</span><i class="ln"></i><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+    body = `${afterLabel}<button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
       <div class="row">${editing ? `<textarea class="dta" aria-label="The text after you accept">${esc(after)}</textarea>`
-                                  : `<div class="desc">${st.text[k] != null ? sentDiff(was, after) : diffHtml(ch.diff, st.descFull)}</div>`}
+                                  : `<div class="desc">${was ? "" : NONE}${st.text[k] != null ? sentDiff(was, after) : diffHtml(ch.diff, st.descFull)}</div>`}
         ${!editing && long && st.text[k] == null ? `<button class="more" data-act="descfull">${st.descFull ? "Show less &#9652;" : "Show all of it &#9662;"}</button>` : ""}
         ${editing && st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}
 </div>`;
@@ -1005,10 +1004,9 @@ function change(c, st) {
     const shown = PARTS.filter(p => now[p]).map(p => fromTTE(ch, now, p)
       ? `<span class="old" title="Kept from TTE: the news does not give it">${esc(showPart(p, now[p]))}</span>`
       : `<span class="newv">${esc(showPart(p, now[p]))}</span>`).join(" ");
-    body = `<div class="row"><div class="tag">${esc(fieldLabel(ch.field))} in TTE now</div><div class="was">${ch.existing.length ? `<s>${esc(ch.existing[0])}</s>` : "<em>none recorded</em>"}</div></div>
-      <div class="arrow"><span>after you accept</span><i class="ln"></i><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+    body = `${afterLabel}<button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
       ${editing ? `<div class="dparts">${PARTS.map(p => `<label>${p.toLowerCase()}<input class="din" data-p="${p}" value="${esc(now[p] || "")}" inputmode="numeric" placeholder="${PART_FMT[p]}" maxlength="${p === "Year" ? 4 : 2}"></label>`).join("")}</div>`
-                : `<div class="final">${shown || "<em>no date</em>"}</div>`}`;
+                : `<div class="final">${ch.existing.length ? `<s class="old">${esc(ch.existing[0])}</s> <span class="sep">&rarr;</span> ` : NONE}${shown || "<em>no date</em>"}</div>`}`;
     if (ch.split) {
       // sources that disagree: each one's date, its parts over TTE's
       const by = new Map(); ch.saidBy.forEach(x => { if (!by.has(x.from)) by.set(x.from, {}); by.get(x.from)[x.part] = x.value; });
@@ -1027,13 +1025,12 @@ function change(c, st) {
       return `<div class="vrow ${isNew ? "new" : ""} ${out ? "out" : ""}"><div class="vmain"><span class="plus">${replace ? "\u2192" : "+"}</span><b>${esc(v)}</b>${c.sources.length > 1 && refs.length ? refs.map(r => `<button class="ref" data-act="csrc" data-i="${r}" title="Said by source ${r + 1}">${r + 1}</button>`).join("") : ""}</div>
         <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div></div>`;
     }).join("");
-    const existing = ch.existing || [], keptVals = vals.filter((v, i) => v.trim() && !st.out[k + ":" + i]);
-    const finalLine = (replace ? "" : existing.map(x => `<span class="old">${esc(x)}</span>`).join(" | ") + (existing.length && keptVals.length ? " | " : ""))
-      + keptVals.map(v => `<span class="newv ${REL && !inTte(v) ? "nt" : ""}">${esc(v)}</span>`).join(" | ");
-    body = `<div class="row"><div class="tag">${ch.variant ? "Non-English names in TTE now" : `${esc(fieldLabel(ch.field))} in TTE now`}</div><div class="was">${existing.length ? (replace ? `<s>${esc(existing.join(" | "))}</s>` : esc(existing.join(" | "))) : "<em>none recorded</em>"}</div></div>
-      <div class="arrow"><span>after you accept</span><i class="ln"></i><span class="seg2" role="group" aria-label="Add or replace"><button class="${replace ? "" : "on"}" data-act="mode" data-m="add">Add</button><button class="${replace ? "on" : ""}" data-act="mode" data-m="replace">Replace</button></span><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
-      <div class="final">${finalLine || "<em>nothing</em>"}</div>
-      <div class="row"><div class="tag">${replace ? "New value" : "Adding"}</div><div class="vrows">${rowsHtml}${editing && !replace ? `<button class="addchip" data-act="addval">+ Add</button>` : ""}</div></div>`;
+    // TTE's values as TTE holds them, struck when replaced, then the new ones as chips: each with its sources, whether
+    // TTE has a record of that name, and × to leave it out
+    const existing = ch.existing || [];
+    const held = existing.map(x => replace ? `<s class="old">${esc(x)}</s>` : `<span class="old">${esc(x)}</span>`).join(`<span class="sep">|</span>`);
+    body = `${afterLabel}<span class="seg2" role="group" aria-label="Add or replace"><button class="${replace ? "" : "on"}" data-act="mode" data-m="add">Add</button><button class="${replace ? "on" : ""}" data-act="mode" data-m="replace">Replace</button></span><button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
+      <div class="final line">${existing.length ? held + (replace ? "" : `<span class="sep">|</span>`) : NONE}${rowsHtml}${editing && !replace ? `<button class="addchip" data-act="addval">+ Add</button>` : ""}</div>`;
   }
   const nSent = ch.field === "Achievements" && isText ? sentences(st.text[k] != null ? st.text[k] : ch.result).length : 0;
   const warnLong = nSent > 5 ? `<div class="note">Achievements are meant to be 3 to 5 sentences; this will be ${nSent}.</div>` : "";
