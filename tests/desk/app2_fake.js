@@ -45,7 +45,8 @@
       const ok = d => (!grp || grp === "all" || groupOf(d.card) === grp)
         && (d.card.sources || []).some(s => (langs || ["en", "zh", "ms", "ta"]).includes(langOf(s.link || "")))
         && openFor(d.card, who) && !(holdOf(d.key) && live(holdOf(d.key)));
-      const order = (a, b) => (newest(b.card) > newest(a.card) ? 1 : newest(b.card) < newest(a.card) ? -1 : 0) || (a.card.i - b.card.i) || (a.key < b.key ? -1 : 1);
+      // changes to records TTE has before records to create, each newest first
+      const order = (a, b) => (!!a.card.isNew - !!b.card.isNew) || (newest(b.card) > newest(a.card) ? 1 : newest(b.card) < newest(a.card) ? -1 : 0) || (a.card.i - b.card.i) || (a.key < b.key ? -1 : 1);
       for (const d of F.deck.filter(ok).sort(order)) if (take(d.key, who)) return d.key;
       return null;
     },

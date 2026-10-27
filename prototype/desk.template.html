@@ -1392,7 +1392,7 @@ async function startOnline() {
 
 // ---- the queue: the database deals each record (sql/15_desk_queue.sql; docs/load-balancing.md) -------------------
 // Online, with a real account, the page never chooses the next record. It asks the database, which gives one record
-// to one reviewer: the newest news first, in a language they read, of the type they chose, that nobody else holds
+// to one reviewer: changes to records TTE has before records to create, each the newest news first, in a language they read, of the type they chose, that nobody else holds
 // and that has something left to decide. They hold it alone until they decide it, stop, or leave it for an hour.
 const QUEUE = () => !!sb && !testing && !!me;
 const HOLD_MIN = 60, RENEW_MS = 3 * 60 * 1000;
@@ -1802,13 +1802,12 @@ function homeData() {
   const them = [...others].filter(k => !DECIDED.has(k)).length;
   const held = [...HELD.keys()].filter(k => !DECIDED.has(k) && !others.has(k)).length;
   const waiting = Math.max(0, CARDS.length - you - them - held);
-  const next = card() && available(card()) ? card() : mine[0];
   const pending = Object.keys(UNSENT).length;
   const types = GROUPS.map(([k, label]) => [k, label, mine.filter(c => groupOf(c) === k).length]);
   const segs = [["you", you, "decided by you"], ["them", them, "decided by others"], ["held", held, "on someone else’s desk"], ["wait", waiting, "still to decide"]];
   // What is still to decide but not in a language you read: the difference between the big number and "still to decide"
   const other = Math.max(0, waiting - n);
-  return { n, back, next, pending, types, segs, other, total: CARDS.length };
+  return { n, back, pending, types, segs, other, total: CARDS.length };
 }
 const nameOf = c => c.entityEn && c.entityEn !== c.entity ? c.entityEn : c.entity;
 // Said only when something is wrong: nothing to say when everything is saved.
@@ -1842,7 +1841,7 @@ function homeMinimal(d) {
   <div class="hmnum">${d.n}</div>
   <p class="hmlab">${d.n === 1 ? "record waiting for you" : "records waiting for you"}</p>
   <p class="hmsub">${subLine(d)}</p>
-  ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b>${d.next ? `<small>${esc(gist(nameOf(d.next), 40))}</small>` : ""}</span><i aria-hidden="true">&rarr;</i></button>`
+  ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b></span><i aria-hidden="true">&rarr;</i></button>`
         : !ONLINE && LOG.length ? `<button class="cta" data-act="restart"><span><b>Start over</b><small>clears this session</small></span></button>` : ""}
   ${d.n ? `<div class="chips">${d.types.filter(t => t[2]).map(([k, label, v]) => `<button data-act="startgroup" data-g="${k}">${label} <b>${v}</b></button>`).join("")}</div>` : ""}
   ${surveyNow() ? `<p class="survey">How is the desk working for you? <a href="${esc(surveyNow().url)}" target="_blank" rel="noopener" data-survey>Two-minute survey &#8599;</a></p>` : ""}
@@ -1900,7 +1899,7 @@ function teamPage() {
   <section class="focus pipe"><div class="line"><span class="k">Cards last published</span><b>${PIPE.published}</b></div><div class="line"><span class="k">Newest news in the deck</span><b>${PIPE.news}</b></div>
     <div class="line"><span class="k">TTE dump loaded</span><b>${PIPE.dump}</b></div><div class="line"><span class="k">That run&rsquo;s steps</span><span class="stp">${PIPE.steps.map(([n, ok]) => `<span class="st ${ok ? "ok" : "bad"}">${ok ? "\u2713" : "\u2717"} ${n}${ok ? "" : " failed"}</span>`).join("")}</span></div></section>
   ${ONLINE ? (() => { const P = perPerson(); return P.length ? `<h2 class="h2">Who decided how many</h2><section class="focus"><table class="people"><thead><tr><th>Reviewer</th><th>Today</th><th>Last 7 days</th><th>All</th><th>Kept for review</th></tr></thead><tbody>${P.map(p => `<tr><td>${esc(p.name)}</td><td>${p.today}</td><td>${p.week}</td><td>${p.all}</td><td>${p.kept}</td></tr>`).join("")}</tbody></table></section>
-  <p class="minor">Records decided, counted once however many proposals they carried. Everyone takes from one shared pile, newest news first, so anyone can do more.</p>` : ""; })() : `<p class="minor">No one&rsquo;s individual numbers are shown here.</p>`}`;
+  <p class="minor">Records decided, counted once however many proposals they carried. Everyone takes from one shared pile, changes before new records and newest news first, so anyone can do more.</p>` : ""; })() : `<p class="minor">No one&rsquo;s individual numbers are shown here.</p>`}`;
 }
 const sampleNote = () => SAMPLE ? `<p class="sample">Prototype: the team&rsquo;s figures are made-up sample data. Real numbers appear once the team starts.</p>` : "";
 function resultsPage() {
@@ -2322,7 +2321,9 @@ function fillGroups() {
 function buildList(filter) {
   const keep = { all: () => true, who: c => !c.isNew, new: c => c.isNew, chg: c => ordered(c).some(o => rowsFor(c, o).length), flag: c => c.isFlag }[filter || "all"];
   LIST = CARDS.map((c, i) => [c, i]).filter(([c]) => keep(c) && available(c) && (group === "all" || groupOf(c) === group)).map(([, i]) => i);
-  LIST.sort((a, b) => MINE.has(CARDS[b].key) - MINE.has(CARDS[a].key));   // a record already on your desk comes first
+  // a record already on your desk comes first, then changes to records TTE has before records to create, as the
+  // database deals them online
+  LIST.sort((a, b) => (MINE.has(CARDS[b].key) - MINE.has(CARDS[a].key)) || (!!CARDS[a].isNew - !!CARDS[b].isNew));
   cur = 0; allDone = !LIST.length && LOG.length > 0; fillJump(); fillGroups();
 }
 $("#jump").addEventListener("change", e => { cur = Number(e.target.value); draw(true); });

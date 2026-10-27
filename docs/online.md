@@ -161,7 +161,8 @@ script, such as 陈劲龙 for Chen, Jinlong, goes on the sheets as its own row
 emptied in Edit, it stays off. The sheets carry the record as the reviewer
 left it, and the decision keeps what was left out and what was edited.
 
-Nothing is pre-assigned: there is one pile, latest news first, and the
+Nothing is pre-assigned: there is one pile, changes to existing records
+before records to create and each latest news first, and the
 database deals the next card that matches your groups and languages, that
 has something left to decide and that nobody holds (`take_next` in
 `sql/15_desk_queue.sql`). You hold one card at a time. It stays yours while

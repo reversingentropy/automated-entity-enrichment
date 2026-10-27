@@ -2,8 +2,8 @@
 -- Run after 14_article_duplicates.sql. Re-runnable. docs/load-balancing.md explains it for the team.
 --
 -- One shared pile, nothing split between people in advance. A reviewer asks for
--- the next record and the database gives them one: the newest news first, in a
--- language they read, of the type they chose, that nobody else holds and that
+-- the next record and the database gives them one: changes to records TTE has
+-- before records to create, each the newest news first, in a language they read, of the type they chose, that nobody else holds and that
 -- has something left to decide. They hold that one record, and only that one,
 -- until they decide it, stop, or leave it alone for an hour. A fast reviewer
 -- takes more, a slow one fewer; someone joining or leaving changes nothing for
@@ -155,8 +155,10 @@ begin
     -- One row per look, LIMIT 1: a loop over the whole query would read, and
     -- lock, ten rows at a time, and with twelve reviewers asking at once the
     -- first three locked the pile between them and nine were given nothing.
-    -- Walked in news order down the index, it stops at the first record that
-    -- fits, past only records still open (the index leaves settled ones out).
+    -- Changes to records TTE has come before records to create, as the reviewers
+    -- asked, each in news order. Walked down the index (deck_queue_updates_first,
+    -- in sql/16), it stops at the first record that fits, past only records
+    -- still open (the index leaves settled ones out).
     -- The open check is open_for() written out, so the planner can use it.
     select d.key into k
     from public.deck d
@@ -174,7 +176,7 @@ begin
       and not (d.key = any(tried))
       and not exists (select 1 from public.claims c
                       where c.card_key = d.key and public.hold_live(c.claimed_at))
-    order by d.newest desc nulls last, d.ord, d.key
+    order by d.grp = 'new records', d.newest desc nulls last, d.ord, d.key
     limit 1
     for update of d skip locked;
     if k is null then

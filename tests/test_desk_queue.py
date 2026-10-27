@@ -122,6 +122,15 @@ def test_the_next_record_is_the_newest_in_your_languages_and_type_and_you_hold_o
     assert list(holds().values()) == [A]
 
 
+def test_changes_to_records_tte_has_come_before_records_to_create(db):
+    """All records: every change before any new record, each newest first; asked for new records, those still come."""
+    deck(("p", "PERSON", "2026-10-10", "en", [1]), ("p-new", "PERSON", "2026-10-13", "en", [2], True),
+         ("o", "ORGANISATION", "2026-10-12", "en", [3]), ("act-new", "LEGAL_ACT", "2026-10-11", "en", [4], True))
+    assert [call(u, "take_next", langs("en")) for u in (A, B, C)] == ["o", "p", "p-new"]
+    deck(("p", "PERSON", "2026-10-10", "en", [1]), ("p-new", "PERSON", "2026-10-13", "en", [2], True))
+    assert call(A, "take_next", langs("en"), "'new records'") == "p-new"
+
+
 def test_updating_and_creating_are_separate_groups(db):
     """A new person is under "new records", not "people"; a change to a building is one of the "other changes"."""
     deck(("p", "PERSON", "2026-10-12", "en", [1]), ("p-new", "PERSON", "2026-10-13", "en", [2], True),

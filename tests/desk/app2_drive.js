@@ -25,6 +25,8 @@
     out.loaded = await until(() => !loading && CARDS.length && NPT_READY);
     out.cards = CARDS.length;
     // home first: how many are waiting, one button to go on, and nothing taken yet
+    // Start names no record: the database chooses one when it is pressed
+    out.startNamesNoRecord = /<button class="cta" data-act="start"><span><b>(Start|Continue)<\/b><\/span>/.test(stage());
     out.homeFirst = PAGE === "home" && /records? waiting for you/.test(stage()) && !!document.querySelector('[data-act="start"]') && F.rpcs.length === 0;
     const t = new Date(), today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
     STATUS = { line: { date: today, text: "A quiet Saturday for the catalogue." } }; draw();
@@ -260,7 +262,7 @@
       const heldZh = DEALT === zhOnly.key;
       act("nav", { dataset: { nav: "home" } });
       act("settings"); document.querySelectorAll("#veil .lang input").forEach(x => { x.checked = x.value === "en"; }); act("savelangs"); await tick(20);
-      out.otherLanguageGivenBack = heldZh && !F.mine().includes(zhOnly.key) && !DEALT && homeData().next !== zhOnly && !stage().includes(esc(gist(nameOf(zhOnly), 40)));
+      out.otherLanguageGivenBack = heldZh && !F.mine().includes(zhOnly.key) && !DEALT && !stage().includes(esc(gist(nameOf(zhOnly), 40)));
       act("start"); await settled();
       out.emptyTypeNotOffered = [...sel.options].find(o => o.value === "organisations").disabled && !CARDS.some(c => available(c) && groupOf(c) === "organisations");
       sel.value = "organisations"; sel.dispatchEvent(new Event("change")); await settled();

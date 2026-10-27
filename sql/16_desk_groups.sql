@@ -36,3 +36,9 @@ alter table public.deck add column if not exists grp text
 
 drop function if exists public.card_group(text);
 grant execute on function public.card_group(text, boolean) to authenticated, service_role;
+
+-- The queue's order (take_next in sql/15): changes to records TTE has before
+-- records to create, each newest news first. Built here, after grp is final: an
+-- index on the column would go with it when the column is dropped above.
+create index if not exists deck_queue_updates_first on public.deck
+  ((grp = 'new records'), newest desc nulls last, ord, key) where not settled;

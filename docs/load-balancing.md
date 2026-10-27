@@ -1,7 +1,8 @@
 # How the review desk shares out the work
 
-**One shared pile. The database hands each reviewer one record at a time, the newest news first. Nothing is
-split between people in advance, so nothing ever needs to be redistributed.**
+**One shared pile. The database hands each reviewer one record at a time: changes to existing records before
+records to create, each the newest news first. Nothing is split between people in advance, so nothing ever needs
+to be redistributed.**
 
 This page describes exactly what the online desk does. The rules live in the database
 (`sql/15_desk_queue.sql`), not in the page, so an old or faulty page cannot break them. They are tested against a
@@ -15,8 +16,9 @@ at the same time, and the changes to one record are decided together.
 
 ## The rules
 
-1. **One pile, in news order.** Every record with something left to decide is in one pile. The record whose
-   newest article is most recent comes first.
+1. **One pile, changes first.** Every record with something left to decide is in one pile. Changes to records
+   TTE already has come before records to create, as the team asked. Within each, the record whose newest
+   article is most recent comes first. Choosing "Create new records" still gives you records to create.
 2. **Filtered for you.** You are only given records with at least one article in a language you read, and only
    of the group you chose: "All records", "People", "Organisations", "Other vocab changes" (changes to any other
    existing record) or "Create new records" (every new record, whatever its type). Updating a record and creating
@@ -56,7 +58,7 @@ at the same time, and the changes to one record are decided together.
 12. **Changing your own decision.** On Results, each of your decisions has a **Change** button. It takes the
     record back (if no colleague holds it) and your new decision replaces the old one. Once you mark it **Done in
     TTE**, it is fixed: a correction is then a new edit in TTE. You can never change a colleague's decision.
-13. **New records every night.** The nightly run adds new records to the same pile, in news order, so the
+13. **New records every night.** The nightly run adds new records to the same pile, in the same order, so the
     newest news is on top the next morning. Records not yet decided stay in the pile. Nothing is redistributed,
     because nothing was ever anyone's except the one record on their screen.
 14. **Fairness.** Results, under "Everyone's", shows how many records each reviewer has decided today, in the
@@ -80,7 +82,7 @@ the pile. Nobody had a share, so nothing has to be divided again.
 **Someone does only 5 records today.** Then the others take the rest from the pile. Nothing waits for them. Their
 count on Results shows they did 5 (rule 14).
 
-**New records at the end of the day. And the old ones?** New records join the pile in news order, newest on top
+**New records at the end of the day. And the old ones?** New records join the pile in the same order, newest on top
 (rule 13). Undecided older ones stay where they are. Nothing is redistributed.
 
 **Can anyone overwrite someone else's decision?** No. The database saves a decision only from the person holding
@@ -101,7 +103,7 @@ Accept is refused and you are told why.
 
 ## An example day
 
-500 records in the pile, newest first.
+500 records in the pile, changes first, newest first.
 
 | Time | What happens |
 |---|---|
