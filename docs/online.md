@@ -136,22 +136,22 @@ build step beyond `--site`.
 
 ## What a reviewer sees
 
-Sign in, and the first time, **How this works** and then the languages they
-read: English, Chinese, Malay and Tamil, by the outlet of each article.
-Both can be opened again from the foot of the side rail (**How this works**,
-**Languages**).
-
-Then, the first time only, the **practice round**: two real cards, Alan Chan
+Sign in, and the first time, **How this works** and then the **practice
+round**. Its first step is the languages they read: English, Chinese, Malay
+and Tamil, by the outlet of each article. Then two real cards, Alan Chan
 (a record TTE has, with four records it could be, five articles in English
 and Chinese, and a description rewrite) and Chen Jinlong (a record to
 create), then a look at Results, Analytics and Downloads. A note above each
-step says what to look at and which button to press. It writes nothing: no
-record is held, no decision is sent, nothing reaches the sheets or the
-downloads, and the three pages show the practice decisions with their
-buttons switched off. **Skip practice** leaves it at any step; Home offers it
+step says what to look at and which button to press. It writes nothing but
+the languages, which are the reviewer's own setting: no record is held, no
+decision is sent, nothing reaches the sheets or the downloads, and the three
+pages show the practice decisions with their buttons switched off. **Skip
+practice** leaves it at any step (before the languages are chosen, the
+languages are asked on their own); Home offers it
 again ("Try the practice round!"). The cards are `prototype/practice.json`,
 taken from the deck on 28 Oct 2026 and put into the page by the build;
-replace them there if a better example turns up.
+replace them there if a better example turns up. **How this works** and
+**Languages** can be opened again from the foot of the side rail.
 
 The rail holds the pages:
 

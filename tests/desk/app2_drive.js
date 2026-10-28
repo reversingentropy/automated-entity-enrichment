@@ -50,30 +50,38 @@
     out.allFourLanguagesOffered = [...document.querySelectorAll("#veil .lang input")].map(x => x.value).join() === "en,zh,ms,ta";
     act("savelangs");
     out.langsStayHome = PAGE === "home" && !document.querySelector("#veil") && F.rpcs.length === 0;
-    // the practice round: two cards from the page itself, then a look at three pages, a note at each step. It writes
-    // nothing: no hold, no decision, nothing in the reviewer's own list
-    const pr0 = { rpcs: F.rpcs.length, reviews: F.reviews.length, log: LOG.length, unsent: Object.keys(UNSENT).length };
+    // the practice round: the languages, two cards from the page itself, then a look at three pages, a note at each
+    // step. It writes nothing: no hold, no decision, nothing in the reviewer's own list; only the languages are kept
+    const pr0 = { rpcs: F.rpcs.length, reviews: F.reviews.length, log: LOG.length, unsent: Object.keys(UNSENT).length }, langs0 = langs.slice();
     out.practiceOffered = /data-act="practice"/.test(stage());
     act("practice");
-    out.practiceUpdateFirst = PAGE === "practice" && /Practice 1 of 5/.test(stage()) && !card().isNew && stOf(card()).screen === "who"
+    const boxes = () => [...document.querySelectorAll("#stage .lang input")];
+    out.practiceLanguagesFirst = PAGE === "practice" && /Practice 1 of 6/.test(stage()) && !card() && boxes().length === 4
+      && boxes().filter(x => x.checked).map(x => x.value).join() === langs0.join() && /your languages are kept/.test(stage());
+    boxes().forEach(x => { x.checked = false; }); act("practicelangs");
+    out.practiceNeedsALanguage = PRACTICE.i === 0 && langs.join() === langs0.join();
+    boxes().forEach(x => { x.checked = langs0.includes(x.value) || x.value === "ms"; }); act("practicelangs");
+    out.practiceLanguagesKept = PRACTICE.i === 1 && langs.includes("ms") && JSON.parse(localStorage.getItem("proto-langs")).includes("ms");
+    out.practiceUpdateFirst = PAGE === "practice" && /Practice 2 of 6/.test(stage()) && !card().isNew && stOf(card()).screen === "who"
       && /Possible TTE records \(4\)/.test(stage()) && /Record 1 of 4/.test(stage()) && /None of these\?/.test(stage()) && /Same record/.test(stage());
     act("same");
     out.practiceChangeNoted = stOf(card()).screen === "change" && /Change 1 of 3/.test(stage()) && /nothing in TTE yet/.test(stage());
-    for (let g = 0; g < 20 && PRACTICE.i === 0; g++) act("accept");
-    out.practiceCreateSecond = /Practice 2 of 5/.test(stage()) && card().isNew && stOf(card()).screen === "create" && /_People/.test(stage())
+    for (let g = 0; g < 20 && PRACTICE.i === 1; g++) act("accept");
+    out.practiceCreateSecond = /Practice 3 of 6/.test(stage()) && card().isNew && stOf(card()).screen === "create" && /_People/.test(stage())
       && /Possible TTE records \(5\)/.test(stage()) && !document.querySelector(".rtabs button.on") && /None of these\?/.test(stage()) && !/data-act="newrec"/.test(stage());
     act("create");
     const tour = () => document.querySelector("#stage .tour");
-    out.practiceResults = /Practice 3 of 5/.test(stage()) && !!tour() && tour().inert && /Alan Chan/.test(tour().innerHTML)
+    out.practiceResults = /Practice 4 of 6/.test(stage()) && !!tour() && tour().inert && /Alan Chan/.test(tour().innerHTML)
       && document.querySelector('.navi[data-nav="results"]').classList.contains("on");
     act("done", { dataset: { i: "0" } });   // a page's own button, refused in practice
-    act("practicenext"); out.practiceAnalytics = /Practice 4 of 5/.test(stage()) && /<h1>Analytics/.test(stage());
-    act("practicenext"); out.practiceDownloads = /Practice 5 of 5/.test(stage()) && /Approved changes/.test(stage());
+    act("practicenext"); out.practiceAnalytics = /Practice 5 of 6/.test(stage()) && /<h1>Analytics/.test(stage());
+    act("practicenext"); out.practiceDownloads = /Practice 6 of 6/.test(stage()) && /Approved changes/.test(stage());
     act("practicenext"); out.practiceEnds = PAGE === "practice" && !card() && /practice<\/h2>/.test(stage());
     out.practiceWritesNothing = F.rpcs.length === pr0.rpcs && F.reviews.length === pr0.reviews && LOG.length === pr0.log
       && Object.keys(UNSENT).length === pr0.unsent && !LOG.some(x => /^practice:/.test(x.key)) && !LOG.some(x => x.done);
     act("practice"); act("practiceend");
-    out.practiceSkips = PAGE === "home" && !PRACTICE && !/class="coach"/.test(stage());
+    out.practiceSkips = PAGE === "home" && !PRACTICE && !/class="coach"/.test(stage()) && !document.querySelector("#veil");
+    keepLangs(langs0);
     // a card's two stamps: the other choice on the left, the way forward on the right in green
     const pair = actions(["same", "Same record", "", "go"], ["discard", "No thanks", "", "red"], []);
     out.greenOnTheRight = pair.indexOf("stamp red") < pair.indexOf("stamp go");
@@ -366,13 +374,16 @@
     out.approvedStarts = !document.querySelector("#veil") && PAGE === "home" && !/new account/.test(stage());
     act("changepw"); suType({ pw: "a new one!", pw2: "a new one!" }); act("dochangepw");
     out.passwordChanged = await until(() => F.passwordSetTo === "a new one!" && /Password changed/.test(stage()));
-    // a first visit in this browser: the welcome, then (languages chosen) the practice round; and only the once
-    try { localStorage.removeItem("desk2-welcomed"); localStorage.removeItem(PRACTISED); } catch (e) {}
+    // a first visit in this browser: the welcome, then the practice round, which asks the languages; and only the once
+    const langsBefore = langs.slice(); langs = null;
+    try { localStorage.removeItem("desk2-welcomed"); localStorage.removeItem(PRACTISED); localStorage.removeItem("proto-langs"); } catch (e) {}
     await signedIn(suFresh);
     out.firstVisitWelcomed = !!document.querySelector("#veil .welcome");
     act("closewelcome");
-    out.firstVisitPractises = PAGE === "practice" && /Practice 1 of 5/.test(stage());
+    out.firstVisitPractises = PAGE === "practice" && /Practice 1 of 6/.test(stage()) && /Which languages do you read\?/.test(stage()) && !document.querySelector("#veil");
     act("practiceend");
+    out.skippedBeforeLanguagesAsks = PAGE === "home" && !!document.querySelector("#veil .lang");
+    act("savelangs"); keepLangs(langsBefore);
     try { localStorage.removeItem("desk2-welcomed"); } catch (e) {}
     await signedIn(suFresh); act("closewelcome");
     out.practiceOnlyOnce = PAGE === "home" && !PRACTICE;

@@ -206,6 +206,7 @@
   .coach .cnext{margin-left:.5rem;background:var(--go);color:#fff;border:none;border-radius:9px;padding:.35rem 1.1rem;font-weight:650}
   .cbtn{font-weight:650}
   .tour{opacity:.92}
+  .plangs{padding:.4rem 1.2rem} .plangs .langs{max-width:30rem}
   .hm .practise{margin:2.4rem 0 0;font-size:1.4rem;font-weight:650;color:var(--ink)}
   .hm .practise button{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;text-underline-offset:.2em;cursor:pointer}
   @keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -1255,7 +1256,8 @@ async function signedIn(user) {
   buildList("all"); draw(true);
   flushUnsent();
   loadAccounts();
-  // How it works, once per browser; then the languages, if not chosen yet; then, the first time, the practice round.
+  // How it works, once per browser; then, the first time, the practice round, which starts with the languages;
+  // otherwise the languages, if not chosen yet.
   let welcomed = false;
   try { welcomed = !!localStorage.getItem("desk2-welcomed"); localStorage.setItem("desk2-welcomed", "1"); } catch (e) {}
   PRACTICE_NEXT = !welcomed && !practised();
@@ -1630,7 +1632,7 @@ const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest
 const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
 const quiet = st => (st.hist.length ? [["back", "&larr; Back"]] : []).concat([["keep", "Not sure? Keep for review"], ["stopnow", "Stop for now"]]);
 const stOf = c => S[c.key] || (S[c.key] = fresh(c));
-const card = () => PAGE === "practice" ? (PRACTICE && PRACTICE_CARDS[PRACTICE.i]) || null
+const card = () => PAGE === "practice" ? (PRACTICE && PRACTICE_CARDS[PRACTICE.i - 1]) || null
   : QUEUE() ? (DEALT ? CARDS.find(c => c.key === DEALT) || null : null) : CARDS[LIST[cur]];
 function srcFor(c, st, k, ch) {
   const link = ch.from || (c.newsFrom || {})[ch.field] || (c.sources[0] || {}).link;
@@ -1692,13 +1694,15 @@ function act(a, el) {
   if (a === "practiceend") return endPractice();
   if (a === "practicedone") { endPractice(); return act("start"); }
   if (a === "practicenext") { if (PRACTICE) PRACTICE.i++; return draw(true); }
-  if (a === "closewelcome") { const v = $("#veil"); if (v) v.remove(); if (!langs) settings(); else if (PRACTICE_NEXT) startPractice(); return; }
+  if (a === "practicelangs") {
+    const picked = [...document.querySelectorAll("#stage .lang input:checked")].map(x => x.value); if (!picked.length || !PRACTICE) return;
+    keepLangs(picked); PRACTICE.i++; return draw(true);
+  }
+  if (a === "closewelcome") { const v = $("#veil"); if (v) v.remove(); if (PRACTICE_NEXT) startPractice(); else if (!langs) settings(); return; }
   if (a === "settings") return settings();
   if (a === "savelangs") {
     const picked = [...document.querySelectorAll("#veil .lang input:checked")].map(x => x.value); if (!picked.length) return;
-    langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
-    $("#veil").remove(); buildList($("#filter").value);   // stays on the page it was opened from
-    if (PRACTICE_NEXT) return startPractice();             // a first visit: the languages, then the practice round
+    keepLangs(picked); $("#veil").remove();   // stays on the page it was opened from
     if (QUEUE() && PAGE === "review" && !fits(card()) && DEAL !== "saving" && DEAL !== "unsaved") return deal();
     // away from the record (home, results), one no longer in a language read is given back, so home offers one that is
     if (QUEUE() && DEALT && DEAL === null && !fits(card())) { Promise.resolve(sb.rpc("release_card", { key: DEALT })).catch(() => {}); MINE.clear(); DEALT = null; }
@@ -1827,11 +1831,11 @@ function welcome() {
 }
 
 // ---- practice ------------------------------------------------------------------------
-// A first go on two real cards, a record to update and one to create, then a look at Results, Analytics and
-// Downloads, with a note at each step on what to look at. It writes nothing: no hold, no decision, nothing on the
+// A first go: the languages, two real cards, a record to update and one to create, then a look at Results, Analytics
+// and Downloads, with a note at each step on what to look at. It writes nothing: no hold, no decision, nothing on the
 // sheets. finish() keeps a practice decision with the practice, and the three pages are shown with those decisions
-// in place of the reviewer's own and every button switched off. The browser keeps only that it was seen. Offered
-// once, after the welcome and the languages, and from Home any time. The cards are prototype/practice.json, put in
+// in place of the reviewer's own and every button switched off. The browser keeps the languages, which are the
+// reviewer's own setting, and that it was seen. Offered once, after the welcome, and from Home any time. The cards are prototype/practice.json, put in
 // by the build; their proposals are emptied, so nothing decided on the real record can change what is asked.
 const PRACTICE_CARDS = (/*__PRACTICE__*/[]).map(c => ({ ...c, key: "practice:" + c.key, pids: [] }));
 const PRACTISED = "desk2-practised";
@@ -1850,6 +1854,7 @@ function startPractice() {
 function endPractice() {
   PRACTICE_CARDS.forEach(c => { S[c.key] = undefined; });
   PRACTICE = null; PAGE = "home"; draw(true);
+  if (!langs) settings();   // skipped before choosing them
 }
 const cbtn = t => `<b class="cbtn">${t}</b>`;   // a button's name, as it reads on the page
 const TOUR = [
@@ -1864,8 +1869,10 @@ const TOUR = [
     points: () => [`${cbtn("Approved changes")}: one row per accepted change, and the records to create. It is the sheet the cataloguers work from.`,
                    `${cbtn("Every decision")}: every record with its outcome. Each comes as yours or everyone&rsquo;s.`] },
 ];
-const practiceSteps = () => PRACTICE_CARDS.length + TOUR.length;
-const coachBox = (title, points, todo) => `<aside class="coach" aria-label="Practice"><div class="ctop"><span><b>Practice ${PRACTICE.i + 1} of ${practiceSteps()}</b> &middot; nothing is saved</span><button class="quiet" data-act="practiceend">Skip practice</button></div>
+// the steps: the languages, the cards, the pages
+const practiceSteps = () => 1 + PRACTICE_CARDS.length + TOUR.length;
+const tourStep = () => PRACTICE && TOUR[PRACTICE.i - 1 - PRACTICE_CARDS.length];
+const coachBox = (title, points, todo, note = "nothing is saved") => `<aside class="coach" aria-label="Practice"><div class="ctop"><span><b>Practice ${PRACTICE.i + 1} of ${practiceSteps()}</b> &middot; ${note}</span><button class="quiet" data-act="practiceend">Skip practice</button></div>
     <h3>${title}</h3><ul>${points.map(p => `<li>${p}</li>`).join("")}</ul><p class="todo">${todo}</p></aside>`;
 // A page as it reads with these decisions in place of the reviewer's own. Drawn in one go, so nothing else runs
 // while the list is swapped; the reviewer's own are back before it returns.
@@ -1875,9 +1882,15 @@ function withLog(L, f) {
   try { return f(); } finally { LOG.splice(0, LOG.length, ...own); VIEW = view; }
 }
 function practicePage() {
+  if (!PRACTICE.i) return coachBox("Which languages do you read?",
+    ["You are given only the records with an article in a language you read. Tick every one you read.",
+     "On a card, an article in a language you read comes first. One in Chinese, Malay or Tamil shows its own words, with the English under them.",
+     `Unlike the rest of the practice, this choice is kept. Change it any time: ${cbtn("Reading")} at the top of the Review page, or ${cbtn("Languages")} at the foot of the menu.`],
+    `Tick yours, then <button class="cnext" data-act="practicelangs">Next</button>`, "your languages are kept")
+    + `<section class="focus plangs">${langBoxes()}</section>`;
   const c = card();
   if (c) return coach(c, stOf(c)) + SCREEN[stOf(c).screen](c, stOf(c));
-  const t = TOUR[PRACTICE.i - PRACTICE_CARDS.length];
+  const t = tourStep();
   if (!t) return practiceEnd();
   return coachBox(t.title, t.points(), `In the menu, under ${cbtn(t.nav[0].toUpperCase() + t.nav.slice(1))}. The buttons here are off in the practice. <button class="cnext" data-act="practicenext">Next</button>`)
     + `<div class="tour" inert>${withLog(PRACTICE.log, t.page)}</div>`;
@@ -2132,14 +2145,22 @@ function download(name, rows) {
   const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
-function settings() {
-  if ($("#veil")) return;
+// The languages read, kept in this browser: they decide which records are dealt.
+function keepLangs(picked) {
+  langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
+  buildList($("#filter").value);
+}
+function langBoxes() {
   const count = l => CARDS.filter(c => !HELD.has(c.key) && !DECIDED.has(c.key) && cardLangs(c).includes(l)).length;
   const chosen = new Set(langs || ["en"]);
+  return `<div class="langs">${Object.entries(LANG_NAMES).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} ${count(l) === 1 ? "card" : "cards"} waiting</small></label>`).join("")}</div>`;
+}
+function settings() {
+  if ($("#veil")) return;
   const v = document.createElement("div"); v.className = "veil"; v.id = "veil";
   v.innerHTML = `<div class="welcome small" role="dialog" aria-label="Languages"><h2>Which languages do you read?</h2>
     <p class="sub">You are only given cards with an article in a language you read. You choose once; change it any time from the menu at the top.</p>
-    <div class="langs">${Object.entries(LANG_NAMES).map(([l, n]) => `<label class="lang"><input type="checkbox" value="${l}" ${chosen.has(l) ? "checked" : ""}> ${n} <small>${count(l)} ${count(l) === 1 ? "card" : "cards"} waiting</small></label>`).join("")}</div>
+    ${langBoxes()}
     <button class="go" data-act="savelangs">Done</button></div>`;
   document.body.appendChild(v);
 }
@@ -2444,7 +2465,7 @@ function draw(top) {
   else if (PAGE === "practice") {
     $("#stage").innerHTML = practicePage();
     // the page being looked at, lit in the menu, so it can be found again
-    const t = !c && PRACTICE && TOUR[PRACTICE.i - PRACTICE_CARDS.length]; if (t) $(`.navi[data-nav="${t.nav}"]`).classList.add("on");
+    const t = !c && tourStep(); if (t) $(`.navi[data-nav="${t.nav}"]`).classList.add("on");
   }
   else if (QUEUE() && PAGE === "review" && DEAL && DEAL !== "none") $("#stage").innerHTML =
     DEAL === "asking" ? wait("Finding your next record&hellip;")
