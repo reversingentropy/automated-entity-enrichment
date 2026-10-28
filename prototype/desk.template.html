@@ -179,7 +179,7 @@
 
   .actions{position:sticky;bottom:0;margin:1.1rem 0 0;padding:.9rem 0;background:linear-gradient(rgba(244,241,234,0),var(--bg) 30%);display:grid;gap:.55rem}
   .pair{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-  .stamp{border:2px solid;border-radius:12px;padding:.8rem .95rem;text-align:left;display:grid;gap:.12rem;min-height:4.2rem;align-content:center;box-shadow:0 2px 6px rgba(20,25,40,.12);transition:transform .08s}
+  .stamp{border:2px solid;border-radius:12px;padding:.8rem .95rem;text-align:center;display:grid;justify-items:center;gap:.12rem;min-height:4.2rem;align-content:center;box-shadow:0 2px 6px rgba(20,25,40,.12);transition:transform .08s}
   .stamp:active{transform:translateY(1px)}
   .stamp b{font-size:1.1rem;font-weight:750;letter-spacing:-.005em}
   .stamp span{font-size:.86rem;line-height:1.3;opacity:.92}
@@ -412,10 +412,9 @@
   .hmnum{font-size:6.5rem;font-weight:700;line-height:.95;letter-spacing:-.045em;color:var(--ink)}
   .hmlab{margin:.5rem 0 .2rem;font-size:1.2rem;font-weight:650}
   .hmsub{margin:0 0 1.8rem;color:var(--ink3);font-size:.95rem}
-  .cta{position:relative;display:flex;align-items:center;justify-content:center;gap:1rem;width:100%;max-width:24rem;margin:0 auto;padding:1rem 3rem;border:0;border-radius:14px;background:var(--ink);color:#fff;text-align:center;box-shadow:0 10px 26px rgba(28,35,51,.22);transition:transform .12s ease,box-shadow .12s ease}
+  .cta{display:flex;align-items:center;justify-content:center;gap:1rem;width:100%;max-width:24rem;margin:0 auto;padding:1rem 1.3rem;border:0;border-radius:14px;background:var(--ink);color:#fff;text-align:center;box-shadow:0 10px 26px rgba(28,35,51,.22);transition:transform .12s ease,box-shadow .12s ease}
   .cta:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(28,35,51,.28)}
   .cta span{display:grid;gap:.1rem} .cta b{font-size:1.12rem} .cta small{color:#C6CCDA;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:17rem}
-  .cta i{position:absolute;right:1.3rem;font-style:normal;font-size:1.4rem}   /* the arrow at the edge, the words centred */
   .chips{display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 0}
   .chips button{border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:999px;padding:.35rem .85rem;font-size:.88rem}
   .chips button:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)} .chips b{color:var(--ink);margin-left:.2rem}
@@ -1841,7 +1840,7 @@ function homeMinimal(d) {
   <div class="hmnum">${d.n}</div>
   <p class="hmlab">${d.n === 1 ? "record waiting for you" : "records waiting for you"}</p>
   <p class="hmsub">${subLine(d)}</p>
-  ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b></span><i aria-hidden="true">&rarr;</i></button>`
+  ${d.n ? `<button class="cta" data-act="start"><span><b>${startLabel(d)}</b></span></button>`
         : !ONLINE && LOG.length ? `<button class="cta" data-act="restart"><span><b>Start over</b><small>clears this session</small></span></button>` : ""}
   ${d.n ? `<div class="chips">${d.types.filter(t => t[2]).map(([k, label, v]) => `<button data-act="startgroup" data-g="${k}">${label} <b>${v}</b></button>`).join("")}</div>` : ""}
   ${surveyNow() ? `<p class="survey">How is the desk working for you? <a href="${esc(surveyNow().url)}" target="_blank" rel="noopener" data-survey>Two-minute survey &#8599;</a></p>` : ""}
