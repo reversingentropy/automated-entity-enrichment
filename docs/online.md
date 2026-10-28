@@ -149,7 +149,7 @@ step says what to look at and which button to press. It writes nothing: no
 record is held, no decision is sent, nothing reaches the sheets or the
 downloads, and the three pages show the practice decisions with their
 buttons switched off. **Skip practice** leaves it at any step; Home offers it
-again ("Try the practice round"). The cards are `prototype/practice.json`,
+again ("Try the practice round!"). The cards are `prototype/practice.json`,
 taken from the deck on 28 Oct 2026 and put into the page by the build;
 replace them there if a better example turns up.
 
