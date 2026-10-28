@@ -18,6 +18,7 @@ import json
 import re
 from pathlib import Path
 
+from src.export.weekly import vocab_for
 from src.shared.description import (
     SENTENCE_LIMIT, SURVIVES_FLOOR, additions, judge, over_limit, sentence_count, sentence_edits,
     split_sentences, survives)
@@ -1316,7 +1317,13 @@ def index_row(record: dict) -> list | None:
     # the man the extractor called "Lee, Choon Seng". Kept short; it ships
     # inside the page for every record.
     gist = " ".join(str(fields.get("Description") or "").split())[:120]
-    return [record["uid"], record["name"], record["entity_type"], identity, gist]
+    row = [record["uid"], record["name"], record["entity_type"], identity, gist]
+    # The vocabulary, where the type does not tell it: a historical event is an
+    # EVENT, but in _Historical_Events, not _Events. The page shows TTE's names.
+    vocabulary = record.get("vocabulary") or ""
+    if vocabulary and vocabulary != vocab_for(record["entity_type"]):
+        row.append(vocabulary)
+    return row
 
 
 def build_index(with_variants: bool = False):
@@ -1326,7 +1333,7 @@ def build_index(with_variants: bool = False):
     badge lookup uses and the page does not ship.
     """
     rows = fetch_all(lambda: get_client().from_("entities")
-                     .select("uid,name,entity_type,fields,canonical_uid,is_active"), order="uid")
+                     .select("uid,name,entity_type,vocabulary,fields,canonical_uid,is_active"), order="uid")
     out = [row for row in (index_row(r) for r in rows) if row]
     out.sort(key=lambda e: e[1])
     if not with_variants:

@@ -109,6 +109,7 @@
   .cands button{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.2rem .75rem;font-size:.86rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cands button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .tt{display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 .3rem;margin-left:.4rem;opacity:.8;vertical-align:middle}
+  .tt.voc{text-transform:none;letter-spacing:0;font-size:.74rem}   /* a vocabulary as TTE spells it: _GeoBuildings */
   .frow{display:flex;gap:.5rem} .frow input{flex:1} .frow select{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:.4rem .6rem;font-size:.9rem;color:var(--ink)}
   .ctype{font:inherit;font-size:.78rem;font-weight:650;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:.15rem .4rem;color:var(--ink);text-transform:none;letter-spacing:0}
   .cands button.newrec{border-style:dashed;color:var(--ink2)}
@@ -592,7 +593,8 @@ function crossOpts(c) {
   }));
   _cross.set(c, out); return out;
 }
-const typeTag = (c, o) => o && o.rtype && o.rtype !== c.type ? `<span class="tt">${esc(kind({ type: o.rtype }))}</span>` : "";
+// a record in another vocabulary than the card's: a same-name building for an organisation, a historical event
+const typeTag = (c, o) => { const v = o && o.uid ? recVocab(o.uid, o.rtype || c.type) : ""; return v && v !== vocabOf(c.type) ? `<span class="tt voc">${esc(v)}</span>` : ""; };
 const findSource = (c, link) => c.sources.find(s => s.link === link) || c.sources[0] || {};
 const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -771,6 +773,10 @@ const VOCABS = { _People: ["PERSON", "CHI TAM"], _Organisations: ["ORGANISATION"
                  _Geographics: ["LOCATION", "CHI MAY TAM"], _Events: ["EVENT", "CHI MAY TAM"], _Historical_Events: ["EVENT", ""],
                  _Awards: ["AWARD", "CHI MAY TAM"], _Programmes: ["PROGRAMME", ""], _LegalActs: ["LEGAL_ACT", ""] };
 const vocabOf = type => Object.keys(VOCABS).find(v => VOCABS[v][0] === type) || "";
+// A record's vocabulary, as TTE names it. The type tells it, but for a historical event, which the index names.
+const rowVocab = r => r[5] || vocabOf(r[2]);
+let RECVOCAB = null;
+const recVocab = (uid, type) => { if (!RECVOCAB) RECVOCAB = new Map(INDEX.filter(r => r[5]).map(r => [r[0], r[5]])); return RECVOCAB.get(uid) || vocabOf(type); };
 const keptIn = (vocab, lang) => !!lang && (VOCABS[vocab] || ["", ""])[1].split(" ").includes(lang);
 const TAMIL = /[\u0B80-\u0BFF]/;
 // A name's language: Chinese and Tamil by their script; Malay, written in the same letters as English, only when the
@@ -825,15 +831,15 @@ function hitsHtml(c, query) {
   const only = (S[c.key] || {}).stype || "all";
   for (const pass of passes) for (const r of INDEX) {
     if (found.length >= 80) break;
-    if ((only !== "all" && r[2] !== only) || found.includes(r)) continue;
+    if ((only !== "all" && rowVocab(r) !== only) || found.includes(r)) continue;
     if (pass(r)) { if (have.has(r[0])) { listed++; continue; } found.push(r); }
   }
   found.sort((a, b) => (b[2] === c.type) - (a[2] === c.type));
   if (!found.length) return `<div class="nohits">${listed ? "That record is already one of the possible TTE records." : "No record by that name."}</div>`;
-  return found.slice(0, 25).map(r => `<button class="hit" data-act="pickhit" data-u="${esc(r[0])}" data-npt="${esc(via[r[0]] || "")}"><b>${esc(r[1])}</b><span class="tt">${esc(kind({ type: r[2] }))}</span>${via[r[0]] ? `<span class="npt2">NPT ${esc(via[r[0]])}</span>` : ""}${r[3] ? `<small>${esc(gist(r[3], 60))}</small>` : ""}</button>`).join("");
+  return found.slice(0, 25).map(r => `<button class="hit" data-act="pickhit" data-u="${esc(r[0])}" data-npt="${esc(via[r[0]] || "")}"><b>${esc(r[1])}</b><span class="tt voc">${esc(rowVocab(r))}</span>${via[r[0]] ? `<span class="npt2">NPT ${esc(via[r[0]])}</span>` : ""}${r[3] ? `<small>${esc(gist(r[3], 60))}</small>` : ""}</button>`).join("");
 }
 // Searching every record in TTE, under the card.
-const findBox = (c, st) => st.finding ? `<div class="find"><div class="frow"><input id="q" type="search" autocomplete="off" placeholder="Search every record in TTE by name, occupation or description" value="${esc(st.query || "")}"><select id="qt" aria-label="Record type"><option value="all">All types</option>${Object.keys(TYPES).map(t => `<option value="${t}" ${st.stype === t ? "selected" : ""}>${TYPES[t][0]}</option>`).join("")}</select></div><div class="hits" id="hits">${hitsHtml(c, st.query)}</div></div>` : "";
+const findBox = (c, st) => st.finding ? `<div class="find"><div class="frow"><input id="q" type="search" autocomplete="off" placeholder="Search every record in TTE by name, occupation or description" value="${esc(st.query || "")}"><select id="qt" aria-label="Key Vocabulary"><option value="all">All vocabularies</option>${Object.keys(VOCABS).map(v => `<option value="${v}" ${st.stype === v ? "selected" : ""}>${v}</option>`).join("")}</select></div><div class="hits" id="hits">${hitsHtml(c, st.query)}</div></div>` : "";
 // The records the one in the news could be, as tabs at the foot of the TTE box: the record shown is one of several,
 // each a click away, and they come once the one shown has been read, beside what to do if none of them is. As a row
 // of names under the card, "Records it could be:", they were easy to miss (28 Oct 2026).
@@ -864,7 +870,7 @@ function who(c, st) {
     ${news(c, st)}
     <div class="join">same ${esc(kind(c))}?</div>
     <div class="side tte">
-      <div class="label">${opts.length > 1 ? `Record ${st.cand + 1} of ${opts.length}` : "In TTE now"} <span class="src">${esc(o.rtype || c.type)} &middot; UID ${esc(o.uid)}</span></div>
+      <div class="label">${opts.length > 1 ? `Record ${st.cand + 1} of ${opts.length}` : "In TTE now"} <span class="src">${esc(recVocab(o.uid, o.rtype || c.type))} &middot; UID ${esc(o.uid)}</span></div>
       <h2 class="name">${esc(o.name)}</h2>
       <p class="ident">${esc(o.thin ? thinIdent(o) || "Nothing recorded but its name" : identLine(c, o))}</p>
       ${o.npt ? `<p class="npt">Found through the name &ldquo;${esc(o.npt)}&rdquo;</p>` : ""}
@@ -950,8 +956,6 @@ function create(c, st) {
             quiet(st))}`;
 }
 
-const TYPES = { PERSON: ["People", "People"], ORGANISATION: ["Organisations", "Organisations"], FACILITY: ["Facilities (buildings)", "Geobuildings"], LOCATION: ["Locations (places)", "Geographics"],
-                EVENT: ["Events", "Events"], AWARD: ["Awards", "Awards"], PROGRAMME: ["Programmes", "Programmes"], LEGAL_ACT: ["Legal acts", "Legal acts"] };
 const FIELD_Q = { "Description": "the description", "Title": "the title", "Affiliations(groupName)": "the affiliations", "Awards": "the awards", "Occupation": "the occupation",
                   "Parent Organisation": "the parent organisation", "Achievements": "the achievements", "Year Ended (yyyy)": "the year ended",
                   "Month Ended (mm)": "the month ended", "Day Ended (dd)": "the day ended", "Death Day (dd)": "the day of death", "Child": "the children" };
@@ -1201,7 +1205,7 @@ async function loadIndex() {
     Object.keys(NPT).forEach(k => delete NPT[k]); Object.assign(NPT, desk.npt || {});
     STATUS = desk.status || null;
   } catch (e) { /* search and the variant check wait; the record itself does not */ }
-  _names = null; _cross = new WeakMap(); NAMEIDX = null; NPT_READY = true;
+  _names = null; _cross = new WeakMap(); NAMEIDX = null; RECVOCAB = null; NPT_READY = true;
   if (me && !loading && !document.querySelector("#veil")) draw();
 }
 // A saved decision, as the sheet and the team pages read it.

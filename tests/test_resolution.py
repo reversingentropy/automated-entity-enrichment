@@ -326,6 +326,17 @@ def test_a_search_result_says_who_the_record_is():
     assert index_row({**base, "fields": {}})[3] == ""
 
 
+def test_a_search_result_names_a_historical_events_vocabulary():
+    from src.export.cards import index_row
+
+    base = {"uid": "1", "name": "X", "entity_type": "EVENT", "is_active": True, "canonical_uid": "1", "fields": {}}
+    # An event's type does not say which of TTE's two event vocabularies holds it, so the index does.
+    assert index_row({**base, "vocabulary": "_Historical_Events"})[5] == "_Historical_Events"
+    # Every other record's vocabulary follows from its type, and ships as nothing.
+    assert len(index_row({**base, "vocabulary": "_Events"})) == 5
+    assert len(index_row({**base, "entity_type": "PERSON", "vocabulary": "_People"})) == 5
+
+
 def test_two_reviewers_produce_two_rows_not_one():
     import json
     import tempfile

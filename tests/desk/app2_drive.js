@@ -114,6 +114,18 @@
     out.fieldNamed = fieldLabel("Day Started (dd)") === "Day started" && fieldLabel("Description") === "Description" && fieldLabel("Affiliations(groupName)") === "Affiliations";
     out.sourceDateHasYear = /2026/.test(dayOf("2026-09-16"));
     out.outletNamed = outletOf("https://www.beritaharian.sg/singapura/x") === "Berita Harian" && outletOf("https://www.tamilmurasu.com.sg/singapore/x") === "Tamil Murasu";
+    // search: TTE's vocabularies by their own names, in the filter and on every result; a historical event by its own,
+    // which the index names (its type, EVENT, does not)
+    const sc = CARDS.find(x => !x.isNew), keepSt = S[sc.key], person = INDEX.find(r => r[2] === "PERSON");
+    INDEX.push(["hx1", "Japanese Occupation of Singapore", "EVENT", "", "", "_Historical_Events"]); RECVOCAB = null;
+    const tags = q => [...hitsHtml(sc, q).matchAll(/<span class="tt voc">([^<]+)<\/span>/g)].map(m => m[1]);
+    const vocOpts = [...findBox(sc, { ...stOf(sc), finding: true, query: "" }).matchAll(/<option value="([^"]+)"/g)].map(m => m[1]).join();
+    out.searchByVocabulary = vocOpts === "all," + Object.keys(VOCABS).join() && Object.keys(VOCABS).length === 9
+      && tags("japanese occupation").includes("_Historical_Events") && tags(person[1]).length > 0 && tags(person[1]).every(t => t in VOCABS)
+      && recVocab("hx1", "EVENT") === "_Historical_Events" && recVocab(person[0], "PERSON") === "_People";
+    stOf(sc).stype = "_Historical_Events";
+    out.searchFiltersByVocabulary = tags("singapore").length > 0 && tags("singapore").every(t => t === "_Historical_Events");
+    INDEX.pop(); RECVOCAB = null; S[sc.key] = keepSt;
     // a record to create: a field naming records says whether TTE has each one, and any value can be left out with ×,
     // which keeps it off the sheet and is saved with the decision
     const nc = CARDS.find(x => x.isNew && x.newsLinked && x.newsLinked.Awards), nst = fresh(nc);
