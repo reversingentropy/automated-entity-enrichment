@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.export.site import PRACTICE_MARK, practice_cards  # noqa: E402
 from src.shared.pagination import fetch_all  # noqa: E402
 from src.shared.supabase_client import get_client  # noqa: E402
 
@@ -55,6 +56,7 @@ def main():
                           ("/*__HELD__*/[]", held)):
         assert page.count(marker) == 1, marker
         page = page.replace(marker, blob(value))
+    page = page.replace(PRACTICE_MARK, practice_cards())
     out = ROOT / "data" / "dist" / ("prototype-review.html" if review else "prototype.html")
     if "--out" in sys.argv:
         out = Path(sys.argv[sys.argv.index("--out") + 1]).resolve()

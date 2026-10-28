@@ -1,7 +1,7 @@
 # The desk redesign, as a standalone prototype
 
 `desk.template.html` is the whole page. `build.py` fills in the current deck and writes
-`data/dist/prototype.html`. It is a separate file from the real desk
+`data/dist/prototype.html`, with the practice round's two cards from `practice.json`. It is a separate file from the real desk
 (`src/export/desk_template.html`): nothing here reaches the live site.
 
 It is the specification for porting the redesign into the real desk, one slice at a time.

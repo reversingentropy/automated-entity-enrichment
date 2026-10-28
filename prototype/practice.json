@@ -1,0 +1,1951 @@
+[
+ {
+  "i": 250,
+  "key": "uid:18593383",
+  "also": [
+   {
+    "uid": "18723859",
+    "name": "Ustaz Mohamad Hasbi Bin Hassan",
+    "state": "card"
+   },
+   {
+    "uid": "18338475",
+    "name": "Dr Iskandar Jalil",
+    "state": "card"
+   },
+   {
+    "uid": "18540431",
+    "name": "Edmund Cheng",
+    "state": "card"
+   },
+   {
+    "uid": "18581198",
+    "name": "Eddie Teo",
+    "state": "card"
+   },
+   {
+    "uid": "20659685",
+    "name": "Bob Tan",
+    "state": "card"
+   },
+   {
+    "uid": "18517441",
+    "name": "Sundaresh Menon",
+    "state": "card"
+   },
+   {
+    "uid": "18544492",
+    "name": "林泉宝",
+    "state": "card"
+   },
+   {
+    "uid": "20605368",
+    "name": "徐炎青",
+    "state": "card"
+   },
+   {
+    "uid": "18704109",
+    "name": "Anita Fam",
+    "state": "card"
+   },
+   {
+    "uid": null,
+    "name": "莫哈默哈斯比",
+    "state": "card"
+   },
+   {
+    "uid": "18568805",
+    "name": "马宣仁",
+    "state": "card"
+   },
+   {
+    "uid": "18517752",
+    "name": "詹达斯",
+    "state": "card"
+   },
+   {
+    "uid": "18570340",
+    "name": "林长仁",
+    "state": "on record"
+   },
+   {
+    "uid": "18560465",
+    "name": "曾秀娘",
+    "state": "card"
+   },
+   {
+    "uid": "18554372",
+    "name": "林福星",
+    "state": "card"
+   },
+   {
+    "uid": null,
+    "name": "孟耀诚",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "林原平",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "陈奕福",
+    "state": "card"
+   },
+   {
+    "uid": null,
+    "name": "陈俐蓉",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "张祖财",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "刘智评",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "高泉庆",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "吴伟祥",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "周家茵",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "林倖贤",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "黄凤飞",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "傅琴芳",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "白承正",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "罗惠燕",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "屈坚文",
+    "state": "not in TTE"
+   },
+   {
+    "uid": null,
+    "name": "曾劲豪",
+    "state": "not in TTE"
+   },
+   {
+    "uid": "18607592",
+    "name": "Pang Kin Keong",
+    "state": "card"
+   }
+  ],
+  "eids": [],
+  "pids": [],
+  "type": "PERSON",
+  "isNew": false,
+  "entity": "Alan Chan",
+  "isFlag": false,
+  "picked": "18593383",
+  "changes": [
+   {
+    "from": "https://www.zaobao.com.sg/news/singapore/story20260809-9491199",
+    "verb": "Add to",
+    "field": "Awards",
+    "inTTE": [
+     {
+      "uid": "18736534",
+      "name": "Meritorious Service Medal (2012)"
+     },
+     {
+      "uid": "18736549",
+      "name": "Public Administration Medal (Gold) (2002)"
+     }
+    ],
+    "adding": "Meritorious Service Medal (2012) | Public Administration Medal (Gold) (2002)",
+    "result": "Distinguished Service Order (2026) | Meritorious Service Medal (2012) | Public Administration Medal (Gold) (2002)",
+    "saidBy": [
+     {
+      "from": "https://www.zaobao.com.sg/news/singapore/story20260809-9491199",
+      "value": "Meritorious Service Medal (2012)"
+     },
+     {
+      "from": "https://www.zaobao.com.sg/news/singapore/story20260809-9491199",
+      "value": "Public Administration Medal (Gold) (2002)"
+     }
+    ],
+    "conflict": false,
+    "existing": [
+     "Distinguished Service Order (2026)"
+    ],
+    "perValue": [
+     {
+      "value": "Meritorious Service Medal (2012)",
+      "sources": [
+       "https://www.zaobao.com.sg/news/singapore/story20260809-9491199"
+      ],
+      "variants": []
+     },
+     {
+      "value": "Public Administration Medal (Gold) (2002)",
+      "sources": [
+       "https://www.zaobao.com.sg/news/singapore/story20260809-9491199"
+      ],
+      "variants": []
+     }
+    ],
+    "strategy": "APPEND",
+    "variants": [],
+    "supporters": [
+     "https://www.zaobao.com.sg/news/singapore/story20260809-9491199"
+    ]
+   },
+   {
+    "adds": [
+     "from 2016 to 2026."
+    ],
+    "diff": [
+     {
+      "op": "same",
+      "text": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He"
+     },
+     {
+      "op": "out",
+      "text": "was appointed"
+     },
+     {
+      "op": "in",
+      "text": "served as"
+     },
+     {
+      "op": "same",
+      "text": "Chairman of the Land Transport Authority"
+     },
+     {
+      "op": "out",
+      "text": "in 2016."
+     },
+     {
+      "op": "in",
+      "text": "from 2016 to 2026."
+     }
+    ],
+    "from": "https://www.zaobao.com.sg/news/singapore/story20260831-9601218",
+    "kept": 0.96,
+    "subs": [
+     {
+      "now": "served as",
+      "was": "was appointed"
+     },
+     {
+      "now": "from 2016 to 2026.",
+      "was": "in 2016."
+     }
+    ],
+    "verb": "Rewrite",
+    "drops": [],
+    "field": "Description",
+    "adding": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He served as Chairman of the Land Transport Authority from 2016 to 2026.",
+    "result": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He served as Chairman of the Land Transport Authority from 2016 to 2026.",
+    "saidBy": [
+     {
+      "from": "https://www.zaobao.com.sg/news/singapore/story20260831-9601218",
+      "value": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He served as Chairman of the Land Transport Authority from 2016 to 2026."
+     }
+    ],
+    "conflict": false,
+    "existing": [
+     "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He was appointed Chairman of the Land Transport Authority in 2016."
+    ],
+    "overEdit": false,
+    "strategy": "MERGE",
+    "variants": [],
+    "overLimit": false,
+    "sentences": 4,
+    "supporters": [
+     "https://www.zaobao.com.sg/news/singapore/story20260831-9601218"
+    ]
+   }
+  ],
+  "flagWhy": "",
+  "options": [
+   {
+    "npt": "Alex Chan",
+    "uid": "18517299",
+    "name": "Chan, Alexander Meng Wah",
+    "delta": [
+     {
+      "have": "",
+      "news": "Singaporean",
+      "field": "Nationality",
+      "fresh": "Singaporean",
+      "state": "new"
+     },
+     {
+      "have": "Singapore Sports Council | MMI Holdings Limited | Jebsen & Jessen (South East Asia) Pte Ltd | Spindex Industries Limited",
+      "news": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "field": "Affiliations(groupName)",
+      "fresh": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "state": "extra"
+     },
+     {
+      "have": "Public Admin Medal (2008)",
+      "news": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "field": "Awards",
+      "fresh": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "state": "extra"
+     },
+     {
+      "have": "Swimmer | Business owner | Member of Parliament",
+      "news": "Executive",
+      "field": "Occupation",
+      "fresh": "Executive",
+      "state": "extra"
+     },
+     {
+      "have": "Former national swimmer and a multiple gold medallist at the South-East Asian Peninsular Games. He was Nominated Member of Parliament between 2002 and 2006 , and served as the Chairman of the Singapore Sports Council (SSC) between 2002 and 2010. He is also the Executive Director of MMI Holdings, Limited (from 1997); Executive Vice Chairman at Jebsen & Jessen (South East Asia) Pte. Ltd.; and Independent Director of Spindex Industries Limited (from 2010).",
+      "news": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "field": "Description",
+      "fresh": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Nationality",
+      "inTTE": null,
+      "adding": "Singaporean",
+      "result": "Singaporean",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Singapore. Land Transport Authority",
+        "uid": "18338799",
+        "name": "Singapore. Land Transport Authority",
+        "wrote": "陆路交通管理局 (Land Transport Authority)"
+       },
+       {
+        "as": "Singapore. Ministry of Communications & Information Technology",
+        "uid": "18531217",
+        "name": "Singapore. Ministry of Communications & Information Technology",
+        "wrote": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+       },
+       {
+        "as": "Singapore. Ministry of Transport",
+        "uid": "18338800",
+        "name": "Singapore. Ministry of Transport",
+        "wrote": "交通部 (Ministry of Transport)"
+       },
+       {
+        "as": "Singapore Press Holdings",
+        "uid": "18539798",
+        "name": "Singapore Press Holdings",
+        "wrote": "新加坡报业控股集团 (Singapore Press Holdings)"
+       },
+       {
+        "as": "Urban Redevelopment Authority (Singapore)",
+        "uid": "18487958",
+        "name": "Urban Redevelopment Authority (Singapore)",
+        "wrote": "市区重建局 (Urban Redevelopment Authority)"
+       },
+       {
+        "as": "Singapore. Public Service Commission",
+        "uid": "18541613",
+        "name": "Singapore. Public Service Commission",
+        "wrote": "公共服务委员会 (Public Service Commission)"
+       }
+      ],
+      "wrote": {
+       "Singapore Press Holdings": "新加坡报业控股集团 (Singapore Press Holdings)",
+       "Singapore. Ministry of Transport": "交通部 (Ministry of Transport)",
+       "Singapore. Land Transport Authority": "陆路交通管理局 (Land Transport Authority)",
+       "Singapore. Public Service Commission": "公共服务委员会 (Public Service Commission)",
+       "Urban Redevelopment Authority (Singapore)": "市区重建局 (Urban Redevelopment Authority)",
+       "Singapore. Ministry of Communications & Information Technology": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+      },
+      "adding": "Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "result": "Singapore Sports Council | MMI Holdings Limited | Jebsen & Jessen (South East Asia) Pte Ltd | Spindex Industries Limited | Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "derived": true,
+      "existing": [
+       "Singapore Sports Council",
+       "MMI Holdings Limited",
+       "Jebsen & Jessen (South East Asia) Pte Ltd",
+       "Spindex Industries Limited"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": "18736517",
+        "name": "Distinguished Service Order (2026)"
+       },
+       {
+        "uid": "18736534",
+        "name": "Meritorious Service Medal (2012)"
+       }
+      ],
+      "adding": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "result": "Public Admin Medal (2008) | Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "derived": true,
+      "existing": [
+       "Public Admin Medal (2008)"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Executive",
+      "result": "Swimmer | Business owner | Member of Parliament | Executive",
+      "derived": true,
+      "existing": [
+       "Swimmer",
+       "Business owner",
+       "Member of Parliament"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Swimmer | Business owner | Member of Parliament"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "Singapore Sports Council | MMI Holdings Limited | Jebsen & Jessen (South East Asia) Pte Ltd | Spindex Industries Limited"
+     },
+     {
+      "key": "Awards",
+      "value": "Public Admin Medal (2008)"
+     },
+     {
+      "key": "Description",
+      "value": "Former national swimmer and a multiple gold medallist at the South-East Asian Peninsular Games. He was Nominated Member of Parliament between 2002 and 2006 , and served as the Chairman of the Singapore Sports Council (SSC) between 2002 and 2010. He is also the Executive Director of MMI Holdings, Limited (from 1997); Executive Vice Chairman at Jebsen & Jessen (South East Asia) Pte. Ltd.; and Independent Director of Spindex Industries Limited (from 2010)."
+     }
+    ],
+    "similarity": 0.58
+   },
+   {
+    "uid": "20604776",
+    "name": "Choo, Alan",
+    "dates": {
+     "Birth Year (yyyy)": "1990"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "Singaporean",
+      "field": "Nationality",
+      "fresh": "Singaporean",
+      "state": "new"
+     },
+     {
+      "have": "Apollo's Fire | Red Dot Baroque",
+      "news": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "field": "Affiliations(groupName)",
+      "fresh": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "state": "extra"
+     },
+     {
+      "have": "Young Artist Award (2024)",
+      "news": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "field": "Awards",
+      "fresh": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "state": "extra"
+     },
+     {
+      "have": "Violinist",
+      "news": "Executive",
+      "field": "Occupation",
+      "fresh": "Executive",
+      "state": "extra"
+     },
+     {
+      "have": "Violinist who is a leading soloist, chamber musician and historical specialist. He is concertmaster and assistant artistic director of Apollo's Fire, a Grammy Award-winning baroque orchestra in the United States. He is also founder and artistic director of Red Dot Baroque, Singapore's first professional period ensemble.",
+      "news": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "field": "Description",
+      "fresh": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Nationality",
+      "inTTE": null,
+      "adding": "Singaporean",
+      "result": "Singaporean",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Singapore. Land Transport Authority",
+        "uid": "18338799",
+        "name": "Singapore. Land Transport Authority",
+        "wrote": "陆路交通管理局 (Land Transport Authority)"
+       },
+       {
+        "as": "Singapore. Ministry of Communications & Information Technology",
+        "uid": "18531217",
+        "name": "Singapore. Ministry of Communications & Information Technology",
+        "wrote": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+       },
+       {
+        "as": "Singapore. Ministry of Transport",
+        "uid": "18338800",
+        "name": "Singapore. Ministry of Transport",
+        "wrote": "交通部 (Ministry of Transport)"
+       },
+       {
+        "as": "Singapore Press Holdings",
+        "uid": "18539798",
+        "name": "Singapore Press Holdings",
+        "wrote": "新加坡报业控股集团 (Singapore Press Holdings)"
+       },
+       {
+        "as": "Urban Redevelopment Authority (Singapore)",
+        "uid": "18487958",
+        "name": "Urban Redevelopment Authority (Singapore)",
+        "wrote": "市区重建局 (Urban Redevelopment Authority)"
+       },
+       {
+        "as": "Singapore. Public Service Commission",
+        "uid": "18541613",
+        "name": "Singapore. Public Service Commission",
+        "wrote": "公共服务委员会 (Public Service Commission)"
+       }
+      ],
+      "wrote": {
+       "Singapore Press Holdings": "新加坡报业控股集团 (Singapore Press Holdings)",
+       "Singapore. Ministry of Transport": "交通部 (Ministry of Transport)",
+       "Singapore. Land Transport Authority": "陆路交通管理局 (Land Transport Authority)",
+       "Singapore. Public Service Commission": "公共服务委员会 (Public Service Commission)",
+       "Urban Redevelopment Authority (Singapore)": "市区重建局 (Urban Redevelopment Authority)",
+       "Singapore. Ministry of Communications & Information Technology": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+      },
+      "adding": "Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "result": "Apollo's Fire | Red Dot Baroque | Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "derived": true,
+      "existing": [
+       "Apollo's Fire",
+       "Red Dot Baroque"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": "18736517",
+        "name": "Distinguished Service Order (2026)"
+       },
+       {
+        "uid": "18736534",
+        "name": "Meritorious Service Medal (2012)"
+       }
+      ],
+      "adding": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "result": "Young Artist Award (2024) | Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "derived": true,
+      "existing": [
+       "Young Artist Award (2024)"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Executive",
+      "result": "Violinist | Executive",
+      "derived": true,
+      "existing": [
+       "Violinist"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Violinist"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "Apollo's Fire | Red Dot Baroque"
+     },
+     {
+      "key": "Awards",
+      "value": "Young Artist Award (2024)"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1990"
+     },
+     {
+      "key": "Description",
+      "value": "Violinist who is a leading soloist, chamber musician and historical specialist. He is concertmaster and assistant artistic director of Apollo's Fire, a Grammy Award-winning baroque orchestra in the United States. He is also founder and artistic director of Red Dot Baroque, Singapore's first professional period ensemble."
+     }
+    ],
+    "similarity": 0.58
+   },
+   {
+    "npt": "Alan Chong",
+    "uid": "18578072",
+    "name": "Chong, Alan (Curator)",
+    "dates": {
+     "Birth Year (yyyy)": "1957"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "field": "Awards",
+      "fresh": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "Singaporean",
+      "field": "Nationality",
+      "fresh": "Singaporean",
+      "state": "new"
+     },
+     {
+      "have": "Currier Museum of Art | Asian Civilisations Museum (Singapore) | Isabella Stewart Gardner Museum",
+      "news": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "field": "Affiliations(groupName)",
+      "fresh": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "state": "extra"
+     },
+     {
+      "have": "Art director | Curator",
+      "news": "Executive",
+      "field": "Occupation",
+      "fresh": "Executive",
+      "state": "extra"
+     },
+     {
+      "have": "Art Director and CEO, Currier Museum of Art (since 8 September 2016). He was the Director of Asian Civilisations Museum (2010-2016) and curator at the Cleveland Museum of Art and Isabella Stewart Gardner Museum (1999-2010).",
+      "news": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "field": "Description",
+      "fresh": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": "18736517",
+        "name": "Distinguished Service Order (2026)"
+       },
+       {
+        "uid": "18736534",
+        "name": "Meritorious Service Medal (2012)"
+       }
+      ],
+      "adding": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "result": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Nationality",
+      "inTTE": null,
+      "adding": "Singaporean",
+      "result": "Singaporean",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Singapore. Land Transport Authority",
+        "uid": "18338799",
+        "name": "Singapore. Land Transport Authority",
+        "wrote": "陆路交通管理局 (Land Transport Authority)"
+       },
+       {
+        "as": "Singapore. Ministry of Communications & Information Technology",
+        "uid": "18531217",
+        "name": "Singapore. Ministry of Communications & Information Technology",
+        "wrote": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+       },
+       {
+        "as": "Singapore. Ministry of Transport",
+        "uid": "18338800",
+        "name": "Singapore. Ministry of Transport",
+        "wrote": "交通部 (Ministry of Transport)"
+       },
+       {
+        "as": "Singapore Press Holdings",
+        "uid": "18539798",
+        "name": "Singapore Press Holdings",
+        "wrote": "新加坡报业控股集团 (Singapore Press Holdings)"
+       },
+       {
+        "as": "Urban Redevelopment Authority (Singapore)",
+        "uid": "18487958",
+        "name": "Urban Redevelopment Authority (Singapore)",
+        "wrote": "市区重建局 (Urban Redevelopment Authority)"
+       },
+       {
+        "as": "Singapore. Public Service Commission",
+        "uid": "18541613",
+        "name": "Singapore. Public Service Commission",
+        "wrote": "公共服务委员会 (Public Service Commission)"
+       }
+      ],
+      "wrote": {
+       "Singapore Press Holdings": "新加坡报业控股集团 (Singapore Press Holdings)",
+       "Singapore. Ministry of Transport": "交通部 (Ministry of Transport)",
+       "Singapore. Land Transport Authority": "陆路交通管理局 (Land Transport Authority)",
+       "Singapore. Public Service Commission": "公共服务委员会 (Public Service Commission)",
+       "Urban Redevelopment Authority (Singapore)": "市区重建局 (Urban Redevelopment Authority)",
+       "Singapore. Ministry of Communications & Information Technology": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+      },
+      "adding": "Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "result": "Currier Museum of Art | Asian Civilisations Museum (Singapore) | Isabella Stewart Gardner Museum | Singapore. Land Transport Authority | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Singapore Press Holdings | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "derived": true,
+      "existing": [
+       "Currier Museum of Art",
+       "Asian Civilisations Museum (Singapore)",
+       "Isabella Stewart Gardner Museum"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Executive",
+      "result": "Art director | Curator | Executive",
+      "derived": true,
+      "existing": [
+       "Art director",
+       "Curator"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Art director | Curator"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "Currier Museum of Art | Asian Civilisations Museum (Singapore) | Isabella Stewart Gardner Museum"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1957"
+     },
+     {
+      "key": "Description",
+      "value": "Art Director and CEO, Currier Museum of Art (since 8 September 2016). He was the Director of Asian Civilisations Museum (2010-2016) and curator at the Cleveland Museum of Art and Isabella Stewart Gardner Museum (1999-2010)."
+     }
+    ],
+    "similarity": 0.54
+   },
+   {
+    "uid": "18593383",
+    "name": "Chan, Alan Heng Loon",
+    "dates": {
+     "Birth Day (dd)": "22",
+     "Birth Month (mm)": "02",
+     "Birth Year (yyyy)": "1953"
+    },
+    "delta": [
+     {
+      "have": "Land Transport Authority | Singapore Press Holdings",
+      "news": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "field": "Affiliations(groupName)",
+      "fresh": "交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)",
+      "state": "extra"
+     },
+     {
+      "have": "Distinguished Service Order (2026)",
+      "news": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)",
+      "field": "Awards",
+      "fresh": "Meritorious Service Medal (2012)",
+      "state": "extra"
+     },
+     {
+      "have": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He was appointed Chairman of the Land Transport Authority in 2016.",
+      "news": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "field": "Description",
+      "fresh": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development.",
+      "state": "differs"
+     },
+     {
+      "have": "Singaporean",
+      "news": "Singaporean",
+      "field": "Nationality",
+      "fresh": "",
+      "state": "same"
+     },
+     {
+      "have": "Executive | Civil servant",
+      "news": "Executive",
+      "field": "Occupation",
+      "fresh": "",
+      "state": "same"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Singapore. Ministry of Communications & Information Technology",
+        "uid": "18531217",
+        "name": "Singapore. Ministry of Communications & Information Technology",
+        "wrote": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+       },
+       {
+        "as": "Singapore. Ministry of Transport",
+        "uid": "18338800",
+        "name": "Singapore. Ministry of Transport",
+        "wrote": "交通部 (Ministry of Transport)"
+       },
+       {
+        "as": "Urban Redevelopment Authority (Singapore)",
+        "uid": "18487958",
+        "name": "Urban Redevelopment Authority (Singapore)",
+        "wrote": "市区重建局 (Urban Redevelopment Authority)"
+       },
+       {
+        "as": "Singapore. Public Service Commission",
+        "uid": "18541613",
+        "name": "Singapore. Public Service Commission",
+        "wrote": "公共服务委员会 (Public Service Commission)"
+       }
+      ],
+      "wrote": {
+       "Singapore. Ministry of Transport": "交通部 (Ministry of Transport)",
+       "Singapore. Public Service Commission": "公共服务委员会 (Public Service Commission)",
+       "Urban Redevelopment Authority (Singapore)": "市区重建局 (Urban Redevelopment Authority)",
+       "Singapore. Ministry of Communications & Information Technology": "交通及资讯科技部 (Ministry of Communications and Information Technology)"
+      },
+      "adding": "Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "result": "Land Transport Authority | Singapore Press Holdings | Singapore. Ministry of Communications & Information Technology | Singapore. Ministry of Transport | Urban Redevelopment Authority (Singapore) | Singapore. Public Service Commission",
+      "derived": true,
+      "existing": [
+       "Land Transport Authority",
+       "Singapore Press Holdings"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Executive | Civil servant"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "Land Transport Authority | Singapore Press Holdings"
+     },
+     {
+      "key": "Awards",
+      "value": "Distinguished Service Order (2026)"
+     },
+     {
+      "key": "Nationality",
+      "value": "Singaporean"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1953"
+     },
+     {
+      "key": "Description",
+      "value": "Administrative officer with the Civil Service who became the CEO of Singapore Press Holdings. He held various appointments including Permanent Secretary of the Ministry of Transport, Deputy Secretary of the Ministry of Foreign Affairs, and Principal Private Secretary to then-Senior Minister Lee Kuan Yew. He was CEO of SPH from 2003 to 2017. He was appointed Chairman of the Land Transport Authority in 2016."
+     }
+    ],
+    "similarity": 0.47
+   }
+  ],
+  "sources": [
+   {
+    "pid": 153,
+    "date": "2026-08-08",
+    "link": "https://www.channelnewsasia.com/singapore/national-day-awards-sundaresh-menon-eddie-teo-order-temasek-6300406",
+    "name": "Alan Chan",
+    "says": "Land Transport Authority Board chairman Alan Chan was conferred the Distinguished Service Order in the 2026 National Day Awards.",
+    "quote": "The recipients are Land Transport Authority (LTA) Board chairman Alan Chan, former Civil Aviation Authority of Singapore (CAAS) Board chairman Edmund Cheng, artist Dr Iskandar Jalil, Ustaz Mohamad Hasbi Bin Hassan and former Sentosa Development Corporation chairman Bob Tan.",
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Executive"
+     },
+     {
+      "key": "Awards",
+      "value": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)"
+     },
+     {
+      "key": "Description",
+      "value": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development."
+     }
+    ],
+    "article": "Chief Justice Sundaresh Menon, former CPA chairman Eddie Teo receive Singapore's highest civilian honour",
+    "original": "",
+    "articleId": 477
+   },
+   {
+    "pid": 160,
+    "date": "2026-08-08",
+    "link": "https://www.straitstimes.com/singapore/chief-justice-former-head-of-council-of-presidential-advisers-receive-top-national-day-honours",
+    "name": "Alan Chan",
+    "says": "Land Transport Authority chairman Alan Chan will receive the Distinguished Service Order at the 2026 National Day Awards for his contributions to Singapore's transport system.",
+    "quote": "Land Transport Authority (LTA) chairman Alan Chan, 73, was recognised for his leadership in advancing Singapore’s land transport system, according to his citation.",
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Executive"
+     },
+     {
+      "key": "Awards",
+      "value": "Distinguished Service Order (2026)"
+     },
+     {
+      "key": "Nationality",
+      "value": "Singaporean"
+     },
+     {
+      "key": "Description",
+      "value": "Alan Chan is a Singaporean corporate leader and transport administrator who has steered national land transport initiatives and infrastructure projects. He worked closely with transport operators to improve rail reliability and expand public transit networks. He has also contributed extensively to public service through his involvement with major statutory boards and commissions."
+     }
+    ],
+    "article": "Chief Justice, former head of Council of Presidential Advisers receive top National Day honours",
+    "original": "",
+    "articleId": 499
+   },
+   {
+    "pid": 14737,
+    "date": "2026-08-09",
+    "link": "https://www.zaobao.com.sg/news/singapore/story20260809-9486990",
+    "name": "陈庆鏻",
+    "says": "Land Transport Authority Chairman Alan Chan Heng Loon was awarded the Distinguished Service Order at the 2026 National Day Awards.",
+    "quote": "Five people were awarded the Distinguished Service Order this year, namely Land Transport Authority Chairman Alan Chan Heng Loon, former Civil Aviation Authority of Singapore Chairman Edmund Cheng Wai Wing, master potter Iskandar Jalil, Religious Rehabilitation Group Co-Chairman Ustaz Mohamad Hasbi, and former Sentosa Development Corporation Chairman Bob Tan Beng Hai.",
+    "fields": [
+     {
+      "key": "Awards",
+      "value": "殊功勋章 (Distinguished Service Order) (2026)"
+     }
+    ],
+    "article": "7491人获各级国庆奖章 自1997年来人数最多",
+    "original": "今年有五人获颁殊功勋章（Distinguished Service Order），即陆路交通管理局主席陈庆鏻、新加坡民航局前主席郑维荣、陶艺大师伊斯干达·贾里（Iskandar Jalil）、宗教改造小组联合主席莫哈默哈斯比（Uztaz Mohamad Hasbi ），以及圣淘沙发展局前主席陈明海。",
+    "articleId": 19711
+   },
+   {
+    "pid": 14804,
+    "date": "2026-08-09",
+    "link": "https://www.zaobao.com.sg/news/singapore/story20260809-9491199",
+    "name": "陈庆鏻",
+    "says": "Chan Heng Loon, Chairman of the Land Transport Authority, was awarded the Distinguished Service Order in 2026 for his contributions to the transport sector and public service.",
+    "quote": "His outstanding contributions to the transport sector and public service were recognised, and he was awarded this year's Distinguished Service Order.",
+    "fields": [
+     {
+      "key": "Affiliations(groupName)",
+      "value": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)"
+     },
+     {
+      "key": "Awards",
+      "value": "殊功勋章 (Distinguished Service Order) (2026) | 功绩奖章 (Meritorious Service Medal) (2012) | 公共行政奖章（金） (Public Administration Medal (Gold)) (2002)"
+     },
+     {
+      "key": "Description",
+      "value": "Chan Heng Loon is a Singaporean public official who was appointed chairman of the Land Transport Authority on 1 April 2016. He served as permanent secretary in the Ministry of Communications and Information Technology and the Ministry of Transport. Between 2003 and 2017, he served as the chief executive officer of Singapore Press Holdings, and chaired the Urban Redevelopment Authority from 2006 to 2012. He became a member of the Public Service Commission in 2010."
+     }
+    ],
+    "article": "领导当局与业者提升陆路交通系统 陆交局主席陈庆鏻获颁殊功勋章",
+    "original": "他对交通领域和公共服务的杰出贡献受肯定，获授予今年的殊功勋章。",
+    "articleId": 19715
+   },
+   {
+    "pid": 14824,
+    "date": "2026-08-31",
+    "link": "https://www.zaobao.com.sg/news/singapore/story20260831-9601218",
+    "name": "陈庆鏻",
+    "says": "Alan Chan Heng Loon concluded his 10-year tenure as Chairman of the Land Transport Authority board on 1 September 2026.",
+    "quote": "Chee also thanked the outgoing Alan Chan, thanking him for leading the Land Transport Authority board over the past 10 years.",
+    "fields": [
+     {
+      "key": "Affiliations(groupName)",
+      "value": "陆路交通管理局 (Land Transport Authority) | 新加坡报业控股 (Singapore Press Holdings) | 交通部 (Ministry of Transport) | 交通及资讯科技部 (Ministry of Communications and Information Technology)"
+     },
+     {
+      "key": "Awards",
+      "value": "殊功勋章 (Distinguished Service Order) (2026)"
+     },
+     {
+      "key": "Description",
+      "value": "Alan Chan Heng Loon is a Singaporean business executive and civil servant who served as Chairman of the Land Transport Authority from 2016 to 2026. Prior to this, he was Chief Executive Officer of Singapore Press Holdings from 2003 to 2017, having earlier held appointments as Permanent Secretary for Transport and Permanent Secretary for Communications and Information Technology. During his leadership of the transport authority, he oversaw major expansions of the rail network and spearheaded initiatives in public transport electrification and autonomous vehicles."
+     }
+    ],
+    "article": "彭建强9月1日出任陆交局主席 陈庆鏻结束10年任期",
+    "original": "萧振祥也向即将卸任的陈庆鏻致谢，感谢他过去10年引领陆交局董事会。",
+    "articleId": 20013
+   }
+  ],
+  "subject": true,
+  "entityEn": "",
+  "newsFrom": {
+   "Name": "https://www.channelnewsasia.com/singapore/national-day-awards-sundaresh-menon-eddie-teo-order-temasek-6300406",
+   "Awards": "https://www.channelnewsasia.com/singapore/national-day-awards-sundaresh-menon-eddie-teo-order-temasek-6300406",
+   "Occupation": "https://www.channelnewsasia.com/singapore/national-day-awards-sundaresh-menon-eddie-teo-order-temasek-6300406",
+   "Description": "https://www.channelnewsasia.com/singapore/national-day-awards-sundaresh-menon-eddie-teo-order-temasek-6300406",
+   "Nationality": "https://www.straitstimes.com/singapore/chief-justice-former-head-of-council-of-presidential-advisers-receive-top-national-day-honours",
+   "Affiliations(groupName)": "https://www.zaobao.com.sg/news/singapore/story20260809-9491199"
+  },
+  "newsSays": "Land Transport Authority Board chairman Alan Chan was conferred the Distinguished Service Order in the 2026 National Day Awards.",
+  "newsFields": [
+   {
+    "key": "Occupation",
+    "value": "Executive"
+   },
+   {
+    "key": "Awards",
+    "value": "Distinguished Service Order (2026) | Meritorious Service Medal (2012)"
+   },
+   {
+    "key": "Description",
+    "value": "Alan Chan is a Singaporean corporate leader and board chairman who has headed the Land Transport Authority Board. He previously served as the chief executive officer of Singapore Press Holdings. He has received multiple national honours for his contributions to public transport and national development."
+   },
+   {
+    "key": "Nationality",
+    "value": "Singaporean"
+   },
+   {
+    "key": "Affiliations(groupName)",
+    "value": "陆路交通管理局 (Land Transport Authority) | 交通及资讯科技部 (Ministry of Communications and Information Technology) | 交通部 (Ministry of Transport) | 新加坡报业控股集团 (Singapore Press Holdings) | 市区重建局 (Urban Redevelopment Authority) | 公共服务委员会 (Public Service Commission)"
+   }
+  ]
+ },
+ {
+  "i": 17,
+  "key": "new:PERSON:chen, jinlong",
+  "also": [
+   {
+    "uid": null,
+    "name": "魏佩淓",
+    "state": "card"
+   }
+  ],
+  "eids": [],
+  "pids": [],
+  "type": "PERSON",
+  "isNew": true,
+  "entity": "陈劲龙",
+  "isFlag": false,
+  "picked": "",
+  "changes": [],
+  "flagWhy": "",
+  "options": [
+   {
+    "npt": "Chen Jinliang",
+    "uid": "18338481",
+    "name": "Tan, Paul Kim Liang",
+    "dates": {
+     "Birth Year (yyyy)": "1970"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "Dr",
+      "field": "Title",
+      "fresh": "Dr",
+      "state": "new"
+     },
+     {
+      "have": "National Arts Council (Singapore) | MediaCorp Pte Ltd | Singapore Press Holdings | Singapore Tourism Board",
+      "news": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "field": "Affiliations(groupName)",
+      "fresh": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "state": "extra"
+     },
+     {
+      "have": "Singapore Literature Prize (Poetry) (1993, 1997)",
+      "news": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "field": "Awards",
+      "fresh": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "state": "extra"
+     },
+     {
+      "have": "1970",
+      "news": "1985",
+      "field": "Birth Year (yyyy)",
+      "fresh": "1985",
+      "state": "extra"
+     },
+     {
+      "have": "Arts administrator | Poet | Television journalist",
+      "news": "Doctor",
+      "field": "Occupation",
+      "fresh": "Doctor",
+      "state": "extra"
+     },
+     {
+      "have": "Poet and two-time winner of the Singapore Literature Prize in 1993 and 1997 for his collection of poems. He was a broadcast journalist with MediaCorp (1995-1999), the deputy head of Editorial Promotion and Branding with Singapore Press Holdings (2004-2007), and director of Strategic Marketing and Communications at the Singapore Tourism Board. He was appointed director of the Singapore Writers Festival in 2011 and Deputy CEO of the National Arts Council in 2014.",
+      "news": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "field": "Description",
+      "fresh": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Title",
+      "inTTE": null,
+      "adding": "Dr",
+      "result": "Dr",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Ng Teng Fong General Hospital",
+        "uid": "18580050",
+        "name": "Ng Teng Fong General Hospital",
+        "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+       }
+      ],
+      "wrote": {
+       "Ng Teng Fong General Hospital": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+      },
+      "adding": "Ng Teng Fong General Hospital",
+      "result": "National Arts Council (Singapore) | MediaCorp Pte Ltd | Singapore Press Holdings | Singapore Tourism Board | Ng Teng Fong General Hospital",
+      "derived": true,
+      "existing": [
+       "National Arts Council (Singapore)",
+       "MediaCorp Pte Ltd",
+       "Singapore Press Holdings",
+       "Singapore Tourism Board"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": null,
+        "name": "Healthcare Humanity Award (2026)",
+        "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+       }
+      ],
+      "wrote": {
+       "Healthcare Humanity Award (2026)": "仁心奖 (Healthcare Humanity Award) (2026)"
+      },
+      "adding": "Healthcare Humanity Award (2026)",
+      "result": "Singapore Literature Prize (Poetry) (1993, 1997) | Healthcare Humanity Award (2026)",
+      "derived": true,
+      "existing": [
+       "Singapore Literature Prize (Poetry) (1993, 1997)"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Birth Year (yyyy)",
+      "inTTE": null,
+      "adding": "1985",
+      "result": "1970 | 1985",
+      "derived": true,
+      "existing": [
+       "1970"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Doctor",
+      "result": "Arts administrator | Poet | Television journalist | Doctor",
+      "derived": true,
+      "existing": [
+       "Arts administrator",
+       "Poet",
+       "Television journalist"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Arts administrator | Poet | Television journalist"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "National Arts Council (Singapore) | MediaCorp Pte Ltd | Singapore Press Holdings | Singapore Tourism Board"
+     },
+     {
+      "key": "Awards",
+      "value": "Singapore Literature Prize (Poetry) (1993, 1997)"
+     },
+     {
+      "key": "Nationality",
+      "value": "Singaporean"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1970"
+     },
+     {
+      "key": "Description",
+      "value": "Poet and two-time winner of the Singapore Literature Prize in 1993 and 1997 for his collection of poems. He was a broadcast journalist with MediaCorp (1995-1999), the deputy head of Editorial Promotion and Branding with Singapore Press Holdings (2004-2007), and director of Strategic Marketing and Communications at the Singapore Tourism Board. He was appointed director of the Singapore Writers Festival in 2011 and Deputy CEO of the National Arts Council in 2014."
+     }
+    ],
+    "romanised": true,
+    "similarity": 0.59
+   },
+   {
+    "npt": "Cheng Jing",
+    "uid": "18573310",
+    "name": "Tan, Ching Yam",
+    "dates": {
+     "Birth Month (mm)": "11",
+     "Birth Year (yyyy)": "1942"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "field": "Affiliations(groupName)",
+      "fresh": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "field": "Awards",
+      "fresh": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "Dr",
+      "field": "Title",
+      "fresh": "Dr",
+      "state": "new"
+     },
+     {
+      "have": "1942",
+      "news": "1985",
+      "field": "Birth Year (yyyy)",
+      "fresh": "1985",
+      "state": "extra"
+     },
+     {
+      "have": "Painter (Art) | Teacher",
+      "news": "Doctor",
+      "field": "Occupation",
+      "fresh": "Doctor",
+      "state": "extra"
+     },
+     {
+      "have": "Chinese painter and art educator who specialises in finger painting and taught at St. Theresa's High School and Kranji Secondary School.",
+      "news": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "field": "Description",
+      "fresh": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Ng Teng Fong General Hospital",
+        "uid": "18580050",
+        "name": "Ng Teng Fong General Hospital",
+        "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+       }
+      ],
+      "wrote": {
+       "Ng Teng Fong General Hospital": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+      },
+      "adding": "Ng Teng Fong General Hospital",
+      "result": "Ng Teng Fong General Hospital",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": null,
+        "name": "Healthcare Humanity Award (2026)",
+        "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+       }
+      ],
+      "wrote": {
+       "Healthcare Humanity Award (2026)": "仁心奖 (Healthcare Humanity Award) (2026)"
+      },
+      "adding": "Healthcare Humanity Award (2026)",
+      "result": "Healthcare Humanity Award (2026)",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Title",
+      "inTTE": null,
+      "adding": "Dr",
+      "result": "Dr",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Birth Year (yyyy)",
+      "inTTE": null,
+      "adding": "1985",
+      "result": "1942 | 1985",
+      "derived": true,
+      "existing": [
+       "1942"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Doctor",
+      "result": "Painter (Art) | Teacher | Doctor",
+      "derived": true,
+      "existing": [
+       "Painter (Art)",
+       "Teacher"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Painter (Art) | Teacher"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1942"
+     },
+     {
+      "key": "Description",
+      "value": "Chinese painter and art educator who specialises in finger painting and taught at St. Theresa's High School and Kranji Secondary School."
+     }
+    ],
+    "romanised": true,
+    "similarity": 0.53
+   },
+   {
+    "npt": "Chen Jing Xuan",
+    "uid": "18722700",
+    "name": "Chin, Felicia Foong Ling",
+    "dates": {
+     "Birth Day (dd)": "24",
+     "Birth Month (mm)": "10",
+     "Birth Year (yyyy)": "1984"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "field": "Awards",
+      "fresh": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "Dr",
+      "field": "Title",
+      "fresh": "Dr",
+      "state": "new"
+     },
+     {
+      "have": "MediaCorp Pte Ltd",
+      "news": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "field": "Affiliations(groupName)",
+      "fresh": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "state": "extra"
+     },
+     {
+      "have": "1984",
+      "news": "1985",
+      "field": "Birth Year (yyyy)",
+      "fresh": "1985",
+      "state": "extra"
+     },
+     {
+      "have": "Actor",
+      "news": "Doctor",
+      "field": "Occupation",
+      "fresh": "Doctor",
+      "state": "extra"
+     },
+     {
+      "have": "Actress who began her career after becoming the female champion in Star Search in 2003. She is known for acting in Mandarin television drama serials. She used her stage name Chen Jing Xuan until 2013.",
+      "news": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "field": "Description",
+      "fresh": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": null,
+        "name": "Healthcare Humanity Award (2026)",
+        "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+       }
+      ],
+      "wrote": {
+       "Healthcare Humanity Award (2026)": "仁心奖 (Healthcare Humanity Award) (2026)"
+      },
+      "adding": "Healthcare Humanity Award (2026)",
+      "result": "Healthcare Humanity Award (2026)",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Title",
+      "inTTE": null,
+      "adding": "Dr",
+      "result": "Dr",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Ng Teng Fong General Hospital",
+        "uid": "18580050",
+        "name": "Ng Teng Fong General Hospital",
+        "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+       }
+      ],
+      "wrote": {
+       "Ng Teng Fong General Hospital": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+      },
+      "adding": "Ng Teng Fong General Hospital",
+      "result": "MediaCorp Pte Ltd | Ng Teng Fong General Hospital",
+      "derived": true,
+      "existing": [
+       "MediaCorp Pte Ltd"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Birth Year (yyyy)",
+      "inTTE": null,
+      "adding": "1985",
+      "result": "1984 | 1985",
+      "derived": true,
+      "existing": [
+       "1984"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Doctor",
+      "result": "Actor | Doctor",
+      "derived": true,
+      "existing": [
+       "Actor"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Actor"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "MediaCorp Pte Ltd"
+     },
+     {
+      "key": "Nationality",
+      "value": "Singaporean"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1984"
+     },
+     {
+      "key": "Description",
+      "value": "Actress who began her career after becoming the female champion in Star Search in 2003. She is known for acting in Mandarin television drama serials. She used her stage name Chen Jing Xuan until 2013."
+     }
+    ],
+    "romanised": true,
+    "similarity": 0.47
+   },
+   {
+    "npt": "Xie Jinlong",
+    "uid": "18586595",
+    "name": "Chia, Philip",
+    "dates": {
+     "Birth Year (yyyy)": "1960"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "field": "Affiliations(groupName)",
+      "fresh": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "field": "Awards",
+      "fresh": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "Dr",
+      "field": "Title",
+      "fresh": "Dr",
+      "state": "new"
+     },
+     {
+      "have": "1960",
+      "news": "1985",
+      "field": "Birth Year (yyyy)",
+      "fresh": "1985",
+      "state": "extra"
+     },
+     {
+      "have": "Chef | Food writer",
+      "news": "Doctor",
+      "field": "Occupation",
+      "fresh": "Doctor",
+      "state": "extra"
+     },
+     {
+      "have": "Chef, culinary consultant and cookbook author. Peranakan chef who conducts cooking lessons and serves as a consultant for dining promotions in hotels. The founder of cooking school, Rice Cooking Studio, now conducts cooking classes at his home. Books he has authored include “Delightful Nonya Treats” and “Peranakan Heritage Cooking”.",
+      "news": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "field": "Description",
+      "fresh": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Ng Teng Fong General Hospital",
+        "uid": "18580050",
+        "name": "Ng Teng Fong General Hospital",
+        "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+       }
+      ],
+      "wrote": {
+       "Ng Teng Fong General Hospital": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+      },
+      "adding": "Ng Teng Fong General Hospital",
+      "result": "Ng Teng Fong General Hospital",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": null,
+        "name": "Healthcare Humanity Award (2026)",
+        "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+       }
+      ],
+      "wrote": {
+       "Healthcare Humanity Award (2026)": "仁心奖 (Healthcare Humanity Award) (2026)"
+      },
+      "adding": "Healthcare Humanity Award (2026)",
+      "result": "Healthcare Humanity Award (2026)",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Title",
+      "inTTE": null,
+      "adding": "Dr",
+      "result": "Dr",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Birth Year (yyyy)",
+      "inTTE": null,
+      "adding": "1985",
+      "result": "1960 | 1985",
+      "derived": true,
+      "existing": [
+       "1960"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Doctor",
+      "result": "Chef | Food writer | Doctor",
+      "derived": true,
+      "existing": [
+       "Chef",
+       "Food writer"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Chef | Food writer"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1960"
+     },
+     {
+      "key": "Description",
+      "value": "Chef, culinary consultant and cookbook author. Peranakan chef who conducts cooking lessons and serves as a consultant for dining promotions in hotels. The founder of cooking school, Rice Cooking Studio, now conducts cooking classes at his home. Books he has authored include “Delightful Nonya Treats” and “Peranakan Heritage Cooking”."
+     }
+    ],
+    "romanised": true,
+    "similarity": 0.47
+   },
+   {
+    "npt": "Chen, Jiongjiang",
+    "uid": "18722693",
+    "name": "Tan, Desmond",
+    "dates": {
+     "Birth Day (dd)": "19",
+     "Birth Month (mm)": "08",
+     "Birth Year (yyyy)": "1986"
+    },
+    "delta": [
+     {
+      "have": "",
+      "news": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "field": "Affiliations(groupName)",
+      "fresh": "黄廷方综合医院 (Ng Teng Fong General Hospital)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "field": "Awards",
+      "fresh": "仁心奖 (Healthcare Humanity Award) (2026)",
+      "state": "new"
+     },
+     {
+      "have": "",
+      "news": "Dr",
+      "field": "Title",
+      "fresh": "Dr",
+      "state": "new"
+     },
+     {
+      "have": "1986",
+      "news": "1985",
+      "field": "Birth Year (yyyy)",
+      "fresh": "1985",
+      "state": "extra"
+     },
+     {
+      "have": "Actor | Singer",
+      "news": "Doctor",
+      "field": "Occupation",
+      "fresh": "Doctor",
+      "state": "extra"
+     },
+     {
+      "have": "Actor who began his acting career after being runner-up in Star Search 2007.",
+      "news": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "field": "Description",
+      "fresh": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace.",
+      "state": "differs"
+     }
+    ],
+    "extra": [
+     {
+      "verb": "Add",
+      "field": "Affiliations(groupName)",
+      "inTTE": [
+       {
+        "as": "Ng Teng Fong General Hospital",
+        "uid": "18580050",
+        "name": "Ng Teng Fong General Hospital",
+        "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+       }
+      ],
+      "wrote": {
+       "Ng Teng Fong General Hospital": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+      },
+      "adding": "Ng Teng Fong General Hospital",
+      "result": "Ng Teng Fong General Hospital",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Awards",
+      "inTTE": [
+       {
+        "uid": null,
+        "name": "Healthcare Humanity Award (2026)",
+        "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+       }
+      ],
+      "wrote": {
+       "Healthcare Humanity Award (2026)": "仁心奖 (Healthcare Humanity Award) (2026)"
+      },
+      "adding": "Healthcare Humanity Award (2026)",
+      "result": "Healthcare Humanity Award (2026)",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add",
+      "field": "Title",
+      "inTTE": null,
+      "adding": "Dr",
+      "result": "Dr",
+      "derived": true,
+      "existing": [],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Birth Year (yyyy)",
+      "inTTE": null,
+      "adding": "1985",
+      "result": "1986 | 1985",
+      "derived": true,
+      "existing": [
+       "1986"
+      ],
+      "strategy": "APPEND"
+     },
+     {
+      "verb": "Add to",
+      "field": "Occupation",
+      "inTTE": null,
+      "adding": "Doctor",
+      "result": "Actor | Singer | Doctor",
+      "derived": true,
+      "existing": [
+       "Actor",
+       "Singer"
+      ],
+      "strategy": "APPEND"
+     }
+    ],
+    "fields": [
+     {
+      "key": "Occupation",
+      "value": "Actor | Singer"
+     },
+     {
+      "key": "Nationality",
+      "value": "Singaporean"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1986"
+     },
+     {
+      "key": "Description",
+      "value": "Actor who began his acting career after being runner-up in Star Search 2007."
+     }
+    ],
+    "romanised": true,
+    "similarity": 0.45
+   }
+  ],
+  "sources": [
+   {
+    "pid": 14894,
+    "date": "2026-10-23",
+    "link": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+    "name": "陈劲龙",
+    "says": "Psychiatrist Chen Jinlong from Ng Teng Fong General Hospital was conferred the Healthcare Humanity Award in 2026.",
+    "quote": "Chen Jinlong's resilience and contributions made him one of this year's Healthcare Humanity Awards recipients, receiving the award on Friday (23 October) from Coordinating Minister for Social Policies and Minister for Health Ong Ye Kung.",
+    "fields": [
+     {
+      "key": "Title",
+      "value": "Dr"
+     },
+     {
+      "key": "Occupation",
+      "value": "Doctor"
+     },
+     {
+      "key": "Affiliations(groupName)",
+      "value": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+     },
+     {
+      "key": "Awards",
+      "value": "仁心奖 (Healthcare Humanity Award) (2026)"
+     },
+     {
+      "key": "Birth Year (yyyy)",
+      "value": "1985"
+     },
+     {
+      "key": "Description",
+      "value": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace."
+     }
+    ],
+    "article": "亲历抗癌更懂病患与同僚苦楚 精神科医生获颁仁心奖",
+    "original": "陈劲龙的坚韧与贡献，让他成为今年的“仁心奖”（Healthcare Humanity Awards）得主之一，星期五（10月23日）从社会政策统筹部长兼保健卫生部长王乙康手中接过奖项。",
+    "articleId": 26640
+   }
+  ],
+  "subject": true,
+  "entityEn": "Chen, Jinlong",
+  "newsFrom": {
+   "Title": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+   "Awards": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+   "Occupation": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+   "Description": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+   "Birth Year (yyyy)": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116",
+   "Affiliations(groupName)": "https://www.zaobao.com.sg/news/singapore/story20261023-9884116"
+  },
+  "newsSays": "Psychiatrist Chen Jinlong from Ng Teng Fong General Hospital was conferred the Healthcare Humanity Award in 2026.",
+  "newsFields": [
+   {
+    "key": "Title",
+    "value": "Dr"
+   },
+   {
+    "key": "Occupation",
+    "value": "Doctor"
+   },
+   {
+    "key": "Affiliations(groupName)",
+    "value": "Ng Teng Fong General Hospital"
+   },
+   {
+    "key": "Awards",
+    "value": "Healthcare Humanity Award (2026)"
+   },
+   {
+    "key": "Birth Year (yyyy)",
+    "value": "1985"
+   },
+   {
+    "key": "Description",
+    "value": "Singaporean psychiatrist who serves as chief resident and vice-chairman of the medical board for patient experience and culture at Ng Teng Fong General Hospital. Diagnosed with stage four lymphoma in late 2012, he completed treatment and joined Ng Teng Fong General Hospital in 2014. He focuses on supporting the mental health and well-being of healthcare colleagues in the workplace."
+   }
+  ],
+  "newsLinked": {
+   "Awards": [
+    {
+     "uid": null,
+     "name": "Healthcare Humanity Award (2026)",
+     "wrote": "仁心奖 (Healthcare Humanity Award) (2026)"
+    }
+   ],
+   "Affiliations(groupName)": [
+    {
+     "as": "Ng Teng Fong General Hospital",
+     "uid": "18580050",
+     "name": "Ng Teng Fong General Hospital",
+     "wrote": "黄廷方综合医院 (Ng Teng Fong General Hospital)"
+    }
+   ]
+  }
+ }
+]

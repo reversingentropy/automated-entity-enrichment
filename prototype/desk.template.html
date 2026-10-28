@@ -192,6 +192,17 @@
   .done-card h2{margin:0;font-size:1.4rem} .done-card p{margin:0;color:var(--ink2)}
   .bigtick{width:3.2rem;height:3.2rem;border-radius:50%;background:var(--tick);color:#fff;display:grid;place-items:center;font-size:1.7rem;font-weight:800;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
   .bigtick.keep{background:var(--amber-line)}
+  /* the practice round: a note above the card or page, which is itself unchanged */
+  .coach{background:var(--accent-bg);border:1.5px solid var(--accent);border-radius:14px;padding:.75rem 1rem .85rem;margin:0 0 1rem;font-size:.93rem;line-height:1.45}
+  .coach .ctop{display:flex;justify-content:space-between;align-items:baseline;gap:.3rem 1rem;flex-wrap:wrap;color:var(--ink2);font-size:.84rem}
+  .coach .ctop b{color:var(--accent);letter-spacing:.05em;text-transform:uppercase;font-size:.76rem}
+  .coach h3{margin:.2rem 0 .35rem;font-size:1.05rem}
+  .coach ul,.coachend{margin:0;padding-left:1.15rem;display:grid;gap:.3rem}
+  .coach .todo{margin:.55rem 0 0;font-weight:600}
+  .coach .cnext{margin-left:.5rem;background:var(--go);color:#fff;border:none;border-radius:9px;padding:.35rem 1.1rem;font-weight:650}
+  .cbtn{font-weight:650}
+  .tour{opacity:.92}
+  .hm > .minor.practise{margin-top:-.6rem}
   @keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
 
   /* first open: what this is, in one picture */
@@ -1078,21 +1089,29 @@ function change(c, st) {
 
 const SCREEN = { who, create, change };
 let allDone = false;
-// a decision is made: say so briefly and show the next card
-function finish(c, kind) {
+// a decision, as the sheets and the pages read it
+function entryOf(c, kind) {
   const st = stOf(c), o = chosenOpt(c, st) || ordered(c)[st.cand];
   const k = kind === "approved" && !st.accepted.length ? "uptodate" : kind;
   const matched = (k === "approved" || k === "uptodate") && o;
   const src0 = c.sources[st.src || 0] || {};
-  LOG.push({ ctype: st.ctype || c.type, key: c.key, entity: c.entity, entityEn: c.entityEn, newsFields: c.newsFields, title: src0.article || "", says: src0.says || "",
-             name: c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity, type: c.type, group: groupOf(c), kind: k,
-             rec: matched ? o.name : k === "created" ? "new record" : "", uid: matched ? o.uid : "", when: new Date(),
-             secs: Math.max(1, Math.round((Date.now() - st.t0) / 1000)), accepted: st.accepted.slice(), seen: st.seen, link: (c.sources[st.src || 0] || {}).link || "",
-             found: !!(matched && o.thin && !o.cross), done: false });
-  const x = LOG[LOG.length - 1];
+  const x = { ctype: st.ctype || c.type, key: c.key, entity: c.entity, entityEn: c.entityEn, newsFields: c.newsFields, title: src0.article || "", says: src0.says || "",
+              name: c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity, type: c.type, group: groupOf(c), kind: k,
+              rec: matched ? o.name : k === "created" ? "new record" : "", uid: matched ? o.uid : "", when: new Date(),
+              secs: Math.max(1, Math.round((Date.now() - st.t0) / 1000)), accepted: st.accepted.slice(), seen: st.seen, link: (c.sources[st.src || 0] || {}).link || "",
+              found: !!(matched && o.thin && !o.cross), done: false };
   x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
   x.leftOut = k === "created" ? leftOutOf(c, st) : [];
   if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); x.names = namesOf(c, st); x.vocab = vocabFor(c, st); }
+  return x;
+}
+// a decision is made: say so briefly and show the next card
+function finish(c, kind) {
+  const x = entryOf(c, kind);
+  // practice writes nothing: no hold, no decision, no sheet row. The decision stays with the practice, for its look
+  // at Results, Analytics and Downloads.
+  if (PAGE === "practice") { PRACTICE.log.push(x); S[c.key] = undefined; PRACTICE.i++; return draw(true); }
+  LOG.push(x);
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1219,9 +1238,10 @@ async function signedIn(user) {
   buildList("all"); draw(true);
   flushUnsent();
   loadAccounts();
-  // How it works, once per browser; then the languages, if not chosen yet.
+  // How it works, once per browser; then the languages, if not chosen yet; then, the first time, the practice round.
   let welcomed = false;
   try { welcomed = !!localStorage.getItem("desk2-welcomed"); localStorage.setItem("desk2-welcomed", "1"); } catch (e) {}
+  PRACTICE_NEXT = !welcomed && !practised();
   if (!welcomed) welcome(); else if (!langs) settings();
 }
 // A record is shown only once the table says it is this reviewer's. Online the database deals it already held, so
@@ -1593,7 +1613,8 @@ const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest
 const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
 const quiet = st => (st.hist.length ? [["back", "&larr; Back"]] : []).concat([["keep", "Not sure? Keep for review"], ["stopnow", "Stop for now"]]);
 const stOf = c => S[c.key] || (S[c.key] = fresh(c));
-const card = () => QUEUE() ? (DEALT ? CARDS.find(c => c.key === DEALT) || null : null) : CARDS[LIST[cur]];
+const card = () => PAGE === "practice" ? (PRACTICE && PRACTICE_CARDS[PRACTICE.i]) || null
+  : QUEUE() ? (DEALT ? CARDS.find(c => c.key === DEALT) || null : null) : CARDS[LIST[cur]];
 function srcFor(c, st, k, ch) {
   const link = ch.from || (c.newsFrom || {})[ch.field] || (c.sources[0] || {}).link;
   const fromIdx = Math.max(0, c.sources.findIndex(s => s.link === link));
@@ -1617,6 +1638,7 @@ const go = (st, screen, extra) => Object.assign(st, { screen, full: false, descF
 
 function act(a, el) {
   const i = el ? Number(el.dataset.i) : 0;
+  if (PAGE === "practice" && PRACTICE_OFF.has(a)) return;
   if (a === "signin") { signIn(); return; }
   if (a === "signup") return signUpPage();
   if (a === "signinpage") return signInPage();
@@ -1633,6 +1655,7 @@ function act(a, el) {
   if (a === "resend") { if (DEALT && DEAL === "unsaved") { DEAL = "saving"; draw(); sendNow(DEALT, true); } return; }
   if (a === "redo") { const x = LOG[i]; if (x && !x.done && QUEUE()) redo(x.key); return; }
   if (a === "stopnow") {
+    if (PAGE === "practice") return endPractice();
     // The record on screen is let go, since nothing was decided on it: a colleague can take it.
     const c0 = card();
     if (QUEUE()) {
@@ -1648,12 +1671,17 @@ function act(a, el) {
   if (a === "signout") { Promise.resolve(sb && sb.auth.signOut()).catch(() => {}).then(() => location.reload()); return; }
   if (a === "retryclaim") { const c0 = card(); if (c0) CLAIM.delete(c0.key); return draw(); }
   if (a === "help") return welcome();
-  if (a === "closewelcome") { const v = $("#veil"); if (v) v.remove(); if (!langs) settings(); return; }
+  if (a === "practice") return startPractice();
+  if (a === "practiceend") return endPractice();
+  if (a === "practicedone") { endPractice(); return act("start"); }
+  if (a === "practicenext") { if (PRACTICE) PRACTICE.i++; return draw(true); }
+  if (a === "closewelcome") { const v = $("#veil"); if (v) v.remove(); if (!langs) settings(); else if (PRACTICE_NEXT) startPractice(); return; }
   if (a === "settings") return settings();
   if (a === "savelangs") {
     const picked = [...document.querySelectorAll("#veil .lang input:checked")].map(x => x.value); if (!picked.length) return;
     langs = picked; try { localStorage.setItem("proto-langs", JSON.stringify(langs)); } catch (e) {}
     $("#veil").remove(); buildList($("#filter").value);   // stays on the page it was opened from
+    if (PRACTICE_NEXT) return startPractice();             // a first visit: the languages, then the practice round
     if (QUEUE() && PAGE === "review" && !fits(card()) && DEAL !== "saving" && DEAL !== "unsaved") return deal();
     // away from the record (home, results), one no longer in a language read is given back, so home offers one that is
     if (QUEUE() && DEALT && DEAL === null && !fits(card())) { Promise.resolve(sb.rpc("release_card", { key: DEALT })).catch(() => {}); MINE.clear(); DEALT = null; }
@@ -1780,6 +1808,102 @@ function welcome() {
   document.body.appendChild(v);
   v.querySelector(".go").focus();
 }
+
+// ---- practice ------------------------------------------------------------------------
+// A first go on two real cards, a record to update and one to create, then a look at Results, Analytics and
+// Downloads, with a note at each step on what to look at. It writes nothing: no hold, no decision, nothing on the
+// sheets. finish() keeps a practice decision with the practice, and the three pages are shown with those decisions
+// in place of the reviewer's own and every button switched off. The browser keeps only that it was seen. Offered
+// once, after the welcome and the languages, and from Home any time. The cards are prototype/practice.json, put in
+// by the build; their proposals are emptied, so nothing decided on the real record can change what is asked.
+const PRACTICE_CARDS = (/*__PRACTICE__*/[]).map(c => ({ ...c, key: "practice:" + c.key, pids: [] }));
+const PRACTISED = "desk2-practised";
+let PRACTICE = null, PRACTICE_NEXT = false;
+const practised = () => { try { return !!localStorage.getItem(PRACTISED); } catch (e) { return false; } };
+// what a page's buttons would do, refused while practising even if one were reached
+const PRACTICE_OFF = new Set(["done", "redo", "release", "restart", "dlchanges", "dlall", "dlchangesall", "dlallteam"]);
+function startPractice() {
+  PRACTICE_NEXT = false;
+  if (!PRACTICE_CARDS.length) return draw(true);
+  PRACTICE_CARDS.forEach(c => { S[c.key] = undefined; });
+  PRACTICE = { i: 0, log: [] }; PAGE = "practice"; HOMENOTE = "";
+  try { localStorage.setItem(PRACTISED, "1"); } catch (e) {}
+  draw(true);
+}
+function endPractice() {
+  PRACTICE_CARDS.forEach(c => { S[c.key] = undefined; });
+  PRACTICE = null; PAGE = "home"; draw(true);
+}
+const cbtn = t => `<b class="cbtn">${t}</b>`;   // a button's name, as it reads on the page
+const TOUR = [
+  { nav: "results", page: () => resultsPage(), title: "Results: what you decided",
+    points: () => ["Every record you decide is listed here, newest first. These are your practice ones; the real ones take their place.",
+                   `${cbtn("Mark done in TTE")} once the change is made in TTE.${ONLINE ? ` ${cbtn("Change")} takes a record back to decide again.` : ""}`,
+                   `${cbtn("Everyone&rsquo;s")} shows the team: how many records are decided, waiting or on someone&rsquo;s desk, and when the cards were last published.`] },
+  { nav: "analytics", page: () => analyticsPage(), title: "Analytics: how it is going",
+    points: () => ["What you decide, how long a record takes and the share of changes you accept, beside everyone&rsquo;s.",
+                   "Records you had to search for: how often the right record was not among the closest ones the desk offered."] },
+  { nav: "downloads", page: () => downloadsPage(), title: "Downloads: the sheets",
+    points: () => [`${cbtn("Approved changes")}: one row per accepted change, and the records to create. It is the sheet the cataloguers work from.`,
+                   `${cbtn("Every decision")}: every record with its outcome. Each comes as yours or everyone&rsquo;s.`] },
+];
+const practiceSteps = () => PRACTICE_CARDS.length + TOUR.length;
+const coachBox = (title, points, todo) => `<aside class="coach" aria-label="Practice"><div class="ctop"><span><b>Practice ${PRACTICE.i + 1} of ${practiceSteps()}</b> &middot; nothing is saved</span><button class="quiet" data-act="practiceend">Skip practice</button></div>
+    <h3>${title}</h3><ul>${points.map(p => `<li>${p}</li>`).join("")}</ul><p class="todo">${todo}</p></aside>`;
+// A page as it reads with these decisions in place of the reviewer's own. Drawn in one go, so nothing else runs
+// while the list is swapped; the reviewer's own are back before it returns.
+function withLog(L, f) {
+  const own = LOG.splice(0, LOG.length, ...L), view = VIEW;
+  VIEW = "mine";
+  try { return f(); } finally { LOG.splice(0, LOG.length, ...own); VIEW = view; }
+}
+function practicePage() {
+  const c = card();
+  if (c) return coach(c, stOf(c)) + SCREEN[stOf(c).screen](c, stOf(c));
+  const t = TOUR[PRACTICE.i - PRACTICE_CARDS.length];
+  if (!t) return practiceEnd();
+  return coachBox(t.title, t.points(), `In the menu, under ${cbtn(t.nav[0].toUpperCase() + t.nav.slice(1))}. The buttons here are off in the practice. <button class="cnext" data-act="practicenext">Next</button>`)
+    + `<div class="tour" inert>${withLog(PRACTICE.log, t.page)}</div>`;
+}
+function coach(c, st) {
+  const k = kind(c), other = c.sources.findIndex(s => langOf(s.link || "") !== "en");
+  let title, points, todo;
+  if (st.screen === "create") {
+    title = "Someone TTE does not have";
+    points = [`No TTE record matched this ${k}, so the desk asks whether to create one.`,
+              `The matching can miss. Look at the names after ${cbtn("Nearest in TTE")}, and try ${cbtn("Search TTE")}. If the ${k} is there, click the record: the card becomes the same-record question from the first card.`,
+              `If not, check the ${cbtn("Key Vocabulary")}, the TTE file it goes into: the box on the line ${cbtn("If you create it")} (here ${esc(vocabFor(c, st))}). Then ${cbtn("&#9998; Edit")} to correct the names and values; &times; leaves a value out.`,
+              `${cbtn("OneSearch &#8599;")}, beside the name, looks it up in NLB&rsquo;s collections, if you want to judge whether it is worth a record.`];
+    todo = `Then ${cbtn("Create a new record")}, or ${cbtn("Not worth a record")}.`;
+  } else if (st.screen === "who" && c.isNew) {
+    title = "A record from TTE";
+    points = [`You picked a TTE record, so the question is the one from the first card: is it the same ${k}?`];
+    todo = `${cbtn("Same record")} if it is; ${cbtn("&larr; Back")} to go back to creating one.`;
+  } else if (st.screen === "who") {
+    title = "A record TTE already has";
+    points = [`One card is one ${k}, with every article that mentions them: here ${c.sources.length}, numbered at the top of ${cbtn("In the news")}. Click a number to read another; ${cbtn("Open article")} opens the whole story.`,
+              ...(other >= 0 ? [`Number ${other + 1} is from ${esc(outletOf(c.sources[other].link))}: the article&rsquo;s own words first, the English under them.`] : []),
+              `The question at the top comes first: is this TTE record the same ${k} as the one in the news? Compare the name and the facts under it.`,
+              `If it is someone else, try another name after ${cbtn("Records it could be")}, or ${cbtn("Search TTE")}. If the ${k} is not in TTE at all, ${cbtn("+ New record")}.`];
+    todo = `Here it is the same ${k}: click ${cbtn("Same record")}.`;
+  } else {
+    const rows = rowsFor(c, chosenOpt(c, st)), ch = rows[st.ch], firstList = rows.findIndex(r => !r.diff);
+    title = `Change ${st.ch + 1} of ${rows.length}`;
+    points = ch.diff ? [`A description is one text: green is the new wording, red and struck through is what it replaces.`,
+                        `${cbtn("&#9998; Edit")} lets you change the wording yourself.`]
+      : st.ch === firstList ? [`Each change is asked on its own. Grey is what TTE holds now, green what would be added. A field TTE holds nothing for says ${NONE}.`,
+                               `&times; leaves one value out, and ${cbtn("&#9998; Edit")} corrects one. The article beside it is where the change comes from.`]
+      : ["The same again: keep the values you trust."];
+    todo = `${cbtn("Accept")} puts the change on the sheet for the cataloguer; ${cbtn("No change")} leaves the field as it is.`;
+  }
+  return coachBox(title, points, todo);
+}
+const practiceEnd = () => `<div class="done-card"><div class="bigtick">&#10003;</div><h2>That&rsquo;s the practice</h2>
+  <p>Nothing you did in it was saved. Two more choices sit under every card:</p>
+  <ul class="coachend"><li>${cbtn("Not sure? Keep for review")} passes the record on to a colleague.</li>
+    <li>${cbtn("Stop for now")} takes you back to Home${ONLINE ? ", and the record you were on goes back to the pile. Your decisions are saved as you go" : ""}.</li></ul>
+  <button class="stamp go" data-act="practicedone"><b>Start</b></button>
+  <button class="quiet" data-act="practice">Go through it again</button></div>`;
 let SAMPLE = true, VIEW = "mine", _team = null;
 const rng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // Made-up decisions by four pretend reviewers, so the team views and the comparison have something to show.
@@ -1867,6 +1991,7 @@ function homeMinimal(d) {
     <p>${shown.map(([k, v, lab]) => `<span><i class="sw ${k}"></i>${v} ${lab}</span>`).join("")}<span class="of">${d.total} in all</span></p>
   </div>
   <p class="minor">${ONLINE ? "Saved as you go. Stop whenever you like!" : `Prototype: decisions stay in this page until you close it.${SAMPLE ? " The team&rsquo;s figures are made-up sample data." : ""}`}</p>
+  ${PRACTICE_CARDS.length ? `<p class="minor practise">New to the desk? <button class="quiet" data-act="practice">Try the practice round</button> (nothing is saved)</p>` : ""}
 </div>`;
 }
 
@@ -2299,6 +2424,11 @@ function draw(top) {
               + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "");
   const wait = (h, p, b) => `<div class="done-card"><h2>${h}</h2>${p ? `<p>${p}</p>` : ""}${b || ""}</div>`;
   if (loading) $("#stage").innerHTML = wait(esc(loading));
+  else if (PAGE === "practice") {
+    $("#stage").innerHTML = practicePage();
+    // the page being looked at, lit in the menu, so it can be found again
+    const t = !c && PRACTICE && TOUR[PRACTICE.i - PRACTICE_CARDS.length]; if (t) $(`.navi[data-nav="${t.nav}"]`).classList.add("on");
+  }
   else if (QUEUE() && PAGE === "review" && DEAL && DEAL !== "none") $("#stage").innerHTML =
     DEAL === "asking" ? wait("Finding your next record&hellip;")
     : DEAL === "saving" ? wait("Saving&hellip;")
@@ -2417,7 +2547,7 @@ function selftest() {
   if (p.get("rail") === "open") $("#panel").classList.add("open");
   if (p.get("page")) PAGE = p.get("page"); if (p.get("view")) VIEW = p.get("view"); if (p.has("nosample")) { SAMPLE = false; _team = null; $("#samplebtn").classList.remove("on"); buildList(); }
   draw();
-  if (!p.has("c") && !p.has("selftest") && !p.has("nowelcome")) welcome(); else if (!p.has("c") && !p.has("selftest") && !langs && !p.has("demo")) settings();
+  if (!p.has("c") && !p.has("selftest") && !p.has("nowelcome")) { PRACTICE_NEXT = !practised(); welcome(); } else if (!p.has("c") && !p.has("selftest") && !langs && !p.has("demo")) settings();
   if (p.has("selftest")) selftest();
 })();
 </script>

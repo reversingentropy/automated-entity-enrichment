@@ -8,7 +8,8 @@ Writes `index.html` and the explainer beside it. The page carries the
 Supabase URL and the anon key, which is public by design: what it may read
 and write is set by the policies in `sql/11_desk_online.sql`, not by the
 key. The deck and the search index are fetched after sign-in, so the page
-itself is small and holds nothing from TTE. It runs from a local folder or
+itself is small and holds nothing from TTE but the two cards of the practice
+round (prototype/practice.json). It runs from a local folder or
 from any static host; nothing in it depends on where it is served from.
 Both pages are served without their comments (src/export/strip.py).
 """
@@ -22,11 +23,21 @@ from src.export.package import standalone
 
 SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
 GUIDE_MARK = "/*__EVAL_GUIDE__*/{}"
+PRACTICE_MARK = "/*__PRACTICE__*/[]"
+PRACTICE = Path(__file__).resolve().parents[2] / "prototype" / "practice.json"
+
+
+def practice_cards() -> str:
+    """The practice round's two cards, as the page takes them in."""
+    cards = json.loads(PRACTICE.read_text(encoding="utf-8"))
+    return json.dumps(cards, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
 def online_page(template: str, url: str, anon_key: str) -> str:
-    """The template as the online page: the client library and the keys in the head, and the Evaluation
-    page's text from docs/evaluation.md (src/eval/guide.py)."""
+    """The template as the online page: the client library and the keys in the head, the Evaluation
+    page's text from docs/evaluation.md (src/eval/guide.py), and the practice round's cards."""
+    if PRACTICE_MARK in template:
+        template = template.replace(PRACTICE_MARK, practice_cards())
     if GUIDE_MARK in template:
         from src.eval.guide import sections
         template = template.replace(GUIDE_MARK, json.dumps(sections(), ensure_ascii=False).replace("</", "<\\/"))
