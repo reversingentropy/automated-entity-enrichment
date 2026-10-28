@@ -60,7 +60,8 @@
     act("same");
     out.practiceChangeNoted = stOf(card()).screen === "change" && /Change 1 of 3/.test(stage()) && /nothing in TTE yet/.test(stage());
     for (let g = 0; g < 20 && PRACTICE.i === 0; g++) act("accept");
-    out.practiceCreateSecond = /Practice 2 of 5/.test(stage()) && card().isNew && stOf(card()).screen === "create" && /_People/.test(stage());
+    out.practiceCreateSecond = /Practice 2 of 5/.test(stage()) && card().isNew && stOf(card()).screen === "create" && /_People/.test(stage())
+      && /Possible TTE records \(5\)/.test(stage()) && !document.querySelector(".rtabs button.on") && /None of these\?/.test(stage()) && !/data-act="newrec"/.test(stage());
     act("create");
     const tour = () => document.querySelector("#stage .tour");
     out.practiceResults = /Practice 3 of 5/.test(stage()) && !!tour() && tour().inert && /Alan Chan/.test(tour().innerHTML)

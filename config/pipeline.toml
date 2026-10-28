@@ -39,7 +39,7 @@ articles_per_request = 1
 [greeting]
 # The line of the day on the desk's home screen (src/export/greeting.py):
 # written once a day by the nightly publish, kept for the noon run.
-models = ["gemini-3.8-flash"]
+models = ["gemini-3.5-flash-lite"]
 thinking = "low"
 
 [notify]
