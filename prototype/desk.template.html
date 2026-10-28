@@ -818,7 +818,7 @@ function who(c, st) {
     ${news(c, st)}
     <div class="join">same ${esc(kind(c))}?</div>
     <div class="side tte">
-      <div class="label">In TTE now <span class="src">${esc(o.rtype || c.type)} &middot; no. ${esc(o.uid)}</span></div>
+      <div class="label">In TTE now <span class="src">${esc(o.rtype || c.type)} &middot; UID ${esc(o.uid)}</span></div>
       <h2 class="name">${esc(o.name)}</h2>
       <p class="ident">${esc(o.thin ? thinIdent(o) || "Nothing recorded but its name" : identLine(c, o))}</p>
       ${o.npt ? `<p class="npt">Found through the name &ldquo;${esc(o.npt)}&rdquo;</p>` : ""}
@@ -1962,7 +1962,7 @@ const changesRows = L => {
   });
   return rows;
 };
-const decisionRows = L => [["Entity", "Type", "Outcome", "Record", "TTE no.", "Changes accepted", "Seconds", "When"]].concat(L.map(x => [x.name, x.type, OUTCOME[x.kind], x.rec, x.uid, x.accepted.length, x.secs, x.when.toISOString()]));
+const decisionRows = L => [["Entity", "Type", "Outcome", "Record", "UID", "Changes accepted", "Seconds", "When"]].concat(L.map(x => [x.name, x.type, OUTCOME[x.kind], x.rec, x.uid, x.accepted.length, x.secs, x.when.toISOString()]));
 const csvCell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
 function download(name, rows) {
   const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
@@ -2222,7 +2222,7 @@ function evScreen() {
       <blockquote>${evMark(b.evidence, [b.name, b.name_en])}</blockquote>
       <p class="tr">${esc(b.name)}${b.name_en && b.name_en !== b.name ? ` (${esc(b.name_en)})` : ""}${b.article ? ` &middot; from &ldquo;${esc(gist(b.article, 90))}&rdquo;` : ""}</p></div>
     <div class="join">same?</div>
-    <div class="side tte"><div class="label"><span>In TTE now</span><span class="src">no. ${esc(b.tte_id)}</span></div><p class="name">${esc(b.tte_name)}</p>
+    <div class="side tte"><div class="label"><span>In TTE now</span><span class="src">UID ${esc(b.tte_id)}</span></div><p class="name">${esc(b.tte_name)}</p>
       ${(b.tte_fields || []).length ? `<div class="evrec">${b.tte_fields.map(([k, v]) => `<div><span class="k">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>` : `<p class="ident">Nothing else on the record.</p>`}</div></section>${ask}
     <div class="actions"><div class="evtrio"><button class="stamp red${was("same", "N")}" data-act="ev-same" data-v="N"><b>Different</b></button>
       <button class="stamp grey${was("same", "?")}" data-act="ev-same" data-v="?"><b>Can&rsquo;t tell</b></button>
