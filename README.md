@@ -214,6 +214,7 @@ between is left alone. The details are at the top of
 
 ## Where to read more
 
+- [docs/how-it-works.md](docs/how-it-works.md): start here -- the whole journey from the news to the desk, with every value, field and rule, and where each rule lives
 - [docs/architecture.md](docs/architecture.md): the system's shape -- components, data model, state machine, stage contracts, trust boundaries, known gaps
 - [docs/design.md](docs/design.md): what each stage does and the measurements behind each decision
 - [docs/review.md](docs/review.md): the cards, the desk, sending it out, what comes back
