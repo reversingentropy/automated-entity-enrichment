@@ -154,11 +154,14 @@ Both can be opened again from the foot of the side rail (**How this works**,
 Evaluators also see an **Evaluation** page (`docs/evaluation.md`).
 
 On a record to create, each value the model found can be left out with ×,
-and **Edit** opens the names, every value and the description for correcting;
-the record type can be changed too. A name the article gives in another
-script, such as 陈劲龙 for Chen, Jinlong, goes on the sheets as its own row
-(Variant name on the weekly sheet, Non-English name on the desk's download);
-emptied in Edit, it stays off. The sheets carry the record as the reviewer
+and **Edit** opens the names, every value and the description for correcting.
+The **Key Vocabulary** (the TTE file it goes into, such as _People or
+_Organisations) is picked by the desk and can be changed. The record goes on
+the sheets under its English name. A name the article gives in Chinese, Tamil
+or Malay, such as 陈劲龙 for Chen, Jinlong, goes on as its own row, TTE's link
+from the English record (ENGtoCHI, ENGtoTAM or ENGtoMAY), but only where TTE
+keeps that language: _People has Chinese and Tamil, and _Programmes,
+_LegalActs and _Historical_Events have none. Emptied in Edit, it stays off. The sheets carry the record as the reviewer
 left it, and the decision keeps what was left out and what was edited.
 
 Nothing is pre-assigned: there is one pile, changes to existing records
@@ -202,9 +205,9 @@ python -m src.export --weekly --since 2026-09-21  # from a date
 
 writes `data/changes/approved-changes-<date>.xlsx`, the template agreed with
 the reviewers: two sheets (existing entities, new entities), one row per change
-with UID, Descriptor, Vocab Class, Attribute, Current Value, Suggested Value,
+with UID, Descriptor, Key Vocabulary, Attribute, Current Value, Suggested Value,
 Article URL, Reviewer, Timestamp and Status, grouped by reviewer. A record
-to create carries the type and the values the reviewer chose on the desk. Each reviewer
+to create carries the Key Vocabulary and the values the reviewer chose on the desk. Each reviewer
 applies their own rows in TTE by hand and sets **Status** to Done. A record
 reported by several articles is one card, so each change appears once. Test
 accounts are left out.

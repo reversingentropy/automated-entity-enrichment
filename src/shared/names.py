@@ -40,6 +40,8 @@ def house(name: str) -> str:
     are the same thing spelt TTE's way; two that are merely near are not.
     """
     n = HOUSE_STYLE.sub("", plain(name)).strip()
+    # "President's Science & Technology Medal" is TTE's own "President's Science and Technology Medal"
+    n = re.sub(r"\s*&\s*", " and ", n)
     n = re.sub(r"['’]s\b", "", n)
     n = re.sub(r"\bawards\b", "award", n)
     return " ".join(re.sub(r"[^\w一-鿿 ]+", " ", n).split())

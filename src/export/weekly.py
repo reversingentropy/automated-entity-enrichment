@@ -16,12 +16,34 @@ from pathlib import Path
 
 from src.shared.names import DELIMITER
 
-HEADERS = ["UID", "Descriptor", "Vocab Class", "Attribute", "Current Value",
+HEADERS = ["UID", "Descriptor", "Key Vocabulary", "Attribute", "Current Value",
            "Suggested Value", "Article URL", "Reviewer", "Timestamp", "Status"]
 SGT = dt.timezone(dt.timedelta(hours=8))
 
 # The desk's own test: a name in Chinese, Malay-Jawi or Tamil script.
 _NON_LATIN = re.compile(r"[^\x00-\x7FÀ-ɏ\s.,'’()\-]")
+
+# TTE's English vocabularies: the type each holds, and the languages it has a version
+# in (the 1 Sep 2026 dump). A language version holds only a name, linked to the English
+# record, so a name in another language is TTE's link from the English record (ENGtoCHI,
+# ENGtoTAM, ENGtoMAY), and only where TTE keeps that language: never for a programme, a
+# legal act or a historical event. The desk holds the same (VOCABS in the page).
+VOCABS = {"_People": ("PERSON", "CHI TAM"), "_Organisations": ("ORGANISATION", "CHI MAY TAM"),
+          "_GeoBuildings": ("FACILITY", "CHI MAY TAM"), "_Geographics": ("LOCATION", "CHI MAY TAM"),
+          "_Events": ("EVENT", "CHI MAY TAM"), "_Historical_Events": ("EVENT", ""),
+          "_Awards": ("AWARD", "CHI MAY TAM"), "_Programmes": ("PROGRAMME", ""), "_LegalActs": ("LEGAL_ACT", "")}
+_CJK = re.compile(r"[\u3400-\u9fff]")
+_TAMIL = re.compile(r"[\u0B80-\u0BFF]")
+
+
+def vocab_for(entity_type: str) -> str:
+    """The English vocabulary a new record of this type goes into (an event: _Events)."""
+    return next((v for v, (t, _) in VOCABS.items() if t == entity_type), "")
+
+
+def eng_to(name: str) -> str:
+    """TTE's link to a name in another language. Any the desk asks about that is neither Chinese nor Tamil is Malay."""
+    return "ENGto" + ("CHI" if _CJK.search(name) else "TAM" if _TAMIL.search(name) else "MAY")
 
 
 def _day(stamp: str) -> str:
@@ -30,15 +52,13 @@ def _day(stamp: str) -> str:
     return f"{when.day}/{when.month}/{when.year}"
 
 
-def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, str],
-             vocab_for_type: dict[str, str]) -> tuple[list[list], list[list]]:
+def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, str]) -> tuple[list[list], list[list]]:
     """
     Existing-entity rows and new-entity rows, one per change.
 
     `decisions` are the desk's labels (one per proposal); `cards` maps each
     proposal id to its card; `vocab_of` maps a record's UID to its TTE
-    vocabulary, `vocab_for_type` an entity type to the vocabulary a new record
-    goes into. A card settled several proposals with one decision, so each
+    vocabulary. A card settled several proposals with one decision, so each
     decision is taken once per card, and a change repeated by two articles is
     one row.
     """
@@ -60,15 +80,14 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
                 sheet.append([uid, name, vocab, attr, current, proposed, link or src.get("link", ""), who, when, status])
 
         if d.get("chose") == "new-entity":
-            # The names as the reviewer left them; a decision from before the desk saved them has the model's.
-            # A name the article gives in another script is a variant name, on its own row as for a record TTE has.
+            # The record under its English name, as the reviewer left it; a decision from before the desk saved
+            # the names has the model's. A name the article gives in another language is TTE's link from it.
             names = d.get("names") or {}
-            english = names.get("name") or card.get("entityEn") or card["entity"]
+            name = names.get("name") or card.get("entityEn") or card["entity"]
             other = card.get("entityEn") and card["entityEn"] != card["entity"]
             variant = names["variant"] if "variant" in names else card["entity"] if other else ""
-            name = f"{variant} ({english})" if variant else english
-            # The type the reviewer chose on the desk, which may not be the model's.
-            vocab = vocab_for_type.get(d.get("ctype") or card.get("type", ""), "")
+            # The Key Vocabulary the reviewer chose on the desk; before the desk saved it, the type's.
+            vocab = d.get("vocab") or vocab_for(d.get("ctype") or card.get("type", ""))
             # The fields as the reviewer left them on the desk: edited, and without any left out with ×.
             # A decision from before the desk saved them names only what was left out.
             fields = d.get("fields")
@@ -81,26 +100,27 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
                         fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
             for f in fields:
                 add(new, "", name, vocab, f["key"], "", f["value"], None)
-            if variant:
-                add(new, "", name, vocab, "Variant name", "", variant, None)
+            link = eng_to(variant) if variant else ""
+            if link and link[5:] in VOCABS.get(vocab, ("", ""))[1].split():
+                add(new, "", name, vocab, link, "", variant, None)
             if not fields:
-                add(new, "", name, vocab, "Name", "", english, None)
+                add(new, "", name, vocab, "Name", "", name, None)
             continue
 
         uid, record = d.get("chose") or "", d.get("record") or ""
         vocab = vocab_of.get(uid, "")
-        # Only what the reviewer accepted. A Chinese name TTE lacks is asked on the desk
-        # as a change like any other, so it is here when accepted, as edited; this
-        # sheet has always called it a variant name.
+        # Only what the reviewer accepted. A name in another language TTE lacks is asked
+        # on the desk as a change like any other, so it is here when accepted, as edited,
+        # as TTE's link from the English record.
         for r in d.get("rows") or []:
-            attr = "Variant name" if r["field"] == "Non-English name" else r["field"]
+            attr = eng_to(r.get("proposed", "")) if r["field"] == "Non-English name" else r["field"]
             add(existing, uid, record, vocab, attr, r.get("current", ""), r.get("proposed", ""), r.get("from"))
 
     order = lambda row: (row[7], row[1], row[3])
     return sorted(existing, key=order), sorted(new, key=order)
 
 
-WIDTHS = {"UID": 12, "Descriptor": 32, "Vocab Class": 16, "Attribute": 24, "Current Value": 40,
+WIDTHS = {"UID": 12, "Descriptor": 32, "Key Vocabulary": 18, "Attribute": 24, "Current Value": 40,
           "Suggested Value": 40, "Article URL": 50, "Article Date": 12, "Reviewer": 16, "Timestamp": 12,
           "Status": 10}
 
@@ -159,13 +179,7 @@ def build(since: dt.date, out: Path | None = None) -> tuple[Path, int, int]:
     for i in range(0, len(uids), 200):
         for e in client.from_("entities").select("uid, vocabulary").in_("uid", uids[i:i + 200]).execute().data:
             vocab_of[e["uid"]] = e["vocabulary"]
-    vocab_for_type = {}
-    # A type a reviewer chose on the desk may be one no card has.
-    for t in {c.get("type") for c in cards.values()} | {d["ctype"] for d in decisions if d.get("ctype")}:
-        hit = client.from_("entities").select("vocabulary").eq("entity_type", t).eq("language", "en").limit(1).execute().data
-        if hit:
-            vocab_for_type[t] = hit[0]["vocabulary"]
-    existing, new = rows_for(decisions, cards, vocab_of, vocab_for_type)
+    existing, new = rows_for(decisions, cards, vocab_of)
     today = dt.datetime.now(SGT).date()
     out = out or Path("data/changes") / f"approved-changes-{today.isoformat()}.xlsx"
     return write(existing, new, out), len(existing), len(new)

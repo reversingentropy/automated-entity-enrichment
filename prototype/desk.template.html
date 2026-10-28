@@ -746,14 +746,33 @@ const modeOf = (st, k, ch) => st.mode[k] || (ch.strategy === "REPLACE" ? "replac
 // Called a non-English name, as the cataloguers call it, so only the record's names in another script are shown
 // beside it: an English variant ("LTA") is not one, and Replace would not remove it.
 const plainName = n => String(n || "").replace(/[\s()（）]/g, "");
-const nonLatin = n => /[^\u0000-\u024F\u1E00-\u1EFF\u2000-\u206F]/.test(n);
+// TTE's English vocabularies: the type each holds, and the languages it has a version in (the 1 Sep 2026 dump). A
+// language version holds only a name, linked to the English record, which holds everything else; so a name in another
+// language goes on the sheet as ENGtoCHI, ENGtoTAM or ENGtoMAY on the English record, and only where TTE keeps that
+// language: never for a programme, a legal act or a historical event. src/export/weekly.py holds the same (VOCABS).
+const VOCABS = { _People: ["PERSON", "CHI TAM"], _Organisations: ["ORGANISATION", "CHI MAY TAM"], _GeoBuildings: ["FACILITY", "CHI MAY TAM"],
+                 _Geographics: ["LOCATION", "CHI MAY TAM"], _Events: ["EVENT", "CHI MAY TAM"], _Historical_Events: ["EVENT", ""],
+                 _Awards: ["AWARD", "CHI MAY TAM"], _Programmes: ["PROGRAMME", ""], _LegalActs: ["LEGAL_ACT", ""] };
+const vocabOf = type => Object.keys(VOCABS).find(v => VOCABS[v][0] === type) || "";
+const keptIn = (vocab, lang) => !!lang && (VOCABS[vocab] || ["", ""])[1].split(" ").includes(lang);
+const TAMIL = /[\u0B80-\u0BFF]/;
+// A name's language: Chinese and Tamil by their script; Malay, written in the same letters as English, only when the
+// model gave the name an English form and the record has a Berita Harian article.
+const nameLang = (n, c) => CJK.test(n) ? "CHI" : TAMIL.test(n) ? "TAM"
+  : c && c.entityEn && c.entityEn !== c.entity && plainName(n) !== plainName(c.entityEn) && c.sources.some(s => langOf(s.link || "") === "ms") ? "MAY" : "";
+// TTE's link from the English record, from the name alone (a saved decision keeps only the name): any name the desk
+// asks about that is neither Chinese nor Tamil is the Malay one.
+const engTo = n => "ENGto" + (CJK.test(n) ? "CHI" : TAMIL.test(n) ? "TAM" : "MAY");
+const SOURCE_LANG = { CHI: "zh", TAM: "ta", MAY: "ms" };
 let NPT_READY = !ONLINE;   // online, the variant names arrive with the search index, a moment after the deck
 function variantRow(c, o) {
-  if (!o || !NPT_READY || !CJK.test(c.entity) || CJK.test(o.name)) return null;
+  const lang = nameLang(c.entity, c);
+  if (!o || !NPT_READY || !keptIn(vocabOf(o.rtype || c.type), lang) || nameLang(o.name) === lang || plainName(o.name) === plainName(c.entity)) return null;
   const held = (NPT[o.uid] || []).concat(o.npt ? [o.npt] : []);
   if (held.some(n => plainName(n) === plainName(c.entity))) return null;
-  const zh = c.sources.find(s => langOf(s.link || "") === "zh") || c.sources[0] || {};
-  return { field: "Non-English name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held.filter(nonLatin))], result: c.entity, from: zh.link || "", variant: true };
+  const src = c.sources.find(s => langOf(s.link || "") === SOURCE_LANG[lang]) || c.sources[0] || {};
+  return { field: "Non-English name", strategy: "APPEND", verb: "Add", adding: c.entity, existing: [...new Set(held.filter(n => lang !== "MAY" && nameLang(n) === lang))],
+           result: c.entity, from: src.link || "", variant: true };
 }
 const rowsFor = (c, o) => o ? mergeDates(mergeRows((reopened(c) ? [] : (o.extra || [])).concat(o.uid === c.picked ? onlyNew(c, c.changes) : []).map(asReplace).map(asProse)), o, c).concat((!reopened(c) && variantRow(c, o)) || []) : [];
 const chosenOpt = (c, st) => ordered(c)[st.chosen != null ? st.chosen : st.cand];
@@ -842,6 +861,7 @@ const newVal = (st, fi, vi, v) => { const e = (st.nval || {})[fi + ":" + vi]; re
 // name in another script, that name as written, which goes on the sheet as a non-English name. Emptied, the
 // non-English name stays off the sheet; the English name falls back to the model's, as a record needs one.
 const hasOther = c => !!c.entityEn && c.entity !== c.entityEn;
+const vocabFor = (c, st) => st.vocab || vocabOf(st.ctype || c.type);
 const namesOf = (c, st) => {
   const nv = st.nval || {}, en = String(nv["name:en"] || "").trim();
   return { name: en || c.entityEn || c.entity, variant: hasOther(c) ? (nv["name:zh"] != null ? nv["name:zh"] : c.entity).trim() : "" };
@@ -878,16 +898,17 @@ function create(c, st) {
   const nf = c.newsFields.filter(f => f.key !== "Description"), di = c.newsFields.findIndex(f => f.key === "Description");
   const desc = di >= 0 ? newVal(st, di, 0, c.newsFields[di].value) : "";
   const shown = st.full || st.nedit ? nf : nf.slice(0, 5);
-  const n = namesOf(c, st);
+  const n = namesOf(c, st), vocab = vocabFor(c, st), lang = nameLang(n.variant || c.entity, c);
+  const notKept = n.variant && !keptIn(vocab, lang) ? ` <small>not kept in ${esc(vocab)}</small>` : "";
   return `<h1>${esc(fresh ? name + " is not in TTE. Create a record?" : "No record for " + name + ". Create one?")}</h1>
   <section class="focus">
     ${news(c, st)}
     <div class="join">would become a new record</div>
     <div class="draftbox">
-      <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Record type">${Object.keys(TYPES).map(t => `<option value="${t}" ${(st.ctype || c.type) === t ? "selected" : ""}>${TYPES[t][0].replace(/ \(.*\)/, "")}${t === "FACILITY" ? " (building)" : t === "LOCATION" ? " (place)" : ""}</option>`).join("")}</select> &middot; new record</span></div>
+      <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Key Vocabulary">${Object.keys(VOCABS).map(v => `<option value="${v}" ${vocab === v ? "selected" : ""}>${v}</option>`).join("")}</select> &middot; new record</span></div>
       <h2 class="name">${st.nedit ? `<input class="cin nin nname" data-i="name" data-j="en" value="${esc(n.name)}" aria-label="Name">` : esc(n.name)}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(n.name)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
       ${!hasOther(c) ? "" : st.nedit ? `<input class="cin nin nname alt" data-i="name" data-j="zh" value="${esc(n.variant)}" aria-label="Non-English name" placeholder="Non-English name (left out)">`
-        : n.variant ? `<p class="orig">${esc(n.variant)}</p>` : ""}
+        : n.variant ? `<p class="orig">${esc(n.variant)}${notKept}</p>` : ""}
       ${desc && st.nedit ? `<textarea class="dta nin" data-i="${di}" data-j="0" aria-label="Description">${esc(desc)}</textarea>`
         : desc ? `<p class="ident">${esc(st.full ? desc : gist(desc, 170))}</p>` : ""}
       ${shown.length ? `<div class="full" style="border-top:none;padding-top:0">${shown.map(x => newField(c, st, x)).join("")}</div>` : ""}
@@ -1071,7 +1092,7 @@ function finish(c, kind) {
   const x = LOG[LOG.length - 1];
   x.dropped = matched ? rowsFor(c, o).flatMap(r => r.date ? Object.keys(r.date.news).map(p => partField(r.date, p)) : [r.field]).filter(f => !x.accepted.some(a => a.field === f)) : [];
   x.leftOut = k === "created" ? leftOutOf(c, st) : [];
-  if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); x.names = namesOf(c, st); }
+  if (k === "created") { x.fields = finalFields(c, st); x.edited = editedOf(c, st); x.names = namesOf(c, st); x.vocab = vocabFor(c, st); }
   if (QUEUE()) {
     // a changed decision replaces the earlier one on the sheet
     if (REDO.has(c.key)) for (let j = LOG.length - 2; j >= 0; j--) if (LOG[j].key === c.key) LOG.splice(j, 1);
@@ -1155,7 +1176,7 @@ function fromDecision(d, c) {
            title: "", says: "", name: c ? (c.entityEn ? `${c.entity} (${c.entityEn})` : c.entity) : (d.entity || ""), type: c ? c.type : "", group: c ? groupOf(c) : "other changes",
            kind: k, rec: d.record || (k === "created" ? "new record" : ""), uid: d.chose && d.chose !== "new-entity" ? d.chose : "", when: new Date(d.at || Date.now()),
            secs: d.seconds || 0, accepted: (d.rows || []).map(r => ({ field: r.field, current: r.current, proposed: r.proposed, link: r.from || "" })),
-           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], fields: d.fields, edited: d.edited || [], names: d.names, link: d.link || "", found: !!d.foundBySearch,
+           seen: d.seen != null ? d.seen : (d.rows || []).length + (d.dropped || []).length, dropped: d.dropped || [], leftOut: d.leftOut || [], fields: d.fields, edited: d.edited || [], names: d.names, vocab: d.vocab, link: d.link || "", found: !!d.foundBySearch,
            done: !!d.done, who: d.reviewer || "" };
 }
 // A decision as the `reviews` table has always held it, plus what this desk needs to show it again.
@@ -1163,7 +1184,7 @@ function toDecision(x, c) {
   const verdict = x.kind === "keep" ? "unsure" : x.kind === "noworth" || x.kind === "discard" ? "reject" : "approve";
   return { verdict, kind: x.kind, entity: c.entity, chose: x.kind === "created" ? "new-entity" : verdict === "approve" ? x.uid : null,
            foundBySearch: !!x.found, reason: x.kind === "discard" ? "discard" : "", note: "",
-           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [], ...(x.fields ? { fields: x.fields, edited: x.edited || [] } : {}), ...(x.names ? { names: x.names } : {}),
+           changes: x.accepted.map(a => a.field), edits: {}, dropped: x.dropped || [], leftOut: x.leftOut || [], ...(x.fields ? { fields: x.fields, edited: x.edited || [] } : {}), ...(x.names ? { names: x.names } : {}), ...(x.vocab ? { vocab: x.vocab } : {}),
            rows: x.accepted.map(a => ({ field: a.field, current: a.current, proposed: a.proposed, from: a.link || x.link })),
            record: x.kind === "created" ? "" : x.rec, reviewer: myName, at: x.when.toISOString(),
            languages: (langs || []).slice(), types: group === "all" ? null : [group], seconds: x.secs, seen: x.seen, ctype: x.ctype, link: x.link, done: !!x.done };
@@ -1711,7 +1732,7 @@ document.addEventListener("click", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if (t.id === "qt") { const c = card(), st = c && stOf(c); if (st) { st.stype = t.value; $("#hits").innerHTML = hitsHtml(c, st.query); } return; }
-  if (t.id === "ctype") { const c = card(), st = c && stOf(c); if (st) st.ctype = t.value; return; }
+  if (t.id === "ctype") { const c = card(), st = c && stOf(c); if (st) { st.vocab = t.value; st.ctype = VOCABS[t.value][0]; draw(); } return; }
   if (t.id === "fo") { SHEET.outcome = t.value; $("#srows").innerHTML = sheetRows(); }
   else if (t.id === "fg") { SHEET.group = t.value; $("#srows").innerHTML = sheetRows(); }
 });
@@ -1732,12 +1753,9 @@ document.addEventListener("input", e => {
   else if (t.classList.contains("cin")) { const ch = rowsFor(c, chosenOpt(c, st))[k]; valsOf(st, k, ch)[Number(t.dataset.i)] = t.value; }
   else if (t.classList.contains("dta")) st.text[k] = t.value;
 });
+// Escape closes a popup. No other key does anything: a stray key must never answer, skip or undo.
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { const v = $("#veil"); if (v && !v.querySelector(".signin")) v.remove(); }
-  if (["SELECT", "INPUT", "TEXTAREA"].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
-  if (PAGE === "evaluation") return;   // no shortcut keys: a stray key must never answer a row
-  if (e.key === "Backspace" && PAGE === "review") { e.preventDefault(); act("back"); return; }
-  if (e.key === "ArrowRight") act("next"); else if (e.key === "ArrowLeft") act("prev");
 });
 
 function welcome() {
@@ -1944,21 +1962,25 @@ const stampTime = d => new Date(d || Date.now()).toLocaleString("sv-SE");   // 2
 const changesRows = L => {
   const rows = [["TTE_UUID", "Entity", "Attribute", "Current_Value", "Proposed_Value", "Article_URL", "Person Who Approved", "Timestamp"]];
   L.forEach(x => {
-    const ent = x.entity || x.name, tail = [x.link || "", REVIEWER, stampTime(x.when)];
+    const tail = [x.link || "", REVIEWER, stampTime(x.when)];
     if (x.kind === "created") {
-      // the non-English name on its own row, as on a change to a record; a decision from before the desk saved the
-      // names has the model's
-      const n = x.names || { name: x.entityEn || ent, variant: x.entityEn && x.entityEn !== x.entity ? x.entity : "" };
+      // The record under its English name, in TTE's English vocabulary; a name the article gives in another language
+      // is TTE's link from it (ENGtoCHI and so on), where TTE keeps that language. A decision from before the desk
+      // saved the names or the vocabulary has the model's.
+      const n = x.names || { name: x.entityEn || x.entity || x.name, variant: x.entityEn && x.entityEn !== x.entity ? x.entity : "" };
+      const vocab = x.vocab || vocabOf(x.ctype || x.type), ent = n.name;
       rows.push(["NEW", ent, "Name", "", n.name, ...tail]);
-      if (n.variant) rows.push(["NEW", ent, "Non-English name", "", n.variant, ...tail]);
-      rows.push(["NEW", ent, "TTE file", "", (TYPES[x.ctype || x.type] || ["", x.type])[1], ...tail]);
+      rows.push(["NEW", ent, "Key Vocabulary", "", vocab, ...tail]);
+      if (n.variant && keptIn(vocab, engTo(n.variant).slice(5))) rows.push(["NEW", ent, engTo(n.variant), "", n.variant, ...tail]);
       (x.fields || keptFields(x.newsFields, x.leftOut)).forEach(f => rows.push(["NEW", ent, f.key, "", f.value, ...tail]));
       return;
     }
     // A record confirmed with nothing to change is no work in TTE: a "(match confirmed)" row put Chee Hong Tat on the
     // sheet with nothing to do. It stays on the "every decision" sheet.
     if (x.kind !== "approved") return;
-    x.accepted.forEach(a => rows.push([x.uid, ent, a.field, a.current, a.proposed, a.link || x.link || "", REVIEWER, stampTime(x.when)]));
+    // the record as TTE names it, not as the article did
+    const ent = x.rec || x.entity || x.name;
+    x.accepted.forEach(a => rows.push([x.uid, ent, a.field === "Non-English name" ? engTo(a.proposed) : a.field, a.current, a.proposed, a.link || x.link || "", REVIEWER, stampTime(x.when)]));
   });
   return rows;
 };

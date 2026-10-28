@@ -107,12 +107,20 @@
     out.newRecordEditOnSheet = changesRows([ex]).some(r => r[2] === "Affiliations(groupName)" && r[4] === "KK Women's and Children's Hospital")
       && ex.edited.length === 1 && toDecision(ex, nc).fields.length === ex.fields.length && toDecision(ex, nc).edited.length === 1;
     out.newRecordLeftOutSaved = toDecision(nx, nc).leftOut.length === 1 && fromDecision(toDecision(nx, nc), nc).leftOut.length === 1;
-    // a record to create from a Chinese article: the Chinese name goes on the sheet as its own row, and Edit opens
-    // both names; emptied, the Chinese name stays off the sheet
-    const zn = { ...nc, entity: "陈劲龙", entityEn: "Chen, Jinlong" }, zst = fresh(zn);
-    const zrows = st => changesRows([{ kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, st), names: namesOf(zn, st), leftOut: [], accepted: [], when: new Date() }]);
-    out.newRecordVariantRow = zrows(zst).some(r => r[2] === "Non-English name" && r[4] === "陈劲龙") && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
-      && /<p class="orig">陈劲龙<\/p>/.test(create(zn, zst));
+    // a record to create from a Chinese article: on the sheet under its English name, in TTE's English vocabulary, with
+    // TTE's link to the Chinese name (ENGtoCHI); Edit opens both names; emptied, the Chinese name stays off the sheet
+    const zx0 = () => ({ kind: "created", entity: zn.entity, accepted: [], when: new Date(), fields: [] });
+    const zn = { ...nc, type: "PERSON", entity: "陈劲龙", entityEn: "Chen, Jinlong" }, zst = fresh(zn);
+    const zrows = st => changesRows([{ kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, st), names: namesOf(zn, st), vocab: vocabFor(zn, st), leftOut: [], accepted: [], when: new Date() }]);
+    out.newRecordVariantRow = zrows(zst).some(r => r[2] === "ENGtoCHI" && r[4] === "陈劲龙") && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
+      && zrows(zst).some(r => r[2] === "Key Vocabulary" && r[4] === "_People") && zrows(zst).slice(1).every(r => r[1] === "Chen, Jinlong")
+      && !zrows(zst).some(r => r[2] === "TTE file" || r[2] === "Non-English name") && /<p class="orig">陈劲龙<\/p>/.test(create(zn, zst));
+    // the Key Vocabulary: chosen by the desk from the type, changeable; one TTE keeps no Chinese names in takes none
+    out.vocabDropdown = /<select class="ctype" id="ctype" aria-label="Key Vocabulary">/.test(create(zn, zst)) && /<option value="_People" selected>/.test(create(zn, zst));
+    zst.vocab = "_Programmes";
+    out.vocabWithoutChinese = !zrows(zst).some(r => r[2].startsWith("ENGto")) && zrows(zst).some(r => r[2] === "Key Vocabulary" && r[4] === "_Programmes")
+      && /not kept in _Programmes/.test(create(zn, zst)) && toDecision({ ...zx0(), vocab: vocabFor(zn, zst) }, zn).vocab === "_Programmes";
+    zst.vocab = undefined;
     zst.nedit = true;
     out.newRecordNamesEditable = (create(zn, zst).match(/class="cin nin nname/g) || []).length === 2;
     zst.nval["name:en"] = "Chen, Jin Long"; zst.nval["name:zh"] = "陈锦龙";
@@ -120,11 +128,11 @@
     const zd = toDecision(zx, zn);
     out.newRecordNamesSaved = zd.names.name === "Chen, Jin Long" && zd.names.variant === "陈锦龙" && fromDecision(zd, zn).names.variant === "陈锦龙"
       && zd.edited.some(e => e.field === "Name" && e.to === "Chen, Jin Long") && zd.edited.some(e => e.field === "Non-English name" && e.to === "陈锦龙")
-      && zrows(zst).some(r => r[2] === "Non-English name" && r[4] === "陈锦龙");
+      && zrows(zst).some(r => r[2] === "ENGtoCHI" && r[4] === "陈锦龙");
     zst.nval["name:zh"] = " "; zst.nval["name:en"] = "";
-    out.newRecordVariantEmptied = !zrows(zst).some(r => r[2] === "Non-English name") && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
+    out.newRecordVariantEmptied = !zrows(zst).some(r => r[2].startsWith("ENGto")) && zrows(zst).some(r => r[2] === "Name" && r[4] === "Chen, Jinlong")
       && leftOutOf(zn, zst).some(o => o.field === "Non-English name" && o.value === "陈劲龙");
-    out.englishRecordNoVariantRow = !changesRows([{ ...ex, entityEn: "", names: namesOf(nc, ast) }]).some(r => r[2] === "Non-English name");
+    out.englishRecordNoVariantRow = !changesRows([{ ...ex, entityEn: "", names: namesOf(nc, ast) }]).some(r => r[2].startsWith("ENGto"));
     // the variant name: asked for a Chinese name TTE lacks, not for one it holds; and it can be corrected or replaced
     out.variantAsked = rowsFor(cOf(F.mineKey), ordered(cOf(F.mineKey))[0]).some(r => r.variant);
     out.variantNotAskedWhenHeld = !rowsFor(cOf(F.theirReview), ordered(cOf(F.theirReview))[0]).some(r => r.variant);
@@ -134,12 +142,29 @@
     vst.val[vrow] = ["雪城 (edited)"]; vst.mode[vrow] = "replace";
     const vgot = acceptedOf(vc, vst, rowsFor(vc, ordered(vc)[0])[vrow], vrow);
     out.variantEditSaved = vgot.field === "Non-English name" && vgot.proposed === "雪城 (edited)";
+    // on the sheet: the record as TTE names it, and TTE's link to the name
+    const vsheet = changesRows([{ kind: "approved", uid: ordered(vc)[0].uid, rec: ordered(vc)[0].name, entity: vc.entity, accepted: [vgot], when: new Date() }])[1];
+    out.variantOnSheetAsEngToChi = vsheet[1] === ordered(vc)[0].name && vsheet[2] === "ENGtoCHI" && vsheet[4] === "雪城 (edited)";
+    // Tamil by its script; Malay only from a Berita Harian article whose name the model gave an English form; never
+    // where TTE keeps no such names
+    const vo = ordered(vc)[0];
+    out.tamilNameAsked = !!variantRow({ ...vc, entity: "ஸ்னோ சிட்டி" }, vo) && engTo("ஸ்னோ சிட்டி") === "ENGtoTAM";
+    out.malayNameAsked = !!variantRow({ ...vc, entity: "Kota Salji", entityEn: vo.name, sources: [{ link: "https://www.beritaharian.sg/x" }] }, vo) && engTo("Kota Salji") === "ENGtoMAY"
+      && !variantRow({ ...vc, entity: vo.name, entityEn: "", sources: [{ link: "https://www.beritaharian.sg/x" }] }, vo)
+      && !variantRow({ ...vc, entity: "Kota Salji", entityEn: vo.name, sources: [{ link: "https://www.straitstimes.com/x" }] }, vo);
+    out.noNameWhereTteKeepsNone = !variantRow(vc, { ...vo, rtype: "PROGRAMME" }) && !variantRow({ ...vc, entity: "Encik Salji", entityEn: "Salji", sources: [{ link: "https://www.beritaharian.sg/x" }] }, { ...vo, rtype: "PERSON" });
 
     // Start: the record already on this reviewer's desk comes back first, taken again by name
     act("start"); await settled();
     const who = () => document.querySelector("#who");
     out.realAccountNamed = !who().hidden && !who().classList.contains("test") && /Signed in as/.test(who().textContent) && /saved/.test(who().textContent);
     out.firstIsMine = DEALT === F.mineKey && F.rpcs.includes("claim_card:" + F.mineKey) && !F.rpcs.some(r => r.startsWith("take_next"));
+    // no key takes a step back or moves to another record: a stray key must never undo or skip
+    if (stOf(card()).screen !== "create") {
+      act("same"); const before = stOf(card()).screen, held = DEALT;
+      ["Backspace", "ArrowLeft", "ArrowRight"].forEach(k => document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })));
+      out.keysDoNothing = before === "change" && stOf(card()).screen === "change" && DEALT === held;
+    }
     // deciding it: saved through decide(), the record given back and the next handed over in the same call
     const k1 = await decideThrough();
     const mine = F.reviews.filter(r => r.card_key === k1);

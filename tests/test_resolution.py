@@ -1032,6 +1032,17 @@ def test_a_link_value_is_english_once_and_new():
     assert [a["name"] for a in aff["inTTE"]].count(lta) == 1
 
 
+def test_an_ampersand_and_the_word_and_are_one_name():
+    """Tan Eng Chye's record holds "President's Science & Technology Medal (2025)", and the
+    article's "President’s Science and Technology Medal (2025)" was asked as a second medal."""
+    from src.export.cards import Lookup, named_as_tte, record_flags
+    medal = "President’s Science and Technology Medal (2025)"
+    awards = Lookup([["18733886", "President's Science and Technology Medal", "AWARD", "", ""]], "AWARD")
+    ch = {"field": "Awards", "strategy": "APPEND", "adding": medal, "inTTE": record_flags(medal, awards),
+          "existing": ["Meritorious Service Medal (2024)", "President's Science & Technology Medal (2025)"]}
+    assert named_as_tte(ch) is False
+
+
 def test_job3_stores_a_link_value_as_tte_names_the_record():
     """The proposal already holds the value a cataloguer will type, with what the article wrote beside it."""
     from src.shared.names import name_link_values

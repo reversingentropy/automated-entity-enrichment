@@ -106,12 +106,14 @@ account and organisation membership, which rules out sending it to a team; a
 local file also has an advantage the artifact does not, in that it may start
 a download.
 
-A Chinese name confirmed against an English record adds a row to the
-approved-changes sheet, "Non-English name" (the reviewers' term; the first desk
-and the weekly sheet still say "Variant name"), because TTE holds the Chinese name for
-only one in four of the people the news mentions and the review is where the
-missing ones are found. A record to create from such a name gets the same row,
-and its names can be corrected under Edit. A "create a record?" for a non-Latin name says the
+A Chinese name confirmed against an English record is asked on the desk as a
+change, "Non-English names" (the reviewers' term), because TTE holds the Chinese
+name for only one in four of the people the news mentions and the review is
+where the missing ones are found. Accepted, it goes on the approved-changes
+sheets as TTE's own link from the English record: ENGtoCHI, or ENGtoTAM and
+ENGtoMAY for Tamil and Malay. A record to create goes on under its English
+name with its Key Vocabulary, and gets the same row where TTE keeps that
+language in that vocabulary; its names can be corrected under Edit. A "create a record?" for a non-Latin name says the
 English spelling was the model's guess and opens the search first, which
 matches the opening of each record's description as well as its name.
 

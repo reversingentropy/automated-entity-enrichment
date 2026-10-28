@@ -172,7 +172,7 @@ def test_the_weekly_file_is_the_template_agreed_with_the_reviewers(tmp_path):
         # Rejected, or kept for review: nothing to apply.
         {"pid": 4, "verdict": "reject", "chose": None, "reviewer": "Reviewer B", "at": "2026-09-28T03:00:00Z"},
     ]
-    existing, new = rows_for(decisions, cards, {"18518926": "_People"}, {"PERSON": "_People"})
+    existing, new = rows_for(decisions, cards, {"18518926": "_People"})
     assert existing == [["18518926", "Jeyaretnam, Kenneth", "_People", "Death Year (yyyy)", "", "2026", link,
                          "Reviewer A", "28/9/2026", ""]]
     # Marked done on the desk: the Status column says so.
@@ -196,12 +196,12 @@ def test_a_record_to_create_goes_on_the_sheet_as_the_reviewer_left_it():
     decisions = [{"pid": 5, "verdict": "approve", "chose": "new-entity", "reviewer": "R", "at": "2026-10-24T03:00:00Z",
                   "ctype": "PROGRAMME", "leftOut": [{"field": "Affiliations(groupName)", "value": "Ministry of Health"},
                                                    {"field": "Year Started (yyyy)", "value": "1999"}]}]
-    _, new = rows_for(decisions, cards, {}, {"ORGANISATION": "_Organisations", "PROGRAMME": "_Programmes"})
+    _, new = rows_for(decisions, cards, {})
     assert [row[2:6] for row in new] == [["_Programmes", "Affiliations(groupName)", "", "People's Association"]]
 
     # Edited on the desk: the sheet carries the fields as the reviewer left them.
     decisions[0]["fields"] = [{"key": "Affiliations(groupName)", "value": "People's Association (PA)"}]
-    _, new = rows_for(decisions, cards, {}, {"PROGRAMME": "_Programmes"})
+    _, new = rows_for(decisions, cards, {})
     assert [row[3:6] for row in new] == [["Affiliations(groupName)", "", "People's Association (PA)"]]
 
 
@@ -214,33 +214,64 @@ def test_a_chinese_name_for_a_record_tte_has_is_on_the_sheet_only_as_accepted():
     d = {"pid": 7, "verdict": "approve", "chose": "18773908", "record": "Snow City", "reviewer": "R",
          "at": "2026-10-26T03:00:00Z", "rows": []}
     # No change to its names: nothing on the sheet.
-    existing, _ = rows_for([d], cards, {"18773908": "_Geobuildings"}, {})
+    existing, _ = rows_for([d], cards, {"18773908": "_GeoBuildings"})
     assert existing == []
-    # Accepted as edited, once, under the sheet's own name for it.
+    # Accepted as edited, once, as TTE's link from the English record.
     d["rows"] = [{"field": "Non-English name", "current": "", "proposed": "雪城 (edited)", "from": link}]
-    existing, _ = rows_for([d], cards, {"18773908": "_Geobuildings"}, {})
-    assert [row[3:6] for row in existing] == [["Variant name", "", "雪城 (edited)"]]
+    existing, _ = rows_for([d], cards, {"18773908": "_GeoBuildings"})
+    assert [row[1:6] for row in existing] == [["Snow City", "_GeoBuildings", "ENGtoCHI", "", "雪城 (edited)"]]
+    d["rows"][0]["proposed"] = "ஸ்னோ சிட்டி"
+    assert rows_for([d], cards, {"18773908": "_GeoBuildings"})[0][0][3] == "ENGtoTAM"
 
 
-def test_a_new_records_chinese_name_is_a_variant_name_row_as_the_reviewer_left_it():
+def test_a_new_record_goes_under_its_english_name_with_tte_s_link_to_the_name_in_another_language():
     from src.export.weekly import rows_for
 
     cards = {"6": {"key": "new:PERSON:陈劲龙", "entity": "陈劲龙", "entityEn": "Chen, Jinlong", "type": "PERSON", "pids": [6],
                    "sources": [{"link": "https://www.zaobao.com.sg/x"}], "newsFields": [{"key": "Title", "value": "Dr"}]}}
     decisions = [{"pid": 6, "verdict": "approve", "chose": "new-entity", "reviewer": "R", "at": "2026-10-26T03:00:00Z"}]
-    # A decision from before the desk saved the names: the model's.
-    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
-    assert [row[1:6:2] for row in new] == [["陈劲龙 (Chen, Jinlong)", "Title", "Dr"],
-                                           ["陈劲龙 (Chen, Jinlong)", "Variant name", "陈劲龙"]]
+    # A decision from before the desk saved the names or the vocabulary: the model's, and the type's.
+    _, new = rows_for(decisions, cards, {})
+    assert [row[1:6:2] for row in new] == [["Chen, Jinlong", "ENGtoCHI", "陈劲龙"], ["Chen, Jinlong", "Title", "Dr"]]
+    assert {row[2] for row in new} == {"_People"}
     # Both names corrected on the desk.
     decisions[0]["names"] = {"name": "Chen, Jin Long", "variant": "陈锦龙"}
-    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
-    assert [row[1:6:2] for row in new] == [["陈锦龙 (Chen, Jin Long)", "Title", "Dr"],
-                                           ["陈锦龙 (Chen, Jin Long)", "Variant name", "陈锦龙"]]
-    # Emptied on the desk: no variant name row.
+    _, new = rows_for(decisions, cards, {})
+    assert [row[1:6:2] for row in new] == [["Chen, Jin Long", "ENGtoCHI", "陈锦龙"], ["Chen, Jin Long", "Title", "Dr"]]
+    # Emptied on the desk: no link.
     decisions[0]["names"] = {"name": "Chen, Jinlong", "variant": ""}
-    _, new = rows_for(decisions, cards, {}, {"PERSON": "_People"})
+    _, new = rows_for(decisions, cards, {})
     assert [row[3] for row in new] == ["Title"] and new[0][1] == "Chen, Jinlong"
+    # A vocabulary TTE keeps no Chinese names in (the reviewer chose _Programmes): the English record only.
+    decisions[0].update(names={"name": "HEART Youth Volunteer Programme", "variant": "心理急救小组青年志愿计划"}, vocab="_Programmes")
+    _, new = rows_for(decisions, cards, {})
+    assert [row[2:4] for row in new] == [["_Programmes", "Title"]]
+
+
+def test_tamil_and_malay_names_are_linked_where_tte_keeps_those_languages():
+    from src.export.weekly import rows_for
+
+    def one(entity, english, kind, link):
+        cards = {"8": {"key": "new:x", "entity": entity, "entityEn": english, "type": kind, "pids": [8],
+                       "sources": [{"link": link}], "newsFields": [{"key": "Description", "value": "x"}]}}
+        d = {"pid": 8, "verdict": "approve", "chose": "new-entity", "reviewer": "R", "at": "2026-10-28T03:00:00Z"}
+        return [row[3:6:2] for row in rows_for([d], cards, {})[1]]
+
+    assert one("டான் எங் சாய்", "Tan, Eng Chye", "PERSON", "https://www.tamilmurasu.com.sg/x") == [["Description", "x"], ["ENGtoTAM", "டான் எங் சாய்"]]
+    assert one("Kementerian Pendidikan", "Ministry of Education", "ORGANISATION", "https://www.beritaharian.sg/x") == \
+        [["Description", "x"], ["ENGtoMAY", "Kementerian Pendidikan"]]
+    # TTE has no Malay names for people.
+    assert one("Encik Ahmad", "Ahmad", "PERSON", "https://www.beritaharian.sg/x") == [["Description", "x"]]
+
+
+def test_the_desk_and_the_weekly_sheet_agree_on_tte_s_vocabularies():
+    import re
+    from pathlib import Path
+
+    from src.export.weekly import VOCABS
+    page = (Path(__file__).resolve().parents[1] / "prototype" / "desk.template.html").read_text(encoding="utf-8")
+    block = re.search(r"const VOCABS = \{(.*?)\};", page, re.S).group(1)
+    assert {v: (t, langs) for v, t, langs in re.findall(r'(_\w+): \["(\w+)", "([A-Z ]*)"\]', block)} == VOCABS
 
 
 def _desk(n_waiting_people=2):
