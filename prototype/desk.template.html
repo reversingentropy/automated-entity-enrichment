@@ -112,6 +112,10 @@
   .frow{display:flex;gap:.5rem} .frow input{flex:1} .frow select{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:.4rem .6rem;font-size:.9rem;color:var(--ink)}
   .ctype{font:inherit;font-size:.78rem;font-weight:650;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:.15rem .4rem;color:var(--ink);text-transform:none;letter-spacing:0}
   .cands button.newrec{border-style:dashed;color:var(--ink2)}
+  .rtabs{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem;margin:.8rem 0 0;padding:.75rem 0 0;border-top:1px solid var(--rule)}
+  .rtabs .rtl{width:100%;font-size:.74rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+  .rtabs button{background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .75rem;font-size:.9rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650}
 
   .ba{padding:1rem 1.3rem 1.2rem;display:grid;gap:.75rem}
   .ba .row{display:grid;gap:.3rem}
@@ -823,14 +827,25 @@ function hitsHtml(c, query) {
     if (pass(r)) { if (have.has(r[0])) { listed++; continue; } found.push(r); }
   }
   found.sort((a, b) => (b[2] === c.type) - (a[2] === c.type));
-  if (!found.length) return `<div class="nohits">${listed ? "That record is already one of the candidates above." : "No record by that name."}</div>`;
+  if (!found.length) return `<div class="nohits">${listed ? "That record is already one of the possible TTE records." : "No record by that name."}</div>`;
   return found.slice(0, 25).map(r => `<button class="hit" data-act="pickhit" data-u="${esc(r[0])}" data-npt="${esc(via[r[0]] || "")}"><b>${esc(r[1])}</b><span class="tt">${esc(kind({ type: r[2] }))}</span>${via[r[0]] ? `<span class="npt2">NPT ${esc(via[r[0]])}</span>` : ""}${r[3] ? `<small>${esc(gist(r[3], 60))}</small>` : ""}</button>`).join("");
 }
-const candRow = (c, st, label) => {
+// Searching every record in TTE, under the card.
+const findBox = (c, st) => st.finding ? `<div class="find"><div class="frow"><input id="q" type="search" autocomplete="off" placeholder="Search every record in TTE by name, occupation or description" value="${esc(st.query || "")}"><select id="qt" aria-label="Record type"><option value="all">All types</option>${Object.keys(TYPES).map(t => `<option value="${t}" ${st.stype === t ? "selected" : ""}>${TYPES[t][0]}</option>`).join("")}</select></div><div class="hits" id="hits">${hitsHtml(c, st.query)}</div></div>` : "";
+// The records the one in the news could be, as tabs at the foot of the TTE box: the record shown is one of several,
+// each a click away, and they come once the one shown has been read, beside what to do if none of them is. As a row
+// of names under the card, "Records it could be:", they were easy to miss (28 Oct 2026).
+const recTabs = (c, st) => {
   const opts = ordered(c);
-  return `<div class="cands">${opts.length ? label : "Not in the list?"} ${opts.map((o, i) => `<button class="${st.screen === "who" && i === st.cand ? "on" : ""}" data-act="cand" data-i="${i}">${esc(o.name)}${typeTag(c, o)}</button>`).join("")}
-    <button data-act="find">${st.finding ? "Close search" : "Search TTE"}</button>${st.screen === "who" ? `<button class="newrec" data-act="newrec">+ New record</button>` : ""}</div>
-  ${st.finding ? `<div class="find"><div class="frow"><input id="q" type="search" autocomplete="off" placeholder="Search every record in TTE by name, occupation or description" value="${esc(st.query || "")}"><select id="qt" aria-label="Record type"><option value="all">All types</option>${Object.keys(TYPES).map(t => `<option value="${t}" ${st.stype === t ? "selected" : ""}>${TYPES[t][0]}</option>`).join("")}</select></div><div class="hits" id="hits">${hitsHtml(c, st.query)}</div></div>` : ""}`;
+  return opts.length < 2 ? "" : `<div class="rtabs" role="tablist" aria-label="Possible TTE records"><span class="rtl">Possible TTE records (${opts.length})</span>${opts.map((o, i) => `<button role="tab" aria-selected="${i === st.cand}" class="${i === st.cand ? "on" : ""}" data-act="cand" data-i="${i}">${esc(o.name)}${typeTag(c, o)}</button>`).join("")}</div>`;
+};
+// Under the card, for when none of them is: search TTE, or a new record.
+const otherRow = (c, st) => `<div class="cands">${ordered(c).length > 1 ? "None of these?" : "Not this one?"} <button data-act="find">${st.finding ? "Close search" : "Search TTE"}</button><button class="newrec" data-act="newrec">+ New record</button></div>${findBox(c, st)}`;
+// On a record to create, the closest records TTE has: it may be one of them under another name.
+const nearRow = (c, st) => {
+  const opts = ordered(c);
+  return `${opts.length ? `<div class="cands">Already in TTE? Closest records: ${opts.map((o, i) => `<button data-act="cand" data-i="${i}">${esc(o.name)}${typeTag(c, o)}</button>`).join("")}</div>` : ""}
+  <div class="cands">${opts.length ? "Not there?" : "Already in TTE?"} <button data-act="find">${st.finding ? "Close search" : "Search TTE"}</button></div>${findBox(c, st)}`;
 };
 
 // ---- screens ---------------------------------------------------------------------
@@ -848,16 +863,17 @@ function who(c, st) {
     ${news(c, st)}
     <div class="join">same ${esc(kind(c))}?</div>
     <div class="side tte">
-      <div class="label">In TTE now <span class="src">${esc(o.rtype || c.type)} &middot; UID ${esc(o.uid)}</span></div>
+      <div class="label">${opts.length > 1 ? `Record ${st.cand + 1} of ${opts.length}` : "In TTE now"} <span class="src">${esc(o.rtype || c.type)} &middot; UID ${esc(o.uid)}</span></div>
       <h2 class="name">${esc(o.name)}</h2>
       <p class="ident">${esc(o.thin ? thinIdent(o) || "Nothing recorded but its name" : identLine(c, o))}</p>
       ${o.npt ? `<p class="npt">Found through the name &ldquo;${esc(o.npt)}&rdquo;</p>` : ""}
       <ul class="checks">${rows.map(r => `<li class="${r.k}"><b>${r.label}</b><span>${r.text}${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span></li>`).join("")}</ul>
       ${o.thin ? `<p class="npt">Only the name and the start of the description are shown for a search result.</p>` : `<button class="more" data-act="full">${st.full ? "Hide the full record &#9652;" : "Show the full record &#9662;"}</button>`}
       ${st.full && !o.thin ? `<div class="full">${(o.fields.length ? o.fields : [{ key: "", value: "Nothing recorded" }]).map(x => `<div><span class="k">${esc(x.key)}</span><span>${esc(x.value)}</span></div>`).join("")}</div>` : ""}
+      ${recTabs(c, st)}
     </div>
   </section>
-  ${candRow(c, st, "Records it could be:")}
+  ${otherRow(c, st)}
   ${actions(["same", `Same record${nCh ? ` (${nCh} change${nCh > 1 ? "s" : ""})` : ""}`, nCh ? "" : "already up to date", "go"],
             ["discard", "Discard", "", "red"],
             quiet(st))}`;
@@ -927,7 +943,7 @@ function create(c, st) {
       <button class="editbtn ${st.nedit ? "on" : ""}" data-act="nedit">${st.nedit ? "Done" : "&#9998; Edit"}</button>
     </div>
   </section>
-  ${candRow(c, st, c.isNew ? "Nearest in TTE (the model matched none):" : "Records it could be:")}
+  ${nearRow(c, st)}
   ${actions(["create", "Create a new record", "", "go"], ["noworth", "Not worth a record", "", "red"],
             quiet(st))}`;
 }
@@ -1871,7 +1887,7 @@ function coach(c, st) {
   if (st.screen === "create") {
     title = "Someone TTE does not have";
     points = [`No TTE record matched this ${k}, so the desk asks whether to create one.`,
-              `The matching can miss. Look at the names after ${cbtn("Nearest in TTE")}, and try ${cbtn("Search TTE")}. If the ${k} is there, click the record: the card becomes the same-record question from the first card.`,
+              `The matching can miss. Look at the names after ${cbtn("Already in TTE? Closest records")}, and try ${cbtn("Search TTE")}. If the ${k} is there, click the record: the card becomes the same-record question from the first card.`,
               `If not, check the ${cbtn("Key Vocabulary")}, the TTE file it goes into: the box on the line ${cbtn("If you create it")} (here ${esc(vocabFor(c, st))}). Then ${cbtn("&#9998; Edit")} to correct the names and values; &times; leaves a value out.`,
               `${cbtn("OneSearch &#8599;")}, beside the name, looks it up in NLB&rsquo;s collections, if you want to judge whether it is worth a record.`];
     todo = `Then ${cbtn("Create a new record")}, or ${cbtn("Not worth a record")}.`;
@@ -1884,7 +1900,7 @@ function coach(c, st) {
     points = [`One card is one ${k}, with every article that mentions them: here ${c.sources.length}, numbered at the top of ${cbtn("In the news")}. Click a number to read another; ${cbtn("Open article")} opens the whole story.`,
               ...(other >= 0 ? [`Number ${other + 1} is from ${esc(outletOf(c.sources[other].link))}: the article&rsquo;s own words first, the English under them.`] : []),
               `The question at the top comes first: is this TTE record the same ${k} as the one in the news? Compare the name and the facts under it.`,
-              `If it is someone else, try another name after ${cbtn("Records it could be")}, or ${cbtn("Search TTE")}. If the ${k} is not in TTE at all, ${cbtn("+ New record")}.`];
+              `Under the TTE record are the ${cbtn("Possible TTE records")}: if this is someone else, click another. If none of them is, ${cbtn("Search TTE")}, or ${cbtn("+ New record")} if the ${k} is not in TTE at all.`];
     todo = `Here it is the same ${k}: click ${cbtn("Same record")}.`;
   } else {
     const rows = rowsFor(c, chosenOpt(c, st)), ch = rows[st.ch], firstList = rows.findIndex(r => !r.diff);

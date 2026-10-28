@@ -56,7 +56,7 @@
     out.practiceOffered = /data-act="practice"/.test(stage());
     act("practice");
     out.practiceUpdateFirst = PAGE === "practice" && /Practice 1 of 5/.test(stage()) && !card().isNew && stOf(card()).screen === "who"
-      && /Records it could be/.test(stage()) && /Same record/.test(stage());
+      && /Possible TTE records \(4\)/.test(stage()) && /Record 1 of 4/.test(stage()) && /None of these\?/.test(stage()) && /Same record/.test(stage());
     act("same");
     out.practiceChangeNoted = stOf(card()).screen === "change" && /Change 1 of 3/.test(stage()) && /nothing in TTE yet/.test(stage());
     for (let g = 0; g < 20 && PRACTICE.i === 0; g++) act("accept");
