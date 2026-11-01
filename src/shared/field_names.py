@@ -28,7 +28,7 @@ FIELDS: dict[str, set[str]] = {
                  "Year Completed (yyyy)", "Month Completed (mm)", "Day Completed (dd)"},
     "LOCATION": {*COMMON, "Country", "Feature Type", "Street Address", "Postal Code"},
     "EVENT": {*COMMON, "SN", "Organiser", "Year", "Month", "Day",
-              "Category", "Topic", "Locality"},
+              "Category", "Slogan"},   # no Topic or Locality: _Events never uses them, and a Topic is an LC heading the model can only invent
     "AWARD": {"Name", "SN", "Awarding Entity", "Year First Awarded"},
     "PROGRAMME": {*COMMON},
     "LEGAL_ACT": {"Name", "SN"},

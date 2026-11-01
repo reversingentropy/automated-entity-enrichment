@@ -470,7 +470,11 @@ def _combined_additions(group: list[dict]) -> list[dict]:
     union, out = [], []
     for members in pooled:
         years = {y.strip("()") for m in members for y in YEAR.findall(m["adding"])}
-        if len(years) > 1:
+        # As in collapse, a disagreement needs two sources: one description
+        # naming 2013, 2026 and 2027 put "the sources disagree" on a card with
+        # one article. Prose naming different years is not a disagreement at all.
+        sources = {m.get("from") for m in members if m.get("from")}
+        if len(years) > 1 and len(sources) > 1 and members[0]["field"] not in PROSE:
             best = max(members, key=lambda m: len(m["adding"]))
             note = dict(best)
             note.update({
@@ -730,6 +734,22 @@ def subjects_of(entities: list[dict], title: str, updates: dict[int, int]) -> se
 # not fields at all in TTE but relationship rows, which the pipeline cannot
 # yet express.
 SOFT_LINKED_FIELDS: dict[str, str] = {}
+# Fields the guidelines also fill with TTE's own names ("enter the preferred
+# name (PT) ... as found in TTE"), checked so the desk can say "in TTE" or "not
+# in TTE" of each name, but never rewritten: a spouse carries "(m. 1991)" and a
+# locality may be a building or a place, which renaming would lose. Suntec City
+# would have gone through as an event's Locality with nothing checking it.
+CHECKED_FIELDS: dict[str, tuple[str, ...]] = {
+    "Education": ("ORGANISATION", "FACILITY"),
+    "Spouse": ("PERSON",), "Child": ("PERSON",), "Parent": ("PERSON",), "Group Members": ("PERSON",),
+    "Organiser": ("ORGANISATION",), "Awarding Entity": ("ORGANISATION",),
+}
+# Fields the extraction prompt asked for until 1 Nov 2026 and no longer does: _Events never uses Topic or Locality,
+# and a Topic is a Library of Congress heading the model could only invent. What was extracted before is left
+# in the database and set aside here, so no card offers them.
+RETIRED: dict[str, set[str]] = {"EVENT": {"Topic", "Locality"}}
+# "Woon, Alice (m. 1942-1986)", "Lam, May Yee (deceased)": the name is what is looked up.
+_MARRIAGE = re.compile(r"\s*\((?:m\.[^)]*|div\.|deceased)\)\s*$")
 NEAR_ENOUGH = 0.6
 
 
@@ -741,23 +761,24 @@ class Lookup:
     rather than calling it absent.
     """
 
-    def __init__(self, index: list[list] | None, entity_type: str,
+    def __init__(self, index: list[list] | None, entity_type: str | tuple[str, ...],
                  variants: list[list] | None = None):
         from src.backfill.local_match import trigrams
+        types = {entity_type} if isinstance(entity_type, str) else set(entity_type)
         self.exact: dict[str, str] = {}
         self.styled: dict[str, tuple[str, str]] = {}
         self.rows: list[tuple[str, str, set]] = []
         for row in index or []:
-            if row[2] != entity_type:
+            if row[2] not in types:
                 continue
             self.exact.setdefault(plain(row[1]), row[0])
             self.styled.setdefault(house(row[1]), (row[0], row[1]))
             self.rows.append((row[0], row[1], trigrams(row[1])))
         # A variant name (Chinese, a former name) reaches its canonical
         # record by exact match only; it is never offered as "nearest".
-        self.canonical_name = {row[0]: row[1] for row in index or [] if row[2] == entity_type}
+        self.canonical_name = {row[0]: row[1] for row in index or [] if row[2] in types}
         for name, canonical_uid, etype in variants or []:
-            if etype == entity_type and canonical_uid in self.canonical_name:
+            if etype in types and canonical_uid in self.canonical_name:
                 self.exact.setdefault(plain(name), canonical_uid)
         self._grams = trigrams
 
@@ -877,14 +898,14 @@ def record_flags(value: str, lookup: "Lookup", soft: bool = False) -> list[dict]
     """
     out = []
     for v in _values(value):
-        found = {"uid": None}
-        for t in tries_for(v):
+        found, bare = {"uid": None}, _MARRIAGE.sub("", v)
+        for t in tries_for(bare):
             got = lookup.find(t)
             if got.get("uid"):
                 found = got
                 # Found through one half of "功绩奖章 (Meritorious Service Medal)": the half
                 # is the record's name, the value as written is not, so it is renamed too.
-                if not found.get("as") and plain(t) != plain(without_year(v)):
+                if not found.get("as") and plain(t) != plain(without_year(bare)):
                     found = {**found, "as": lookup.canonical_name.get(found["uid"], "")}
                 break
             if got.get("nearest") and not found.get("nearest"):
@@ -934,6 +955,13 @@ def build_cards(include_new: bool = True, backfill: bool = False,
     if column_exists("extracted_entities", "backfill"):
         entities = {k: v for k, v in entities.items() if bool(v.get("backfill")) == backfill}
         proposals = [p for p in proposals if p["extracted_id"] in entities]
+    for e in entities.values():
+        if RETIRED.get(e.get("entity_type")) and e.get("fields"):
+            e["fields"] = {k: v for k, v in e["fields"].items() if k not in RETIRED[e["entity_type"]]}
+    for p in proposals:
+        gone = RETIRED.get((entities.get(p["extracted_id"]) or {}).get("entity_type"), set())
+        if gone:
+            p["field_updates"] = [u for u in p.get("field_updates") or [] if u.get("field") not in gone]
     articles = _by_id("article", "id",
                       [e["article_id"] for e in entities.values()], "id, title, url, pubDate")
     # Feed titles arrive HTML-escaped ("Singapore&#039;s highest civilian
@@ -946,14 +974,21 @@ def build_cards(include_new: bool = True, backfill: bool = False,
         uids += p.get("duplicate_uids") or []
         uids += [c["canonical_uid"] for c in (p.get("candidates") or [])]
     records = _by_id("entities", "uid", uids, "uid, name, entity_type, fields")
-    lookups = {t: Lookup(index, t, variants) for t in set(LINKED_FIELDS.values()) | set(SOFT_LINKED_FIELDS.values())}
+    lookups = {t: Lookup(index, t, variants)
+               for t in set(LINKED_FIELDS.values()) | set(SOFT_LINKED_FIELDS.values()) | set(CHECKED_FIELDS.values())}
 
     def flags_for(field: str, value: str):
         if field in LINKED_FIELDS:
             return record_flags(value, lookups[LINKED_FIELDS[field]])
         if field in SOFT_LINKED_FIELDS:
             return record_flags(value, lookups[SOFT_LINKED_FIELDS[field]], soft=True) or None
+        if field in CHECKED_FIELDS:
+            return record_flags(value, lookups[CHECKED_FIELDS[field]])
         return None
+
+    def renames(change: dict) -> bool:
+        """Whether a link field's values are written as TTE names them; False drops the change."""
+        return change["field"] in CHECKED_FIELDS or named_as_tte(change)
 
     # Which entities each article is about, judged over the article's whole set.
     by_article: dict[int, list[dict]] = {}
@@ -1180,7 +1215,7 @@ def build_cards(include_new: bool = True, backfill: bool = False,
         for ch in card["changes"]:
             if ch["strategy"] != "MERGE":
                 ch["inTTE"] = flags_for(ch["field"], ch["adding"])
-                if ch["inTTE"] and not named_as_tte(ch):
+                if ch["inTTE"] and not renames(ch):
                     continue
             kept.append(ch)
         card["changes"] = kept
@@ -1200,7 +1235,7 @@ def build_cards(include_new: bool = True, backfill: bool = False,
             extra = []
             for row in derived_changes(rows, covered if same else set()):
                 row["inTTE"] = flags_for(row["field"], row["adding"])
-                if row["inTTE"] and not named_as_tte(row):
+                if row["inTTE"] and not renames(row):
                     continue
                 extra.append(row)
             option["extra"] = extra
@@ -1208,13 +1243,13 @@ def build_cards(include_new: bool = True, backfill: bool = False,
             card["newsLinked"] = {}
             # A record to create takes these names the same way: as TTE names them, in English
             # ("全国职工总会 (National Trades Union Congress)" was its parent on the create screen).
-            for f in list(LINKED_FIELDS) + list(SOFT_LINKED_FIELDS):
+            for f in list(LINKED_FIELDS) + list(SOFT_LINKED_FIELDS) + list(CHECKED_FIELDS):
                 value = DELIMITER.join(news_values(news.get(f)))   # a list the model joined with commas, split
                 flags = flags_for(f, value) if value else None
                 if not flags:
                     continue
                 named = {"field": f, "strategy": "APPEND", "existing": [], "adding": value, "inTTE": flags}
-                named_as_tte(named)
+                renames(named)
                 card["newsLinked"][f] = named["inTTE"]
                 for nf in card["newsFields"]:
                     if nf["key"] == f:

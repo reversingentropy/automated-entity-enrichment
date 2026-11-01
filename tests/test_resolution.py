@@ -880,6 +880,10 @@ def test_one_source_is_never_a_disagreement():
     two = {"field": "Awards", "strategy": "APPEND", "existing": [],
            "adding": "Meritorious Service Award (1993) | CC Tan Award (2011)", "from": "ST"}
     assert collapse([two])[0]["conflict"] is False
+    # an added description naming three years, from one article (The Purple Parade, Oct 2026)
+    three = {"field": "Description", "strategy": "APPEND", "existing": [], "from": "ST",
+             "adding": "First held in 2013, the movement features marches. Its 2026 edition was postponed to 2027."}
+    assert collapse([three])[0]["conflict"] is False
     # two sources, two years for the same award: that is one
     a = {"field": "Awards", "strategy": "APPEND", "existing": [], "adding": "Doctor of Letters (2026)", "from": "ST"}
     b = {"field": "Awards", "strategy": "APPEND", "existing": [], "adding": "Doctor of Letters (2025)", "from": "ZB"}
@@ -969,6 +973,18 @@ def test_linked_values_are_looked_up_exactly_then_nearly():
     assert near["uid"] is None and near["nearest"] == "Inspiring Teacher of English Award"
     awards = Lookup(index, "AWARD")
     assert record_flags("President’s Science and Technology Medal (2026)", awards)[0]["uid"] == "3"
+
+
+def test_checked_fields_find_names_across_types_without_their_marriage_dates():
+    """A name may be a building or a place; a spouse is looked up without "(m. 1991)"."""
+    from src.export.cards import CHECKED_FIELDS, Lookup, record_flags
+    index = [["18520359", "Suntec City", "FACILITY", "", ""], ["4", "Kranji", "LOCATION", "", ""],
+             ["5", "Phua, Swee Liang", "PERSON", "", ""]]
+    places = Lookup(index, ("LOCATION", "FACILITY"))
+    got = record_flags("Suntec City | Kranji | Marina Bay", places)
+    assert [g["uid"] for g in got] == ["18520359", "4", None]
+    got = record_flags("Phua, Swee Liang (m. 1991) | Lam, May Yee (deceased)", Lookup(index, CHECKED_FIELDS["Spouse"]))
+    assert got[0] == {"name": "Phua, Swee Liang (m. 1991)", "uid": "5"} and got[1]["uid"] is None
 
 
 def test_an_original_name_with_its_gloss_is_looked_up_both_ways():

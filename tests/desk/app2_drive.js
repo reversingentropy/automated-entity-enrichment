@@ -167,6 +167,13 @@
     zst.vocab = undefined;
     zst.nedit = true;
     out.newRecordNamesEditable = (create(zn, zst).match(/class="cin nin nname/g) || []).length === 2;
+    // a Qualifier: an empty box under Edit, in nothing until written; written, its own row and in the record's name
+    const qst = fresh(zn); qst.nedit = true;
+    const qrows = () => changesRows([{ kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, qst), names: namesOf(zn, qst), vocab: vocabFor(zn, qst), leftOut: [], accepted: [], when: new Date() }]);
+    out.qualifierEmptyUnlessWritten = /class="cin nin nqual" data-i="qual" data-j="0" value=""/.test(create(zn, qst))
+      && !qrows().some(r => r[2] === "Qualifier") && !finalFields(zn, qst).some(f => f.key === "Qualifier");
+    qst.nval["qual:0"] = "Writer";
+    out.qualifierWhenWritten = qrows().some(r => r[2] === "Qualifier" && r[4] === "Writer") && qrows().slice(1).every(r => r[1] === "Chen, Jinlong (Writer)");
     zst.nval["name:en"] = "Chen, Jin Long"; zst.nval["name:zh"] = "陈锦龙";
     const zx = { kind: "created", entity: zn.entity, entityEn: zn.entityEn, ctype: zn.type, fields: finalFields(zn, zst), edited: editedOf(zn, zst), names: namesOf(zn, zst), leftOut: leftOutOf(zn, zst), accepted: [], when: new Date() };
     const zd = toDecision(zx, zn);

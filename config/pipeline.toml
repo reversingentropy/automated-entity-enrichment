@@ -40,7 +40,7 @@ articles_per_request = 1
 # The line of the day on the desk's home screen (src/export/greeting.py):
 # written once a day by the nightly publish, kept for the noon run.
 models = ["gemini-3.5-flash-lite"]
-thinking = "low"
+thinking = "high"
 
 [notify]
 # The daily email ends with a link to the desk. Put its address here once it

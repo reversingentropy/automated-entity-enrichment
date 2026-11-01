@@ -98,6 +98,10 @@ def rows_for(decisions: list[dict], cards: dict[str, dict], vocab_of: dict[str, 
                     kept = [v for v in str(f.get("value") or "").split(DELIMITER) if v.strip() and (f["key"], v) not in out]
                     if kept:
                         fields.append({"key": f["key"], "value": DELIMITER.join(kept)})
+            # A name TTE already holds was given a Qualifier on the desk; TTE's descriptor carries it, "Elangovan (Writer)".
+            qualifier = next((f["value"] for f in fields if f["key"] == "Qualifier"), "")
+            if qualifier:
+                name = f"{name} ({qualifier})"
             for f in fields:
                 add(new, "", name, vocab, f["key"], "", f["value"], None)
             link = eng_to(variant) if variant else ""

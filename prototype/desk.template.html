@@ -105,6 +105,8 @@
   .full .nvi .vtags{margin-left:auto}
   .full .nvi .cin{flex:1;min-width:8rem;font-weight:500}
   .draftbox .dta.nin{min-height:5rem;margin:.2rem 0 .6rem}
+  .draftbox .qual{display:flex;gap:.5rem;align-items:center;margin:.1rem 0 .5rem;font-size:.9rem;color:var(--ink2)}
+  .draftbox .qual input{flex:1;max-width:22rem}
   .cands{margin:.9rem 0 0;color:var(--ink2);font-size:.9rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
   .cands button{background:var(--paper);border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:.2rem .75rem;font-size:.86rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cands button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -902,8 +904,12 @@ const namesOf = (c, st) => {
 };
 const namesEdited = (c, n) => [["Name", c.entityEn || c.entity, n.name], ["Non-English name", hasOther(c) ? c.entity : "", n.variant]]
   .filter(([, from, to]) => from && to && to !== from).map(([field, from, to]) => ({ field, from, to }));
+// A Qualifier tells two TTE records of one name apart, "Elangovan (Writer)". Few records have one, so it starts empty
+// and is kept only when the reviewer writes one; the hint is the person's occupation, never a value.
+const qualOf = st => String((st.nval || {})["qual:0"] || "").trim();
+const qualHint = c => { const o = c.type === "PERSON" && c.newsFields.find(f => f.key === "Occupation"); return o ? fieldVals(o)[0] : "none"; };
 const finalFields = (c, st) => c.newsFields.map((f, fi) => ({ key: f.key, value: fieldVals(f).map((v, vi) => st.out["n" + fi + ":" + vi] ? "" : newVal(st, fi, vi, v).trim())
-  .filter(Boolean).join(" | ") })).filter(f => f.value);
+  .filter(Boolean).join(" | ") })).filter(f => f.value).concat(qualOf(st) ? [{ key: "Qualifier", value: qualOf(st) }] : []);
 // What the reviewer changed, kept with the decision: a measure of what the model gets wrong.
 const editedOf = (c, st) => namesEdited(c, namesOf(c, st)).concat(c.newsFields.flatMap((f, fi) => fieldVals(f).map((v, vi) => ({ field: f.key, from: v, to: newVal(st, fi, vi, v).trim() }))
   .filter((e, vi) => e.to !== e.from && e.to && !st.out["n" + fi + ":" + vi])));
@@ -940,7 +946,8 @@ function create(c, st) {
     <div class="join">would become a new record</div>
     <div class="draftbox">
       <div class="label">If you create it <span class="src"><select class="ctype" id="ctype" aria-label="Key Vocabulary">${Object.keys(VOCABS).map(v => `<option value="${v}" ${vocab === v ? "selected" : ""}>${v}</option>`).join("")}</select> &middot; new record</span></div>
-      <h2 class="name">${st.nedit ? `<input class="cin nin nname" data-i="name" data-j="en" value="${esc(n.name)}" aria-label="Name">` : esc(n.name)}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(n.name)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
+      <h2 class="name">${st.nedit ? `<input class="cin nin nname" data-i="name" data-j="en" value="${esc(n.name)}" aria-label="Name">` : esc(n.name + (qualOf(st) ? ` (${qualOf(st)})` : ""))}<a class="osbtn" href="https://search.nlb.gov.sg/onesearch/Search?query=${encodeURIComponent(n.name)}" target="_blank" rel="noopener">OneSearch &#8599;</a></h2>
+      ${st.nedit ? `<label class="qual">Qualifier <input class="cin nin nqual" data-i="qual" data-j="0" value="${esc(qualOf(st))}" placeholder="${esc(qualHint(c))}" aria-label="Qualifier, only if TTE has another record of this name"></label>` : ""}
       ${!hasOther(c) ? "" : st.nedit ? `<input class="cin nin nname alt" data-i="name" data-j="zh" value="${esc(n.variant)}" aria-label="Non-English name" placeholder="Non-English name (left out)">`
         : n.variant ? `<p class="orig">${esc(n.variant)}${notKept}</p>` : ""}
       ${desc && st.nedit ? `<textarea class="dta nin" data-i="${di}" data-j="0" aria-label="Description">${esc(desc)}</textarea>`
@@ -2127,7 +2134,9 @@ const changesRows = L => {
       // is TTE's link from it (ENGtoCHI and so on), where TTE keeps that language. A decision from before the desk
       // saved the names or the vocabulary has the model's.
       const n = x.names || { name: x.entityEn || x.entity || x.name, variant: x.entityEn && x.entityEn !== x.entity ? x.entity : "" };
-      const vocab = x.vocab || vocabOf(x.ctype || x.type), ent = n.name;
+      // A Qualifier the reviewer wrote is in the record's name as TTE writes it, "Elangovan (Writer)", as on the weekly sheet.
+      const q = ((x.fields || []).find(f => f.key === "Qualifier") || {}).value;
+      const vocab = x.vocab || vocabOf(x.ctype || x.type), ent = q ? `${n.name} (${q})` : n.name;
       rows.push(["NEW", ent, "Name", "", n.name, ...tail]);
       rows.push(["NEW", ent, "Key Vocabulary", "", vocab, ...tail]);
       if (n.variant && keptIn(vocab, engTo(n.variant).slice(5))) rows.push(["NEW", ent, engTo(n.variant), "", n.variant, ...tail]);

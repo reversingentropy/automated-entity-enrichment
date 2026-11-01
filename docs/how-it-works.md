@@ -180,7 +180,7 @@ holds the same list (`src/shared/field_names.py`).
 | ORGANISATION | `_Organisations` | Name, Description, Country, Street Address, Postal Code, Founder, Year Started (yyyy), Month Started (mm), Day Started (dd), Year Ended (yyyy), Month Ended (mm), Day Ended (dd), Parent Organisation, Group Members, Awards |
 | FACILITY | `_GeoBuildings` | Name, Description, Street Address, Country, Postal Code, Feature Type, Year Completed (yyyy), Month Completed (mm), Day Completed (dd) |
 | LOCATION | `_Geographics` | Name, Description, Country, Feature Type, Street Address, Postal Code |
-| EVENT | `_Events`, `_Historical_Events` | Name, SN, Organiser, Year, Month, Day, Category, Topic, Locality, Description |
+| EVENT | `_Events`, `_Historical_Events` | Name, SN, Organiser, Year, Month, Day, Category, Slogan, Description |
 | AWARD | `_Awards` | Name, SN, Awarding Entity, Year First Awarded |
 | PROGRAMME | `_Programmes` | Name, Description |
 | LEGAL_ACT | `_LegalActs` | Name, SN |
@@ -221,7 +221,7 @@ where they matter.
 | Parent Organisation | The organisation that controls this one. |
 | Group Members | Members of a small group, such as a band. |
 | Feature Type | What kind of building or place, from GeoNames, in lower case and American spelling: "hospital", "theater", "park". |
-| Organiser, Year, Month, Day, Locality | For an event: who ran it, when, and where. |
+| Organiser, Year, Month, Day, Slogan | For an event: who ran it, when, and the edition's slogan. |
 | Category | For an event: a subject from SingHeritage Events. |
 | Topic | For an event: a Library of Congress Subject Heading. |
 | Awarding Entity, Year First Awarded | For an award: who gives it, and since when. |

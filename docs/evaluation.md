@@ -323,7 +323,7 @@ not yet in effect.
 
 ## Extraction {#extraction}
 
-Written from `prompts/extraction.txt` (version b44367f8), `prompts/tte/fields_brief.txt` (version a3f7f141) and `prompts/tte/notability.txt` (version 5ee3450f).
+Written from `prompts/extraction.txt` (version b44367f8), `prompts/tte/fields_brief.txt` (version 47aa50f1) and `prompts/tte/notability.txt` (version 5ee3450f).
 
 For each name the AI found:
 

@@ -14,13 +14,13 @@ FACILITY      Name · Description · Street Address · Country · Postal Code ·
               Day Completed (dd)
 LOCATION      Name · Description · Country · Feature Type · Street Address ·
               Postal Code
-EVENT         Name · SN · Organiser · Year · Month · Day · Category · Topic ·
-              Locality · Description
+EVENT         Name · SN · Organiser · Year · Month · Day · Category · Slogan ·
+              Description
 AWARD         Name · SN · Awarding Entity · Year First Awarded
 PROGRAMME     Name · Description
 LEGAL_ACT     Name · SN
 
-Four distinctions that are easy to get wrong:
+Distinctions that are easy to get wrong:
 
   Occupation is a durable profession from a fixed thesaurus: Engineer,
   Politician, Teacher, Lawyer. A POST IS NOT AN OCCUPATION -- "Chairperson",
@@ -44,6 +44,10 @@ Four distinctions that are easy to get wrong:
   marriage has ended and both years are known. If only the outcome is known,
   write "Name (div.)" or "Name (deceased)" in place of a year. Chronological
   order, separated by " | ".
+
+  Slogan is an event's theme or slogan for one edition, as the organisers
+  word it, with the year in brackets: "Every Step in the Right Direction
+  (2019)". One per edition, separated by " | ".
 
 Descriptions: 3-5 sentences, opening with what best summarises the entity.
 Paraphrase rather than copy. Write in British spelling (organisation,

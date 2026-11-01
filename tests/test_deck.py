@@ -204,6 +204,12 @@ def test_a_record_to_create_goes_on_the_sheet_as_the_reviewer_left_it():
     _, new = rows_for(decisions, cards, {})
     assert [row[3:6] for row in new] == [["Affiliations(groupName)", "", "People's Association (PA)"]]
 
+    # A name TTE already holds, given a Qualifier on the desk: its own row, and in the descriptor as TTE writes it.
+    decisions[0]["fields"].append({"key": "Qualifier", "value": "Welfare home"})
+    _, new = rows_for(decisions, cards, {})
+    assert {row[1] for row in new} == {"Kampung Senang (Welfare home)"}
+    assert [row[3:6] for row in new][-1] == ["Qualifier", "", "Welfare home"]
+
 
 def test_a_chinese_name_for_a_record_tte_has_is_on_the_sheet_only_as_accepted():
     from src.export.weekly import rows_for
