@@ -411,6 +411,10 @@
   .appwrap.phone .full div{grid-template-columns:1fr;gap:0}
   .notice{margin:0 0 .8rem;padding:.55rem .8rem;border-radius:8px;background:#FBF1DC;border:1px solid var(--amber-line);font-size:.9rem;line-height:1.45}
   .notice.test{background:#EEF2F7;border-color:#C9D3E2}
+  .notice.undo{background:none;border:none;padding:.15rem 0;color:var(--ink2)}
+  .notice.undo b{color:var(--ink)}
+  .undobtn{background:none;border:none;padding:0;font:inherit;font-weight:600;color:var(--ink);text-decoration:underline;cursor:pointer}
+  #undot{color:var(--ink3);font-size:.85rem}
   .signin .fld{display:block;text-align:left;font-size:.85rem;font-weight:600;margin:.6rem 0}
   .signin .fld input{display:block;width:100%;box-sizing:border-box;margin-top:.25rem;padding:.55rem .6rem;border:1.5px solid #BDB6A4;border-radius:8px;font:inherit}
   .signin .err{color:#B3261E;font-size:.88rem;margin:.4rem 0}
@@ -1137,6 +1141,7 @@ function entryOf(c, kind) {
 // a decision is made: say so briefly and show the next card
 function finish(c, kind) {
   const x = entryOf(c, kind);
+  if (PAGE !== "practice") offerUndo(c, x, S[c.key]);
   // practice writes nothing: no hold, no decision, no sheet row. The decision stays with the practice, for its look
   // at Results, Analytics and Downloads.
   if (PAGE === "practice") { PRACTICE.log.push(x); S[c.key] = undefined; PRACTICE.i++; return draw(true); }
@@ -1151,6 +1156,33 @@ function finish(c, kind) {
   DECIDED.add(c.key); S[c.key] = undefined; NOTICE = "";
   LIST.splice(cur, 1);
   if (!LIST.length) allDone = true; else cur = Math.min(cur, LIST.length - 1);
+  fillJump(); fillGroups(); draw(true);
+}
+// The last decision, for a few seconds: a slip (the wrong button, or one pressed too soon) is undone where it happened
+// rather than through Results. The line sits above the next record, never over it, and goes at the next click.
+const UNDO_SECS = 10;
+let UNDO = null, undoTimer = null;
+function offerUndo(c, x, st) {
+  UNDO = { key: c.key, entity: c.entity, kind: x.kind, st, at: cur, until: Date.now() + UNDO_SECS * 1000 };
+  clearInterval(undoTimer);
+  undoTimer = setInterval(() => {
+    const left = UNDO ? Math.ceil((UNDO.until - Date.now()) / 1000) : 0, t = document.getElementById("undot");
+    if (left <= 0) { dropUndo(); draw(); } else if (t) t.textContent = left + "s";
+  }, 1000);
+}
+function dropUndo() { UNDO = null; clearInterval(undoTimer); }
+// On the next record, or on Home when that was the last one.
+const undoShown = () => !!UNDO && (PAGE === "review" || PAGE === "home") && (!QUEUE() || DEAL === null || DEAL === "none");
+const undoLine = () => undoShown() ? `<p class="notice undo">&#10003; ${testing ? "Done" : "Saved"}: <b>${esc(UNDO.entity)}</b>, ${esc((OUTCOME[UNDO.kind] || UNDO.kind).toLowerCase())} &middot; <button class="undobtn" data-act="undo">Undo</button> <span id="undot">${Math.max(1, Math.ceil((UNDO.until - Date.now()) / 1000))}s</span></p>` : "";
+// Back on the screen the decision was made on, with the choices made before it, as Back would leave them.
+function undoLast() {
+  const u = UNDO, c = u && CARDS.find(y => y.key === u.key); dropUndo();
+  if (!c || !u.st) return draw();
+  const st = u.st, h = st.hist.pop(); if (h) Object.assign(st, h);
+  if (QUEUE()) return redo(c.key, st);
+  for (let j = LOG.length - 1; j >= 0; j--) if (LOG[j].key === c.key) { LOG.splice(j, 1); break; }
+  DECIDED.delete(c.key); S[c.key] = st; allDone = false; PAGE = "review";
+  LIST.splice(Math.min(u.at, LIST.length), 0, CARDS.indexOf(c)); cur = Math.min(u.at, LIST.length - 1);
   fillJump(); fillGroups(); draw(true);
 }
 
@@ -1562,13 +1594,13 @@ async function resumeOrDeal() {
   deal();
 }
 // Change a decision of one's own: the record is taken back, if no colleague holds it, and decided again.
-async function redo(key) {
+async function redo(key, st) {
   const c = CARDS.find(y => y.key === key);
   const was = PAGE; PAGE = "review"; DEAL = "asking"; draw(true);
   let ok = false;
   try { const { data } = await sb.rpc("claim_card", { key }); ok = !!data; } catch (e) {}
   if (!ok || !c) { DEAL = null; PAGE = was; NOTICE = `${c ? c.entity : "That record"} is on a colleague's desk just now. Try again later.`; return draw(); }
-  REDO.add(key); S[key] = fresh(c); PAGE = "review"; setDealt(key);
+  REDO.add(key); S[key] = st || fresh(c); PAGE = "review"; setDealt(key);
 }
 // The hold is renewed every three minutes while the reviewer is clicking or typing, so however slowly they work the
 // record stays theirs; an hour with neither lets it lapse. Coming back after that, they are told if it went to a
@@ -1684,6 +1716,7 @@ function act(a, el) {
   if (a === "redeal") return deal();
   if (a === "resend") { if (DEALT && DEAL === "unsaved") { DEAL = "saving"; draw(); sendNow(DEALT, true); } return; }
   if (a === "redo") { const x = LOG[i]; if (x && !x.done && QUEUE()) redo(x.key); return; }
+  if (a === "undo") return undoLast();
   if (a === "stopnow") {
     if (PAGE === "practice") return endPractice();
     // The record on screen is let go, since nothing was decided on it: a colleague can take it.
@@ -1787,7 +1820,10 @@ document.addEventListener("click", e => {
   if (!e.target.closest("#panel")) $("#panel").classList.remove("open");
   const nv = e.target.closest("button[data-nav]"); if (nv) return act("nav", nv);
   if (e.target.closest("a[data-survey]")) { try { localStorage.setItem(SURVEY_SEEN, surveyKey(STATUS.survey)); } catch (x) {} return; }
-  const b = e.target.closest("button[data-act]"); if (b) act(b.dataset.act, b);
+  const b = e.target.closest("button[data-act]");
+  // the next click on anything else lets the last decision stand
+  if (UNDO && !(b && b.dataset.act === "undo")) { dropUndo(); if (!b) draw(); }
+  if (b) act(b.dataset.act, b);
 });
 document.addEventListener("change", e => {
   const t = e.target;
@@ -2472,7 +2508,7 @@ function navState() {
 function draw(top) {
   const c = card(); navState();
   const lines = (testing ? `<p class="notice test">Test account: try anything you like. Nothing is saved and no record is held.</p>` : "")
-              + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "");
+              + (NOTICE ? `<p class="notice">${esc(NOTICE)}</p>` : "") + undoLine();
   const wait = (h, p, b) => `<div class="done-card"><h2>${h}</h2>${p ? `<p>${p}</p>` : ""}${b || ""}</div>`;
   if (loading) $("#stage").innerHTML = wait(esc(loading));
   else if (PAGE === "practice") {
@@ -2485,7 +2521,7 @@ function draw(top) {
     : DEAL === "saving" ? wait("Saving&hellip;")
     : DEAL === "unsaved" ? wait("Not saved yet", "The connection dropped. Your decision is kept on this computer and goes up as soon as the connection is back.", `<button class="stamp go" data-act="resend"><b>Try again now</b></button>`)
     : wait("The database did not answer", "Your decisions so far are saved. Check the connection, then try again.", `<button class="stamp go" data-act="redeal"><b>Try again</b></button>`);
-  else if (PAGE === "home" || (PAGE === "review" && (!c || allDone))) { PAGE = "home"; navState(); $("#stage").innerHTML = homePage(); }
+  else if (PAGE === "home" || (PAGE === "review" && (!c || allDone))) { PAGE = "home"; navState(); $("#stage").innerHTML = undoLine() + homePage(); }
   else if (PAGE === "results") $("#stage").innerHTML = resultsPage();
   else if (PAGE === "analytics") $("#stage").innerHTML = analyticsPage();
   else if (PAGE === "downloads") $("#stage").innerHTML = downloadsPage();

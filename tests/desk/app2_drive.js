@@ -243,6 +243,15 @@
     const k2 = DEALT;
     act("keep"); await settled();
     out.keptSavedUnsure = F.reviews.some(r => r.card_key === k2 && r.verdict === "unsure" && r.decision.kept_by.includes("u1"));
+    // a slip undone at once: a line above the next record, and Undo brings the record back to be decided again
+    out.undoOffered = /class="notice undo"/.test(stage()) && !!UNDO && UNDO.key === k2;
+    document.querySelector('button[data-act="undo"]').click(); await settled();
+    out.undoBringsItBack = DEALT === k2 && REDO.has(k2) && !UNDO && card().key === k2;
+    act("keep"); await settled();
+    out.undoThenDecideAgain = LOG.filter(x => x.key === k2).length === 1 && DEALT !== k2;
+    // the next click on anything else lets the decision stand
+    document.querySelector("#stage").click();
+    out.undoGoesAtNextClick = !UNDO && !/class="notice undo"/.test(stage());
     // a colleague's record kept for review is offered, with who kept it
     const kc = cOf(F.keptByJo);
     out.keptByColleagueOffered = openFor(kc) && /Jo kept this for review/.test(cardNote(kc));
@@ -358,6 +367,14 @@
     out.testHoldsNothing = MINE.size === 0 && !available(cOf(zk)) && !LIST.some(i => CARDS[i].key === zk);
     act("start"); act("keep"); await tick(100);
     out.testWritesNothing = F.reviews.length === nRev && F.rpcs.length === nRpc && /Test account/.test(stage());
+    // Undo there too, with nothing written: the record comes back on screen
+    const tc = CARDS.find(c => readable(c) && !DECIDED.has(c.key)) || CARDS[0];   // every one is decided by now; any will do
+    out.testCardShown = !!tc;
+    if (tc) { LIST = [CARDS.indexOf(tc)]; cur = 0; PAGE = "review"; draw(); }
+    const tk = (card() || {}).key; act("keep"); await tick(50);
+    out.testUndo = /class="notice undo"/.test(stage()) && /Done:/.test(stage());
+    act("undo");
+    out.testUndoBack = (card() || {}).key === tk && !LOG.some(x => x.key === tk) && F.reviews.length === nRev && F.rpcs.length === nRpc;
     out.testAccountNamed = who().classList.contains("test") && /Test account/.test(who().textContent) && /test@nlb\.gov\.sg/.test(who().textContent);
     out.noDirectWrites = !F.direct;
 
