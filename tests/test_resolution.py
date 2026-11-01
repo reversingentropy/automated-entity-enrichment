@@ -251,6 +251,14 @@ def test_unmatched_entities_group_by_name_so_new_ones_still_merge():
                         "entity_type": "ORGANISATION"})
             for n in ("Kopi Near Me", "KOPI NEAR ME")]
     assert same[0] == same[1]
+    # One name written two ways is one card: commas, "The", spacing (Kuah Boon Wee, Nov 2026)
+    key = lambda name, t="PERSON": _group_key({"matched_uid": None}, {"entity_name": name, "entity_type": t})
+    assert key("Kuah Boon Wee") == key("Kuah, Boon Wee") == key("kuah  boon wee")
+    assert key("The Purple Parade", "EVENT") == key("Purple Parade", "EVENT")
+    assert key("Garden Waterfront I @ Tengah", "FACILITY") != key("Garden Waterfront II @ Tengah", "FACILITY")
+    # other scripts keep their letters, and lose only punctuation
+    assert key("陈劲龙") == "new:PERSON:陈劲龙" and key("陈劲龙") != key("陈锦龙")
+    assert key("சிங்கப்பூர் இந்திய சங்கம்", "ORGANISATION") == "new:ORGANISATION:சிங்கப்பூர் இந்திய சங்கம்"
     # A different type is a different entity even under the same name.
     other = _group_key({"matched_uid": None},
                        {"entity_name": "Kopi Near Me", "entity_name_en": "Kopi Near Me",

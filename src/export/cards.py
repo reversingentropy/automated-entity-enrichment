@@ -16,6 +16,7 @@ import difflib
 import html
 import json
 import re
+import unicodedata
 from pathlib import Path
 
 from src.export.weekly import vocab_for
@@ -698,8 +699,22 @@ def _group_key(proposal: dict, entity: dict) -> str:
     """
     if proposal.get("matched_uid"):
         return "uid:" + proposal["matched_uid"]
-    name = (entity.get("entity_name_en") or entity["entity_name"]).strip().lower()
-    return "new:" + entity["entity_type"] + ":" + name
+    return "new:" + entity["entity_type"] + ":" + loose_name(entity.get("entity_name_en") or entity["entity_name"])
+
+
+def loose_name(name: str) -> str:
+    """
+    A new entity's name with what does not tell two entities apart taken out:
+    case, punctuation, a leading "The" and extra spaces. "Kuah, Boon Wee" and
+    "Kuah Boon Wee" were two cards, one person; about 1 new entity in 10 came
+    as a second spelling (docs/new-record-duplicates.md). Letters of any script
+    stay, so Chinese and Tamil names are untouched but for their punctuation.
+    """
+    text = "".join(" " if unicodedata.category(ch).startswith("P") else ch for ch in name.casefold())
+    words = text.split()
+    if len(words) > 1 and words[0] == "the":
+        words = words[1:]
+    return " ".join(words)
 
 
 # An article's subject is the entity whose change is the news. The extraction

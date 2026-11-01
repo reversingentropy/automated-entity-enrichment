@@ -224,6 +224,7 @@ between is left alone. The details are at the top of
 - [docs/gotchas.md](docs/gotchas.md): what cost an evening
 - [docs/pipeline.html](docs/pipeline.html): the explainer for someone who has never seen any of this
 - [docs/load-balancing.md](docs/load-balancing.md): how the desk shares records out, for the team
+- [docs/new-record-duplicates.md](docs/new-record-duplicates.md): the same new record created twice: what happens, the fix, for and against, for the team to decide
 - [docs/numbers.md](docs/numbers.md): the funnel's figures, dated
 
 ## Where it stands
