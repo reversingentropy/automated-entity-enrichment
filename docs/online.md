@@ -134,6 +134,13 @@ The live copy is the same folder: `wrangler.jsonc` serves `dist/` on
 Cloudflare Workers, rebuilt on every push to `main`. Nothing in it needs a
 build step beyond `--site`.
 
+Cloudflare can miss a push: on 3 Nov 2026 two pushes eight minutes apart
+got one build, of the first, and the live page stayed a version behind. To
+tell which version is live, search the page source (Ctrl+U) for something
+the latest change added. If it is missing and the Worker's Deployments list
+no build for the newest commit, push again; a build is of whatever is newest
+on `main`.
+
 ## What a reviewer sees
 
 Sign in, and the first time, **How this works** and then the **practice
