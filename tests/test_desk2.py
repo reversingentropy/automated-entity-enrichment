@@ -204,7 +204,9 @@ def test_nothing_a_source_said_is_out_of_sight(tmp_path):
     for v in ("World's Best Economy Class (2026)", "World's Best Economy Class Onboard Catering (2026)",
               "Skytrax World's Best Economy Class (2026)"):
         assert v in awards
-    assert awards.count("may be the same as") == 2 and "sources say this" not in awards
+    # one row per award: the two wordings of Best Economy Class are one row, the other wording under it
+    assert awards.count("also written") == 1 and "may be the same as" not in awards and "sources say this" not in awards
+    assert "+ Skytrax World's Best Economy Class (2026)" in awards and "also written “World's Best Economy Class (2026)”" in awards
     title = next(t for t in screens if "Set the title to this?" in t)
     assert "The sources disagree. Keep the one you trust:" in title and "Ambassador-at-Large" in title and "Keep both" not in title
     text = next(t for t in screens if "description?" in t or "description like this?" in t)

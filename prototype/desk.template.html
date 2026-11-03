@@ -167,6 +167,8 @@
   .alts{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--ink2);margin-top:.5rem}
   .alts span{color:var(--ink3);font-size:.8rem}
   .vrow .maybe{flex-basis:100%;font-size:.8rem;font-weight:400;color:var(--ink2)}
+  .vrow .alsow{background:none;border:none;border-bottom:1px dotted currentColor;color:inherit;font:inherit;padding:0;text-align:left}
+  .vrow .alsow span{color:var(--ink3)}
   .alts button,.pick{background:#fff;border:1.5px solid var(--ink3);color:var(--ink);border-radius:8px;padding:.3rem .65rem;font-size:.88rem;text-align:left}
   .picks{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
   .pick.on{background:var(--ink);color:#fff}
@@ -751,7 +753,26 @@ function mergeRows(rows) {
     if (Array.isArray(m.inTTE) || Array.isArray(r.inTTE)) m.inTTE = (m.inTTE || []).concat(r.inTTE || []);
     m.conflict = m.conflict || r.conflict;
   });
+  out.forEach(r => { if (r.vals0 && (r.perValue || []).some(p => (p.maybe || []).length)) wordings(r); });
   return out;
+}
+// Wordings of one value, one row. Singapore Airlines' eight awards came in thirteen wordings ("World's Best Economy
+// Class", "Skytrax World's Best Economy Class"), and a row each, every one with its links spelt out, was a wall. A
+// group is values each linked to every other, so a link through a third (Business Traveller's "World's Best Airline"
+// to Skytrax's, through the bare "World's Best Airline") does not join two awards. The longest wording is offered,
+// as it holds the others' words; the rest are shown under it with their own sources, one click to use instead.
+function wordings(r) {
+  const link = new Map((r.perValue || []).map(p => [p.value, new Set(p.maybe || [])]));
+  const linked = (a, b) => (link.get(a) || new Set()).has(b) || (link.get(b) || new Set()).has(a);
+  const groups = [];
+  r.vals0.slice().sort((a, b) => (link.get(b) || new Set()).size - (link.get(a) || new Set()).size).forEach(v => {
+    const g = groups.find(g => g.every(w => linked(v, w)));
+    if (g) g.push(v); else groups.push([v]);
+  });
+  groups.forEach(g => g.sort((a, b) => b.length - a.length));
+  const first = g => Math.min(...g.map(v => r.vals0.indexOf(v)));
+  r.groups = groups.sort((a, b) => first(a) - first(b));
+  r.vals0 = r.groups.map(g => g[0]);
 }
 const valsOf = (st, k, ch) => st.val[k] || (st.val[k] = (ch.vals0 || splitVals(ch.adding)).slice());
 // The values a disagreement is between: a list's from listRow, a single-value field's from what each source said.
@@ -1121,9 +1142,13 @@ function change(c, st) {
     const rowsHtml = vals.map((v, i) => {
       const out = st.out[k + ":" + i], isNew = REL && !inTte(v), refs = refsOf(v);
       if (editing) return `<div class="vrow ${isNew ? "new" : ""}"><input class="cin" data-i="${i}" value="${esc(v)}" aria-label="Value ${i + 1}"><button class="x" data-act="rm" data-i="${i}" title="Remove">&times;</button></div>`;
+      const group = (ch.groups || []).find(g => g.includes(v)) || [v];
+      const also = group.filter(w => w !== v && !vals.includes(w));
       const maybe = maybeOf(v).filter(w => w !== v && vals.includes(w));
+      const under = (also.length ? `also written ${also.map(w => `<button class="alsow" data-act="usew" data-i="${i}" data-w="${esc(w)}" title="Use this wording instead">&ldquo;${esc(w)}&rdquo; <span>${refsTxt(c, (ch.perValue || []).filter(x => x.value === w).flatMap(x => x.sources || []))}</span></button>`).join(" ")}` : "")
+        + (maybe.length ? `${also.length ? "; " : ""}may be the same as &ldquo;${maybe.map(w => esc(gist(w, 50))).join("&rdquo; or &ldquo;")}&rdquo;` : "");
       return `<div class="vrow ${isNew ? "new" : ""} ${out ? "out" : ""}"><div class="vmain"><span class="plus">${replace ? "\u2192" : "+"}</span><b>${esc(v)}</b>${c.sources.length > 1 && refs.length ? refs.map(r => `<button class="ref" data-act="csrc" data-i="${r}" title="Said by source ${r + 1}">${r + 1}</button>`).join("") : ""}</div>
-        <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div>${maybe.length ? `<small class="maybe">may be the same as ${maybe.map(w => `&ldquo;${esc(gist(w, 60))}&rdquo;`).join(" or ")}</small>` : ""}</div>`;
+        <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div>${under ? `<small class="maybe">${under}</small>` : ""}</div>`;
     }).join("");
     // TTE's values as TTE holds them, struck when replaced, then the new ones as chips: each with its sources, whether
     // TTE has a record of that name, and × to leave it out
@@ -1822,6 +1847,7 @@ function act(a, el) {
   if (a === "src") { st.src = i; return draw(); }
   if (a === "csrc") { st.csrc[k] = i; return draw(); }
   if (a === "out") { const key = k + ":" + i; st.out[key] = !st.out[key]; return draw(); }
+  if (a === "usew") { valsOf(st, k, rowsFor(c, chosenOpt(c, st))[k])[i] = el.dataset.w; return draw(); }
   if (a === "nedit") { st.nedit = !st.nedit; st.nval = st.nval || {}; return draw(); }
   if (a === "nout") { const key = "n" + i + ":" + el.dataset.j; st.out[key] = !st.out[key]; return draw(); }
   if (a === "edit") { st.edit[k] = !st.edit[k]; return draw(); }

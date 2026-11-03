@@ -169,7 +169,9 @@ Where each change lives:
   and per-sentence sources (`said`) and marked wordings (`differ`) in `_combined_rewrite`: `src/export/cards.py`.
 - `account_for`: `src/export/accounting.py`. The card builder runs it on every card that changes a record; a card
   with a problem is left out of the deck and printed (`Left out of the deck, <name>: ...`).
-- Desk: "may be the same as ..." under linked values; "N sources say this" only when every source says every value
+- Desk: wordings of one value are one row, the longest offered and the others under it ("also written ...", each
+  with its sources, one click to use instead); a group is wordings each linked to every other, so Business
+  Traveller's "World's Best Airline" stays apart from Skytrax's. "May be the same as ..." only for a link left over; "N sources say this" only when every source says every value
   shown; a single-value dispute offers each value, without "Keep both"; under a description, its other wordings to
   swap in (marked when the numbers or dates differ) and its held-back sentences to add.
 - Tests: the real cases in `tests/test_resolution.py`, and the desk screens in `tests/test_desk2.py`.
