@@ -124,3 +124,68 @@ def test_overlap_the_model_left_is_removed_and_a_new_verb_is_kept():
     assert [s["text"] for s in got["add"]] == ["He stepped down as Permanent Secretary, Ministry of Home Affairs.",
                                                "In 2026 he became chairman of the Land Transport Authority, succeeding Alan Chan."]
     assert got["add"][1]["sources"] == ["a", "b"]                 # the shorter one's article moves to it
+
+
+def test_a_sentence_may_join_names_from_two_articles_but_each_gives_the_date():
+    """Khaw Boon Wan, 3 Nov run: "Holdings" is only in one article and "Chan Yeng Kit" only in another."""
+    record = {"key": "k", "name": "Khaw Boon Wan", "tte": "Minister.", "sources": [
+        {"n": 1, "link": "a", "outlet": "", "date": "2026-09-09", "title": "",
+         "quote": "SPH Media Trust chairman Khaw Boon Wan will step down, handing the role to Chan Yeng Kit on October 1.", "new_sentences": []},
+        {"n": 2, "link": "b", "outlet": "", "date": "2026-10-01", "title": "",
+         "quote": "He retires as chairman of SPH Media Trust and SPH Media Holdings on Oct 1.", "new_sentences": []},
+        {"n": 3, "link": "c", "outlet": "", "date": "2026-09-10", "title": "",
+         "quote": "Khaw Boon Wan will step down as chairman of SPH Media Holdings.", "new_sentences": []}]}
+    text = "He retired as chairman of SPH Media Trust and SPH Media Holdings on 1 October 2026, succeeded by Chan Yeng Kit."
+    got = checked(record, Combined.model_validate({"add": [{"text": text, "sources": [1, 2, 3]}],
+                                                   "disagreements": [], "corrections": [], "left_out": []}))
+    assert got["add"] == [{"text": text, "sources": ["a", "b"]}]                  # 3 gives no date
+    got = checked(record, Combined.model_validate({"add": [{"text": text.replace("Chan Yeng Kit", "Tan Ah Kow"), "sources": [1, 2]}],
+                                                   "disagreements": [], "corrections": [], "left_out": []}))
+    assert got["add"] == []                                                         # a name no article gives
+
+
+def test_leading_as_a_verb_is_not_praise_and_apostrophes_match():
+    record = {"key": "k", "name": "X", "tte": "Curator.", "sources": [
+        {"n": 1, "link": "a", "outlet": "", "date": "2026-11-01", "title": "",
+         "quote": "He will focus on leading the Singapore Art Museum. He is Senior Advisor in the Prime Minister’s Office.",
+         "new_sentences": []}]}
+    got = checked(record, Combined.model_validate({"add": [
+        {"text": "He left to focus on leading the Singapore Art Museum.", "sources": [1]},
+        {"text": "He is Senior Advisor in the Prime Minister's Office.", "sources": [1]},
+        {"text": "He is a leading curator.", "sources": [1]}], "disagreements": [], "corrections": [], "left_out": []}))
+    assert [s["text"] for s in got["add"]] == ["He left to focus on leading the Singapore Art Museum.",
+                                               "He is Senior Advisor in the Prime Minister's Office."]
+
+
+def test_an_uncited_article_that_gives_the_missing_name_is_credited():
+    record = {"key": "k", "name": "Khaw Boon Wan", "tte": "Minister.", "sources": [
+        {"n": 1, "link": "a", "outlet": "", "date": "2026-10-01", "title": "",
+         "quote": "Chan, 61, succeeds Khaw as chairman of SPH Media Holdings on Oct 1.", "new_sentences": []},
+        {"n": 2, "link": "b", "outlet": "", "date": "2026-09-09", "title": "",
+         "quote": "Khaw will step down on 1 October, handing the role to Chan Yeng Kit.", "new_sentences": []}]}
+    text = "He retired as chairman of SPH Media Holdings on 1 October 2026, succeeded by Chan Yeng Kit."
+    got = checked(record, Combined.model_validate({"add": [{"text": text, "sources": [1]}],
+                                                   "disagreements": [], "corrections": [], "left_out": []}))
+    assert got["add"] == [{"text": text, "sources": ["a", "b"]}]
+
+
+def test_a_fact_left_out_takes_the_place_of_a_dropped_sentence():
+    """Heng Swee Keat, 3 Nov run: the article on his patronage has no date, so its sentence's year is unconfirmed."""
+    record = {"key": "k", "name": "Heng Swee Keat", "tte": "Deputy Prime Minister.", "sources": [
+        {"n": 1, "link": "a", "outlet": "", "date": "", "title": "",
+         "quote": "Heng Swee Keat will take over from Goh Chok Tong as Honorary Patron of the Inter-Religious Organisation.", "new_sentences": []},
+        {"n": 2, "link": "b", "outlet": "", "date": "2026-08-31", "title": "",
+         "quote": "NRF chairman Heng Swee Keat said research improves lives.", "notes": "Chairman of the National Research Foundation.", "new_sentences": []}]}
+    got = checked(record, Combined.model_validate({
+        "add": [{"text": "On 1 September 2026, he succeeded Goh Chok Tong as Honorary Patron of the Inter-Religious Organisation.", "sources": [1]}],
+        "left_out": [{"text": "He serves as Chairman of the National Research Foundation.", "sources": [2]}],
+        "disagreements": [], "corrections": []}))
+    assert got["ok"] and [s["text"] for s in got["add"]] == ["He serves as Chairman of the National Research Foundation."]
+    assert got["left_out"] == []
+
+
+def test_a_correction_whose_new_words_no_article_gives_is_dropped():
+    got = checked(PANG, Combined.model_validate({"add": [], "disagreements": [], "left_out": [], "corrections": [
+        {"quote": "Ministry of Home Affairs (since 2017)", "replace_with": "Ministry of Home Affairs (2017-2026)", "sources": [4]},
+        {"quote": "Ministry of Law (2010-2012)", "replace_with": "Ministry of Law (2010-2013)", "sources": [4]}]}))
+    assert [c["with"] for c in got["corrections"]] == ["Ministry of Home Affairs (2017-2026)"]

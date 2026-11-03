@@ -446,14 +446,19 @@ record with description sentences from two or more articles, one model call
 article's sentences, and writes what to add: each fact once, facts only,
 dates with their year, at most as many sentences as fit under five. It
 reports values the articles disagree on, and words in TTE's description
-they show are now wrong. Code then drops any sentence that is already in
-the description, has nothing the description lacks, carries praise, has a
-date with no year, or sits inside another added sentence, and takes an
-article off a sentence when what was recorded from it lacks one of the
-sentence's numbers or names. The rest is stored in `description_drafts`,
-one row per record and set of articles, and the card shows it. Until then,
-or if nothing passes, the card shows each article's sentences, one row
-each. Details: [descriptions.md](descriptions.md).
+they show are now wrong. Code then checks the answer against what the
+extraction step recorded from each article (not against Job 3's sentences,
+which are model output too). It drops any sentence that is already in the
+description, has nothing the description lacks, carries praise, has a date
+with no year, names someone none of its articles names, or sits inside
+another added sentence. An article stays on a sentence only if it gives the
+sentence's dates and numbers itself. A fact left out for length takes the
+place of a dropped sentence. The rest is stored in `description_drafts`,
+with the model's answer, and the card shows it. Until then, or if nothing
+passes, the card shows each article's own sentences. After a check
+changes, `python -m src.combine --recheck` applies it again to every
+stored addition without asking the model. Details:
+[descriptions.md](descriptions.md).
 
 ## 4. Cards
 
@@ -484,7 +489,10 @@ These are the **Possible TTE records** tabs on the desk.
 
 **What each change shows.** For each record offered, the card works out what
 the article would change on it, field by field: not on the record, adds to
-what is there, worded differently, or already recorded. Choosing another
+what is there, worded differently, or already recorded. "Already recorded"
+sets aside case, punctuation and TTE's house style, as merging does: the
+article's "Poh Siew Aing" is TTE's "Poh, Siew Aing", and "Ministry of Home
+Affairs" is TTE's "Singapore. Ministry of Home Affairs". Choosing another
 record works this out again.
 
 **Joining what several articles said.**
@@ -500,12 +508,13 @@ record works this out again.
 - If two articles give different years for one fact, or different values
   for a field that holds one, the card says so and offers each. The
   reviewer picks. One article naming one award in two years is two awards.
-- Two articles rewriting one description are put together into one
-  rewrite, sentence by sentence. Another article's wording of a sentence is
-  shown beside it to swap in, marked when its numbers or dates differ, and
-  sentences held back by the five-sentence limit are shown to add. The
-  reviewers found this screen too slow to read; its replacement, one
-  checked addition per record, is planned in [descriptions.md](descriptions.md).
+- A description is shown as one paragraph: TTE's words grey, the new
+  sentences green, each with the articles that state it and a × to leave it
+  out. A correction to TTE's words is made in place, only the changed words
+  struck. Where two or more articles wrote sentences, they are the combined
+  addition (step 3b); until that is made, each article's own sentences, with
+  another article's wording of one offered under the box. Facts held back
+  by the five-sentence limit are under the box to add.
 - Before the deck is published, a check confirms every proposed value is on
   its card, or already in TTE, and credited only to articles that gave it. A
   card that fails is left out and named.

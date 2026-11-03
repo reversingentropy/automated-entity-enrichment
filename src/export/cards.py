@@ -223,9 +223,12 @@ def clean_news_value(field: str, value) -> str:
 
 
 def _covered(field: str, value: str, held: list[str]) -> bool:
-    """Is this value already among what the record holds, in either of its two languages?"""
-    lower = {v.casefold() for v in held}
-    if value.casefold() in lower or _gloss(value).casefold() in lower:
+    """
+    Is this value already among what the record holds, in either of its two languages? Compared as values are merged
+    (value_key): Tommy Koh's spouse, "Poh Siew Aing" in the article, was offered as new beside TTE's "Poh, Siew Aing".
+    """
+    keys = {value_key(v) for v in held}
+    if value_key(value) in keys or value_key(_gloss(value)) in keys:
         return True
     if field == "Street Address":    # the model often gives only the street: "Margaret Drive" is in "53 Margaret Drive"
         street = _gloss(value).casefold()

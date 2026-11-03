@@ -276,7 +276,7 @@ def combine_import(text: str, sent: dict, model: str, dry_run: bool, parse) -> s
         if not result["ok"]:
             failed.append(record["name"])
         if not dry_run:
-            save(record, result, by_hand(model))
+            save(record, result, by_hand(model), got)
         written += 1
     return (f"{written} records combined"
             + (f" ({len(failed)} with nothing passing the checks, shown as each article's sentences: {failed})" if failed else "")

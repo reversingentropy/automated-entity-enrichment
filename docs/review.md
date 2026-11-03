@@ -240,7 +240,8 @@ Checking the cards against the articles on 2–3 November 2026 found more:
 | A gold in 2023 hidden behind the gold in 2026, from one article | One article naming one award in two years is two awards |
 | A death on the 14th and on the 15th shown as "2 sources say this" | Different values for a one-value field are "The sources disagree", with a button for each |
 | "Senior Counsel" offered as an award, from articles read before the extraction rule | The card builder drops it too |
-| Description screens slower to read than the articles | Planned: one checked addition per record ([descriptions.md](descriptions.md)) |
+| Tommy Koh's spouse offered as new: the article's "Poh Siew Aing" against TTE's "Poh, Siew Aing" | "Already in TTE" sets aside punctuation and house style, as merging does; 17 values on the deck were offered as new this way |
+| Description screens slower to read than the articles | Several articles' sentences combined into one checked addition per record, shown as one paragraph: TTE's words grey, the new sentences green with their sources ([descriptions.md](descriptions.md)) |
 
 ## Proposals as a spreadsheet
 

@@ -286,6 +286,7 @@ folder, as before.
 | Table or file | Holds | Who may |
 |---|---|---|
 | `deck` | one row per card | reviewers read; the nightly job writes |
+| `description_drafts` | one combined description addition per record and set of articles (docs/descriptions.md) | the nightly job and `src.manual combine import` write; nobody else (sql/22) |
 | `reviews` | one decision per proposal, the whole label | reviewers read all; written only through `decide` / `mark_done` (sql/15) |
 | `claims` | who has which card open, and since when | reviewers read; written only through `take_next` / `claim_card` / `renew_card` / `release_card` / `decide` |
 | bucket `desk/desk.json` | search index, NPT map, noted list, the pipeline's status | reviewers read |

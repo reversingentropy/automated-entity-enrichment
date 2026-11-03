@@ -185,6 +185,7 @@ python -m src.job2_extraction [--limit N] [--dry-run]   # entities per relevant 
 python -m src.job3_resolution [--limit N] [--dry-run]   # proposals per article's entities
 python -m src.job3_resolution --requeue-stale [--dry-run]   # after a TTE import
 python -m src.combine         [--limit N] [--dry-run]   # one description addition per record from all its articles
+python -m src.combine --recheck [--dry-run]             # the checks again on every stored addition, no model call
 python -m src.manual relevance|extraction|matching|combine export|import   # a stage by hand in AI Studio
 python -m src.load_tte [--source local] [--dry-run]     # the authority file, from the bucket
 python -m src.eval [--case edge-] [--show]              # the resolution prompt on frozen cases

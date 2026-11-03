@@ -1414,3 +1414,12 @@ def test_senior_counsel_is_never_offered_as_an_award():
     rows = delta({"Awards": "高级律师 (Senior Counsel) | Public Service Medal (2020)"}, {"Awards": ""})
     assert [r["fresh"] for r in rows if r["field"] == "Awards"] == ["Public Service Medal (2020)"]
     assert delta({"Awards": "Senior Counsel (2023)"}, {}) == []
+
+
+def test_a_value_tte_holds_with_other_punctuation_is_not_offered():
+    """Tommy Koh's spouse: the article's "Poh Siew Aing" is TTE's "Poh, Siew Aing"."""
+    from src.export.cards import delta
+    rows = delta({"Spouse": "Poh Siew Aing"}, {"Spouse": "Poh, Siew Aing"})
+    assert [r["state"] for r in rows] == ["same"]
+    rows = delta({"Awards": "Public Service Medal (2021)"}, {"Awards": "Public Service Medal (2020)"})
+    assert [r["fresh"] for r in rows] == ["Public Service Medal (2021)"]      # a different year is still new

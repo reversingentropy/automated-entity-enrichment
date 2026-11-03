@@ -94,8 +94,9 @@ its room and its articles. Answer every record by the same rules, each under its
 {records}
 """
 
-FILLER = re.compile(r"\b(distinguished|renowned|prominent|veteran|well-known|respected|leading|esteemed|illustrious|"
-                    r"celebrated|notable|eminent|acclaimed|stalwart)\b", re.I)
+# "leading" only as praise ("a leading lawyer"), not as a verb ("to focus on leading the museum")
+FILLER = re.compile(r"\b(distinguished|renowned|prominent|veteran|well-known|respected|esteemed|illustrious|"
+                    r"celebrated|notable|eminent|acclaimed|stalwart)\b|\b(?:a|the) leading\b", re.I)
 NUMBER = re.compile(r"\d[\d,.]*\d|\d")
 MONTH = r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
 # "on 1 September" or "September 1" with no year after it
@@ -183,6 +184,10 @@ def _numbers(text: str) -> set[str]:
     return {n.replace(",", "") for n in NUMBER.findall(text)}
 
 
+def _plain(text: str) -> str:
+    return text.lower().replace("’", "'")
+
+
 def _names(text: str) -> list[str]:
     """Capitalised words, less months and each sentence's first word ("Following his retirement")."""
     firsts = {m.group(1) for m in re.finditer(r"(?:^|[.!?]\s+)([A-Za-z'’&-]+)", text)}
@@ -221,8 +226,8 @@ def checked(record: dict, got: Combined) -> dict:
     The answer as stored: sources as links, and only what passed.
 
     A sentence is dropped when it repeats the description, carries filler, or gives a day and month with no year. An
-    article is taken off a sentence when what was recorded from it lacks one of the sentence's numbers or names; a
-    sentence left with none is dropped. Then overlap goes: see _redundant. `ok` is false when nothing to add survived, and the card then shows each
+    article is taken off a sentence when what was recorded from it lacks one of the sentence's numbers, and a sentence
+    is dropped when a name in it is in none of its articles, or no article is left. Then overlap goes: see _redundant. `ok` is false when nothing to add survived, and the card then shows each
     article's own sentences instead.
     """
     by = {s["n"]: s for s in record["sources"]}
@@ -230,17 +235,19 @@ def checked(record: dict, got: Combined) -> dict:
     dropped = []
 
     def stating(text: str, cited: list[int]) -> list[str]:
-        """The cited articles whose record holds every number and name in the text."""
-        keep = []
-        for n in dict.fromkeys(cited):
-            src = by.get(n)
-            if src is None:
-                continue
-            m = _material(src) + " " + tte
-            if _numbers(text) - _numbers(m) or [w for w in _names(text) if w.lower() not in m.lower()]:
-                continue
-            keep.append(src["link"])
-        return keep
+        """
+        The cited articles that give every number and date in the text, each on its own; none unless every name in it
+        is in one of them. A sentence joins facts from several articles (the date from one, the successor's name from
+        another), so names are looked for across them; a number is what articles disagree on, so each must give it.
+        """
+        gives = lambda s: not _numbers(text) - _numbers(_material(s) + " " + tte)
+        keep = [by[n] for n in dict.fromkeys(cited) if n in by and gives(by[n])]
+        missing = lambda: [w for w in _names(text) if _plain(w) not in _plain(" ".join(_material(s) for s in keep) + " " + tte)]
+        # a name the cited articles lack may be in one the model did not cite: credit it if it gives the dates too
+        for s in record["sources"]:
+            if missing() and s not in keep and gives(s) and any(_plain(w) in _plain(_material(s)) for w in missing()):
+                keep.append(s)
+        return [] if missing() else [s["link"] for s in keep]
 
     def sentence(s: Sentence) -> dict | None:
         text = " ".join(s.text.split())
@@ -264,6 +271,9 @@ def checked(record: dict, got: Combined) -> dict:
     add = _redundant([x for x in (sentence(s) for s in got.add) if x], tte, dropped)
     more = _redundant([x for x in (sentence(s) for s in got.left_out) if x], tte + " " + " ".join(s["text"] for s in add),
                       dropped)
+    # a dropped sentence frees its place for the first fact left out
+    while more and len(add) < room(tte) and len(add) < len(got.add):
+        add.append(more.pop(0))
     disagree = []
     for d in got.disagreements:
         values = [{"value": v.value, "sources": stating(v.value, v.sources)} for v in d.values]
@@ -272,7 +282,7 @@ def checked(record: dict, got: Combined) -> dict:
             disagree.append({"about": d.about, "values": values})
     fixes = []
     for c in got.corrections:
-        srcs = [by[n]["link"] for n in c.sources if n in by]
+        srcs = stating(c.replace_with, c.sources)                    # the new words traced like any sentence
         if c.quote and c.quote in tte and srcs and not FILLER.search(c.replace_with):
             fixes.append({"quote": c.quote, "with": c.replace_with, "sources": srcs})
         else:
@@ -293,7 +303,10 @@ def stored(client=None) -> dict[str, dict]:
     return {r["key"]: r["combined"] for r in rows}
 
 
-def save(record: dict, combined: dict, model: str, client=None) -> None:
+def save(record: dict, combined: dict, model: str, answer: Combined | None = None, client=None) -> None:
+    """The checked draft, with what the model was given and what it answered: a changed check is applied again
+    from those (python -m src.combine --recheck), with no model call."""
     from src.shared.supabase_client import get_client
+    kept = {**combined, "input": record, "answer": answer.model_dump()} if answer is not None else combined
     (client or get_client()).from_(TABLE).upsert(
-        {"key": record["key"], "record": record["key"].split("|")[0], "combined": combined, "model": model}).execute()
+        {"key": record["key"], "record": record["key"].split("|")[0], "combined": kept, "model": model}).execute()
