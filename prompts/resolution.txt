@@ -110,13 +110,20 @@ RESOLUTION ACTIONS
          multiple new items with the delimiter already used in the record
          (default " | ").
      * "MERGE" — prose fields where the record already says something worth
-       keeping, above all Description. Reproduce the existing passage and make
-       the smallest edit that carries the new fact, then give the complete
-       edited passage as the value.
-       - Every fact already in the passage survives the edit. Do not shorten,
-         summarise, or trade a specific detail for a general one, however long
-         the passage runs.
-       - Write the new fact in the style already there.
+       keeping, above all Description. Give the complete passage as the value:
+       the existing passage word for word, then the new facts as new sentences
+       after it. Other articles about the same record are combined later, and
+       a reviewer reads only the sentences you add.
+       - Do not reword, shorten or reorder the existing passage. Change its
+         words only where the article shows they are now wrong (a post it
+         says the person still holds, which they have left), and change only
+         those words.
+       - Each new sentence states facts: a post, a date, an appointment, an
+         award, an event. No praise or characterisation ("distinguished",
+         "renowned", "prominent", "veteran", "well-known", "respected").
+       - Every date in full, with its year ("on 1 September 2026", never
+         "on 1 September").
+       - Write the new sentences in the style already there.
        - If the article adds no fact the passage lacks, omit the Description
          update. Emitting one that only rephrases is a defect.
        Prefer MERGE to REPLACE for Description: an authority description is

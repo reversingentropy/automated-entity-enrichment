@@ -159,6 +159,9 @@ ENGLISH_ONLY = {"Street Address"}
 
 PROSE = {"Description", "Achievements"}
 
+# Designations the extraction prompt says are not awards (prompts/extraction.txt, "Awards").
+NOT_AWARDS = {"senior counsel"}
+
 
 def _gloss(value: str) -> str:
     """
@@ -210,6 +213,10 @@ def clean_news_value(field: str, value) -> str:
     if field in PROSE:
         return str(value or "")
     entries = news_values(value)
+    if field == "Awards":
+        # The extraction prompt's rule since 15 Oct 2026, for articles read before it: Goh Yihan's
+        # "高级律师 (Senior Counsel)", read on 25 Sep, was still offered as an award.
+        entries = [v for v in entries if value_key(without_year(_english(v))) not in NOT_AWARDS]
     if field in ENGLISH_ONLY:
         entries = [_gloss(v) for v in entries if not CJK.search(_gloss(v))]
     return DELIMITER.join(entries)
@@ -665,8 +672,46 @@ def _combined_rewrite(group: list[dict]) -> dict:
                              or {ch.get("from") for ch in group if ch.get("from")}),
         "variants": [], "conflict": False, "alts": alts, "held": held,
         "said": {t: sorted(s) for t, s in said.items()},
+        # What the desk asks, one row per fact: its best wording with the articles that gave it, the other
+        # wordings under it, and the sentence of TTE's it rewrites, if any. Replaced by the combined addition
+        # when there is one (src/combine).
+        "rows": [{"text": best_of[i]["text"], "sources": sorted(said[best_of[i]["text"]]),
+                  "also": [{"text": e["text"], "sources": sorted(said[e["text"]])} for e in c if e is not best_of[i]],
+                  "replaces": " ".join(base[best_of[i]["at"]:best_of[i]["to"]]),
+                  "differ": len(c) > 1 and _numbers_differ([e["text"] for e in c]),
+                  "kind": "add" if i in keep else "more"} for i, c in enumerate(clusters)],
     })
     return merged
+
+
+def description_rows(card: dict, ch: dict, drafts: dict) -> None:
+    """
+    A description note as the desk asks it: one row per new fact, never a rewrite to read through.
+
+    Two or more articles' sentences, once combined (src/combine), are the combined addition: its sentences, the
+    facts that did not fit, where the articles disagree, and words of TTE's they show are now wrong. Before that,
+    and for one article, each new sentence is a row with the articles that gave it.
+    """
+    from src.combine import draft_key
+    if ch.get("said") and len({s for ls in ch["said"].values() for s in ls}) > 1:
+        draft = drafts.get(draft_key(card, ch))
+        if draft and draft.get("ok"):
+            ch["rows"] = ([{"text": s["text"], "sources": s["sources"], "also": [], "replaces": "", "kind": "add"}
+                           for s in draft["add"]]
+                          + [{"text": s["text"], "sources": s["sources"], "also": [], "replaces": "", "kind": "more"}
+                             for s in draft.get("left_out") or []]
+                          + [{"text": f["with"], "sources": f["sources"], "also": [], "replaces": f["quote"], "kind": "fix"}
+                             for f in draft.get("corrections") or []])
+            ch["disagree"] = draft.get("disagreements") or []
+            ch["combined"] = True
+        return
+    if ch.get("rows") is not None:
+        return
+    before = " ".join(ch.get("existing") or [])
+    base = split_sentences(before)
+    ch["rows"] = [{"text": e["text"], "sources": [ch["from"]] if ch.get("from") else [], "also": [],
+                   "replaces": " ".join(base[e["at"]:e["to"]]), "kind": "add"}
+                  for e in sentence_edits(before, ch["adding"]) if e["text"] not in before]
 
 
 _NUMBER = re.compile(r"\d[\d,.]*\d|\d")
@@ -1278,6 +1323,8 @@ def build_cards(include_new: bool = True, backfill: bool = False,
             "original": (e.get("evidence") or "") if e.get("evidence_en") else ""})
 
     cards = list(grouped.values())
+    from src.combine import stored
+    drafts = stored()
     for card in cards:
         proposed = [dict(ch) for ch in card["changes"]]
         # Two articles proposing the same fact is one note, not two.
@@ -1310,6 +1357,9 @@ def build_cards(include_new: bool = True, backfill: bool = False,
         # between here and the screen; a card where something is goes nowhere.
         if not card["isNew"]:
             card["unaccounted"] = account_for(proposed, kept, settled)
+        for ch in kept:
+            if ch["field"] == "Description" and ch["strategy"] in ("MERGE", "REPLACE"):
+                description_rows(card, ch, drafts)
         card["options"].sort(key=lambda o: -(o["similarity"] or 0))
         # Every candidate answers "and what would that change?", not just the
         # one the model picked -- a reviewer who overrides the match needs the

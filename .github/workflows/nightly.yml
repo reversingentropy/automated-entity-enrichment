@@ -70,6 +70,14 @@ jobs:
         timeout-minutes: 60
         run: uv run python -m src.job3_resolution
 
+      # One description addition per record from all its articles
+      # (docs/descriptions.md); a few records a night, within Flash's allowance.
+      - name: Combine descriptions
+        id: combine
+        if: ${{ !cancelled() }}
+        timeout-minutes: 20
+        run: uv run python -m src.combine
+
       - name: Publish the review deck
         id: publish
         if: ${{ !cancelled() }}
@@ -77,7 +85,7 @@ jobs:
         run: uv run python -m src.export --publish
         env:
           # How each earlier step went, for the team page and the daily email.
-          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }}"
+          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},combine=${{ steps.combine.outcome }}"
 
       # Once a day, after the midnight run: an email to each reviewer with
       # something to act on, and silence for everyone else. Mail settings are
@@ -87,7 +95,7 @@ jobs:
         timeout-minutes: 10
         run: uv run python -m src.export --notify
         env:
-          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},publish=${{ steps.publish.outcome }}"
+          PIPELINE_STEPS: "load=${{ steps.load.outcome }},relevance=${{ steps.relevance.outcome }},extraction=${{ steps.extraction.outcome }},resolution=${{ steps.resolution.outcome }},combine=${{ steps.combine.outcome }},publish=${{ steps.publish.outcome }}"
           MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
           MAIL_PORT: ${{ secrets.MAIL_PORT }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}

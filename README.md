@@ -74,7 +74,7 @@ src/
   job2_extraction/  fetch -> scraper -> prompt -> update
   job3_resolution/  fetch -> candidates -> rank -> prompt -> update
                     requeue: what a TTE update invalidates
-  manual/           the three stages by hand in AI Studio: one prompt out, one answer in
+  manual/           the four model stages by hand in AI Studio: one prompt out, one answer in
   load_tte/         the authority file from the Storage bucket into entities
   export/           cards (the review data), desk_template.html (the first
                     desk, still the zip's), package (a zip for reviewers),
@@ -92,9 +92,10 @@ prompts/            relevance, extraction, resolution, desk_greeting; tte/ holds
 sql/                numbered setup scripts, run in order
 tests/              unit tests, no network; the desk in headless Chrome, the
                     queue in a throwaway Postgres (Docker)
-docs/               design.md, architecture.md, online.md, review.md,
-                    evaluation*.md, backfill.md, gotchas.md, numbers.md and
-                    the explainer page
+docs/               how-it-works.md, design.md, architecture.md, online.md,
+                    review.md, evaluation*.md, backfill.md, gotchas.md,
+                    numbers.md, merging-values.md, descriptions.md and the
+                    explainer page
 data/               ignored: the archive, the model's answers, built packages
 .github/workflows/  one workflow per job, plus tests
 ```
@@ -183,7 +184,8 @@ python -m src.job1_relevance  [--limit N] [--dry-run]   # verdict per unscored a
 python -m src.job2_extraction [--limit N] [--dry-run]   # entities per relevant article
 python -m src.job3_resolution [--limit N] [--dry-run]   # proposals per article's entities
 python -m src.job3_resolution --requeue-stale [--dry-run]   # after a TTE import
-python -m src.manual relevance|extraction|matching export|import   # a stage by hand in AI Studio
+python -m src.combine         [--limit N] [--dry-run]   # one description addition per record from all its articles
+python -m src.manual relevance|extraction|matching|combine export|import   # a stage by hand in AI Studio
 python -m src.load_tte [--source local] [--dry-run]     # the authority file, from the bucket
 python -m src.eval [--case edge-] [--show]              # the resolution prompt on frozen cases
 python -m src.eval sheets                               # the evaluation's sheets, drawn from every year (src/eval/plan.py)
@@ -226,6 +228,8 @@ between is left alone. The details are at the top of
 - [docs/load-balancing.md](docs/load-balancing.md): how the desk shares records out, for the team
 - [docs/new-record-duplicates.md](docs/new-record-duplicates.md): the same new record created twice: what happens, the fix, for and against, for the team to decide
 - [docs/numbers.md](docs/numbers.md): the funnel's figures, dated
+- [docs/merging-values.md](docs/merging-values.md): how the cards once hid values and credited the wrong articles, and the fix (built)
+- [docs/descriptions.md](docs/descriptions.md): one description addition from many articles: the plan, with its trial, for discussion
 
 ## Where it stands
 

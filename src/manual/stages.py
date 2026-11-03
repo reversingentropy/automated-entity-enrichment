@@ -246,8 +246,47 @@ def matching_import(text: str, sent: dict, model: str, dry_run: bool, parse) -> 
             + (f"; {len(missing)} not in the answer, left for the next run: {missing}" if missing else ""))
 
 
+# ---- combine ------------------------------------------------------------------------------------
+
+def combine_export(limit: int | None) -> tuple[str, dict, str] | None:
+    from src.combine import CombineBatch, batch_prompt
+    from src.combine.__main__ import pending
+    records = pending(limit)
+    if not records:
+        return None
+    prompt = batch_prompt(records) + "\n" + shape(CombineBatch)
+    return prompt, {"records": records}, f"{len(records)} records with description sentences from two or more articles"
+
+
+def combine_import(text: str, sent: dict, model: str, dry_run: bool, parse) -> str:
+    from src.combine import CombineBatch, checked, save, stored
+    answer = parse(text, CombineBatch)
+    answered = {r.key: r for r in answer.records}
+    done = stored()
+    written, skipped, missing, failed = 0, [], [], []
+    for record in sent["records"]:
+        if record["key"] in done:
+            skipped.append(record["name"])         # combined by the nightly run since the export
+            continue
+        got = answered.get(record["key"])
+        if got is None:
+            missing.append(record["name"])
+            continue
+        result = checked(record, got)
+        if not result["ok"]:
+            failed.append(record["name"])
+        if not dry_run:
+            save(record, result, by_hand(model))
+        written += 1
+    return (f"{written} records combined"
+            + (f" ({len(failed)} with nothing passing the checks, shown as each article's sentences: {failed})" if failed else "")
+            + (f"; {len(skipped)} left alone, combined by the nightly run since the export" if skipped else "")
+            + (f"; {len(missing)} not in the answer, left for the next run: {missing}" if missing else ""))
+
+
 STAGES = {
     "relevance": (relevance_export, relevance_import, "relevance"),
     "extraction": (extraction_export, extraction_import, "extraction"),
     "matching": (matching_export, matching_import, "resolution"),
+    "combine": (combine_export, combine_import, "combine"),
 }

@@ -1,5 +1,5 @@
 """
-The three Gemini stages done by hand in Google AI Studio, for days the API is busy or out of requests.
+The four Gemini stages done by hand in Google AI Studio, for days the API is busy or out of requests.
 
     python -m src.manual relevance export     # every unscored article in one prompt, onto the clipboard
     python -m src.manual relevance import     # AI Studio's answer, off the clipboard, into the database
@@ -9,6 +9,9 @@ The three Gemini stages done by hand in Google AI Studio, for days the API is bu
 
     python -m src.manual matching export      # every entity not yet matched, with the records it could be
     python -m src.manual matching import
+
+    python -m src.manual combine export       # every record two or more articles gave description sentences to,
+    python -m src.manual combine import       # not yet combined into one addition (docs/descriptions.md)
 
 In between: open a new chat at aistudio.google.com, choose the model and thinking level the export names, paste,
 wait for the whole answer, and copy it with the copy button under it. Run the stages in order, each once the one

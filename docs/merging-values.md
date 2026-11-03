@@ -1,6 +1,7 @@
 # Merging values on a card: what went wrong, and the fix plan
 
-Status: built 3 Nov 2026 (changes 1–8 and 6a), not yet published. Results under [Built](#built).
+Status: built and published 3 Nov 2026 (changes 1–8 and 6a). Results under [Built](#built). The description
+screen this left too slow to read is replanned in [descriptions.md](descriptions.md).
 
 ## What went wrong
 

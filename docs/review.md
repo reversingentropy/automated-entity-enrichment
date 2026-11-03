@@ -232,6 +232,16 @@ A screen-by-screen review on 28 September 2026, at 1440x900 and at a
 | Two sources' wordings of one sentence were both added to a description | Near-identical sentences from different sources are one addition; the other wording is offered as a swap |
 | Searching "Lee" listed Jubilee Church first | Names with a word starting with the search come before names containing it |
 
+Checking the cards against the articles on 2–3 November 2026 found more:
+
+| Found | Changed |
+|---|---|
+| Singapore Airlines' eight awards shown as four, credited to papers that never named them | Values merge only when the same; each carries its own articles; wordings of one value are one row with "also written" under it; a check leaves out any card that hides a value or credits the wrong article ([merging-values.md](merging-values.md)) |
+| A gold in 2023 hidden behind the gold in 2026, from one article | One article naming one award in two years is two awards |
+| A death on the 14th and on the 15th shown as "2 sources say this" | Different values for a one-value field are "The sources disagree", with a button for each |
+| "Senior Counsel" offered as an award, from articles read before the extraction rule | The card builder drops it too |
+| Description screens slower to read than the articles | Planned: one checked addition per record ([descriptions.md](descriptions.md)) |
+
 ## Proposals as a spreadsheet
 
 ```bash

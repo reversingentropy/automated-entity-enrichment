@@ -31,7 +31,8 @@ from email.message import EmailMessage
 GROUPS = [("people", "People", {"PERSON"}), ("organisations", "Organisations", {"ORGANISATION"}),
           ("legal acts", "Legal acts", {"LEGAL_ACT"}), ("everything else", "Everything else", None)]
 STEP_NAMES = {"ingest": "RSS ingestion", "load": "loading the TTE dump", "relevance": "relevance",
-              "extraction": "extraction", "resolution": "matching", "publish": "publishing the cards"}
+              "extraction": "extraction", "resolution": "matching", "combine": "combining descriptions",
+              "publish": "publishing the cards"}
 
 
 def group_of(card: dict) -> str:

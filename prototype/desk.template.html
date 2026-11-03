@@ -144,7 +144,7 @@
   .desc{font-size:1.02rem;line-height:1.6;overflow-wrap:anywhere}
   .desc .add{background:var(--add-bg);color:var(--add);border-radius:4px;padding:.05rem .2rem;font-weight:600}
   .desc del{background:var(--del-bg);color:var(--del);border-radius:4px;padding:.05rem .2rem;text-decoration-thickness:2px}
-  .desc .fade{color:var(--ink2)} .desc .gap{color:var(--ink3);font-weight:700}
+  .desc .fade{color:var(--ink2)} .desc .gap,.dpara .gap{color:var(--ink3);font-weight:700}
   .dta{width:100%;font:1rem/1.55 inherit;font-family:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--ink3);border-radius:10px;padding:.6rem .7rem;min-height:9rem}
   .final{font-size:1.02rem;line-height:1.65;overflow-wrap:anywhere;padding:.55rem .75rem;border-radius:10px;background:#F7F5EF;border:1px solid var(--rule)}
   .final .old{color:var(--ink2)}
@@ -167,8 +167,17 @@
   .alts{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--ink2);margin-top:.5rem}
   .alts span{color:var(--ink3);font-size:.8rem}
   .vrow .maybe{flex-basis:100%;font-size:.8rem;font-weight:400;color:var(--ink2)}
-  .vrow .alsow{background:none;border:none;border-bottom:1px dotted currentColor;color:inherit;font:inherit;padding:0;text-align:left}
-  .vrow .alsow span{color:var(--ink3)}
+  .dpara .newv{font-weight:400;color:var(--ink);-webkit-box-decoration-break:clone;box-decoration-break:clone}
+  .dpara .newv.out{background:none;color:var(--ink3);text-decoration:line-through}
+  .dpara .ref{width:1.15rem;height:1.15rem;margin-left:.15rem;vertical-align:.08em;color:var(--add)}
+  .dpara .x{background:none;border:none;color:var(--ink3);font-size:1.05rem;line-height:1;padding:0 .2rem;vertical-align:-.05em}
+  .dpara .x:hover{color:var(--del)}
+  .dbtn{background:#fff;border:1.5px solid var(--ink3);color:var(--ink);border-radius:8px;padding:.15rem .5rem;font-size:.8rem;white-space:nowrap;margin-right:.4rem}
+  .dlead{font-size:.8rem;color:var(--ink3);margin-top:.6rem}
+  .dmore,.dalso{font-size:.88rem;color:var(--ink2);margin-top:.35rem;line-height:1.5}
+  .dalso{font-size:.8rem}
+  .vrow .alsow,.dalso .alsow{background:none;border:none;border-bottom:1px dotted currentColor;color:inherit;font:inherit;padding:0;text-align:left}
+  .vrow .alsow span,.dalso .alsow span{color:var(--ink3)}
   .alts button,.pick{background:#fff;border:1.5px solid var(--ink3);color:var(--ink);border-radius:8px;padding:.3rem .65rem;font-size:.88rem;text-align:left}
   .picks{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
   .pick.on{background:var(--ink);color:#fff}
@@ -1061,6 +1070,78 @@ function diffHtml(diff, full) {
     return `<span class="fade">${esc(head(t, 100))}</span><span class="gap"> … </span><span class="fade">${esc(tail(t, 100))}</span>`;
   }).join(" ");   // the parts are runs of words: without the space, "2025." and "2025, and" read "2025.2025, and"
 }
+// ---- a description, as one paragraph (docs/descriptions.md) ----------------------------------------------------
+// Four articles each rewriting a description made a screen slower to read than the articles. The card builder now
+// gives one row per fact: from the combined addition (src/combine) when two or more articles wrote sentences, else
+// each article's own new sentences. The screen shows them the way every other field shows its change: the box of
+// what the field reads after you accept, TTE's words grey, the news's green with the sources that state them. A
+// sentence goes in unless left out with × (↺ puts it back). A correction to TTE's words is made in place, struck and
+// replaced. A fact left out to keep within five sentences is offered under the box with + Add.
+const rowOn = (st, k, j, r) => { const v = (st.drow || {})[k + ":" + j]; return v == null ? r.kind !== "more" : v; };
+const wordingOf = (r, now) => ([{ text: r.text, sources: r.sources }].concat(r.also || [])).find(w => w.text === now) || r;
+// the words two wordings share at each end, and the middles that differ: "Home Affairs (since 2017)" to "Home
+// Affairs (2017-2026)" strikes only "(since 2017)"
+function ends(a, b) {
+  const A = a.split(" "), B = b.split(" ");
+  let i = 0, j = 0;
+  while (i < A.length - 1 && i < B.length - 1 && A[i] === B[i]) i++;
+  while (j < A.length - 1 - i && j < B.length - 1 - i && A[A.length - 1 - j] === B[B.length - 1 - j]) j++;
+  return [A.slice(0, i).join(" "), A.slice(i, A.length - j).join(" "), B.slice(i, B.length - j).join(" "), A.slice(A.length - j).join(" ")];
+}
+const rowText = (st, k, j, r) => (st.dword || {})[k + ":" + j] || r.text;
+function descText(st, k, ch) {
+  if (st.text[k] != null) return st.text[k];
+  let out = (ch.existing || []).join(" ").trim();
+  ch.rows.forEach((r, j) => { if (r.kind === "fix" && rowOn(st, k, j, r) && out.includes(r.replaces)) out = out.replace(r.replaces, () => r.text); });
+  ch.rows.forEach((r, j) => {
+    if (r.kind === "fix" || !rowOn(st, k, j, r)) return;
+    const t = rowText(st, k, j, r);
+    out = r.replaces && out.includes(r.replaces) ? out.replace(r.replaces, () => t) : (out + " " + t).trim();
+  });
+  return out;
+}
+function descRows(c, st, k, ch, editing, afterLabel) {
+  const was = (ch.existing || []).join(" ").trim(), text = descText(st, k, ch);
+  const refs = links => srcIdxOf(c, links).map(r => `<button class="ref" data-act="csrc" data-i="${r}" title="Said by source ${r + 1}">${r + 1}</button>`).join("");
+  const x = (j, on) => `<button class="x" data-act="drow" data-j="${j}" title="${on ? "Leave this out" : "Put this back"}">${on ? "&times;" : "&#8634;"}</button>`;
+  const head = `${afterLabel}<button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>`;
+  if (editing) return `${head}<div class="row"><textarea class="dta" aria-label="The text after you accept">${esc(text)}</textarea>
+    ${st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}</div>`;
+  if (st.text[k] != null) return `${head}<div class="row"><div class="desc">${sentDiff(was, text)}</div><button class="more" data-act="resettext">Put back the proposed wording</button></div>`;
+  // TTE's words, each correction or reworded sentence marked where it stands; then the new sentences after them
+  const marks = [], inPlace = new Set();
+  let held = was;
+  ch.rows.forEach((r, j) => {
+    const on = rowOn(st, k, j, r), now = rowText(st, k, j, r);
+    if (!r.replaces || !held.includes(r.replaces) || (r.kind === "more" && !on)) return;
+    inPlace.add(j);
+    const [pre, out, inn, post] = ends(r.replaces, now), sp = s => s ? " " : "";
+    marks.push(on ? `${esc(pre)}${sp(pre)}<s class="old">${esc(out)}</s> <span class="newv">${esc(inn)}</span>${refs(wordingOf(r, now).sources)}${x(j, true)}${sp(post)}${esc(post)}`
+                  : `${esc(r.replaces)}${x(j, false)}`);
+    held = held.replace(r.replaces, () => `\u0000${marks.length - 1}\u0000`);
+  });
+  const fold = !marks.length && was.length > 360 && !st.descFull;
+  const tte = (fold ? `<span class="gap">&hellip; </span>` + esc(tail(was, 220)) : esc(held)).replace(/\u0000(\d+)\u0000/g, (_, i) => marks[i]);
+  const added = ch.rows.map((r, j) => {
+    const on = rowOn(st, k, j, r), now = rowText(st, k, j, r);
+    if (inPlace.has(j) || r.kind === "fix" || (r.kind === "more" && !on)) return "";
+    return on ? ` <span class="newv">${esc(now)}</span>${refs(wordingOf(r, now).sources)}${x(j, true)}` : ` <span class="newv out">${esc(now)}</span>${x(j, false)}`;
+  }).join("");
+  const box = `<div class="final dpara">${was ? `<span class="old">${tte}</span>` : NONE}${added}</div>
+    ${!marks.length && was.length > 360 ? `<button class="more" data-act="descfull">${st.descFull ? "Show less of TTE&rsquo;s text &#9652;" : "Show all of TTE&rsquo;s text &#9662;"}</button>` : ""}`;
+  // under the box: a warning where wordings differ, the other wordings, and the facts left out
+  const on = ch.rows.map((r, j) => [r, j]).filter(([r, j]) => rowOn(st, k, j, r));
+  const differ = on.some(([r]) => r.differ) ? `<div class="dalso"><b>The wordings give different numbers or dates: check before you accept.</b></div>` : "";
+  const also = on.map(([r, j]) => {
+    const now = rowText(st, k, j, r), others = [{ text: r.text, sources: r.sources }].concat(r.also || []).map((w, i) => [w, i]).filter(([w]) => w.text !== now);
+    return others.length ? `<div class="dalso">also written ${others.map(([w, i]) => `<button class="alsow" data-act="dword" data-j="${j}" data-w="${i}" title="Use this wording instead">&ldquo;${esc(w.text)}&rdquo; <span>${refsTxt(c, w.sources)}</span></button>`).join(" ")}</div>` : "";
+  }).join("");
+  const left = ch.rows.map((r, j) => [r, j]).filter(([r, j]) => r.kind === "more" && !rowOn(st, k, j, r));
+  const more = left.length ? `<div class="dlead">Left out to keep within five sentences:</div>` + left.map(([r, j]) =>
+    `<div class="dmore"><button class="dbtn" data-act="drow" data-j="${j}">+ Add</button>${esc(r.text)} <span>${refsTxt(c, r.sources)}</span></div>`).join("") : "";
+  const disagree = (ch.disagree || []).map(d => `<div class="note">The sources disagree on ${esc(d.about)}: ${d.values.map(v => `<b>${esc(v.value)}</b> <span>${refsTxt(c, v.sources)}</span>`).join(", ")}. Add the one you trust with Edit.</div>`).join("");
+  return `${disagree}${head}${box}${differ}${also}${more}`;
+}
 // a hand-edited description, shown against what TTE has: new sentences green, dropped ones struck
 function sentDiff(was, now) {
   const split = t => String(t || "").split(/(?<=[.!?。！？])\s+/).filter(Boolean);
@@ -1109,7 +1190,10 @@ function change(c, st) {
   let title, body, tools = "";
   const was = (ch.existing || []).join(" ");
   const afterLabel = `<div class="arrow"><span>${ch.variant ? "Non-English names" : esc(fieldLabel(ch.field))} after you accept</span><i class="ln"></i>`;
-  if (isText) {
+  if (isText && (ch.rows || []).length) {
+    title = `Add this to ${fq(ch.field)}?`;
+    body = descRows(c, st, k, ch, editing, afterLabel);
+  } else if (isText) {
     title = ch.diff.some(d => d.op === "out") ? `Rewrite ${fq(ch.field)} like this?` : `Add this to ${fq(ch.field)}?`;
     const long = was.length > 260 || ch.diff.some(d => d.op === "same" && d.text.length > 260);
     body = `${afterLabel}<button class="editbtn ${editing ? "on" : ""}" data-act="edit">${editing ? "Done" : "&#9998; Edit"}</button></div>
@@ -1166,10 +1250,10 @@ function change(c, st) {
     const opts = [...seen.entries()], held = opts.filter(([v]) => vals.includes(v)).length, one = ch.strategy === "REPLACE";
     conflict = `<div class="note">The sources disagree. Keep the one you trust${one ? "" : ", or both"}:<div class="picks">${opts.map(([v, links], j) => `<button class="pick ${held === 1 && vals.includes(v) ? "on" : ""}" data-act="pick" data-j="${j}">${esc(v)} <span>${refsTxt(c, links)}</span></button>`).join("")}${one ? "" : `<button class="pick ${held === opts.length ? "on" : ""}" data-act="pickboth">Keep both</button>`}</div></div>`;
   }
-  const valsForMark = isText ? (ch.adds || []).map(x => gist(x, 60)) : vals;
+  const valsForMark = isText ? ((ch.rows || []).length ? ch.rows.filter(r => r.kind !== "fix").map(r => r.text) : (ch.adds || [])).map(x => gist(x, 60)) : vals;
   // "N sources say this" only when every one of them says every value or sentence shown; otherwise each value carries
   // its own source numbers, and the note does not credit a paper with what it never said.
-  const everySays = !ch.conflict && !ch.split && (isText ? !ch.said || (ch.adds || []).every(t => ((ch.said || {})[t] || []).length >= sup.length)
+  const everySays = !ch.conflict && !ch.split && !(ch.rows || []).length && (isText ? !ch.said || (ch.adds || []).every(t => ((ch.said || {})[t] || []).length >= sup.length)
                                                          : !(ch.perValue || []).length || vals.every(v => refsOf(v).length >= sup.length));
   const support = sup.length > 1 && everySays ? ` &middot; ${sup.length} sources say this` : "";
   return `${stepper("change", c, st)}
@@ -1733,7 +1817,7 @@ const firstReadable = c => {
   return Math.max(0, S.findIndex(readsSource));
 };
 const fresh = c => ({ mode: {}, hist: [], t0: Date.now(), accepted: [], seen: 0, screen: c.isNew ? "create" : "who", cand: 0, chosen: null, ch: 0, src: firstReadable(c), csrc: {}, val: {}, text: {}, edit: {}, out: {}, nval: {}, nedit: false,
-                      extra: [], finding: false, query: "", full: false, descFull: false, exhausted: false, kind: "" });
+                      extra: [], finding: false, query: "", full: false, descFull: false, exhausted: false, kind: "", drow: {}, dword: {} });
 const snapOf = st => { const { hist, ...rest } = st; return structuredClone(rest); };
 const PUSH = new Set(["same", "accept", "nochange", "newrec", "discard", "create", "noworth", "keep", "cand", "pickhit"]);
 const quiet = st => (st.hist.length ? [["back", "&larr; Back"]] : []).concat([["keep", "Not sure? Keep for review"], ["stopnow", "Stop for now"]]);
@@ -1751,6 +1835,7 @@ function srcFor(c, st, k, ch) {
 }
 const acceptedOf = (c, st, ch, k) => {
   const src = c.sources[srcFor(c, st, k, ch).si] || {}, base = { field: ch.field, link: src.link || "", title: src.article || "", says: src.says || "" };
+  if (ch.diff && (ch.rows || []).length) return { ...base, current: (ch.existing || []).join(" "), proposed: descText(st, k, ch) };
   if (ch.diff) return { ...base, current: ch.diff.filter(d => d.op !== "in").map(d => d.text).join(" "), proposed: st.text[k] != null ? st.text[k] : ch.result };
   if (ch.date) {
     const now = dateOf(st, k, ch), stored = (p, v) => { v = String(v || "").trim(); return p !== "Year" && /^\d$/.test(v) ? "0" + v : v; };
@@ -1856,6 +1941,8 @@ function act(a, el) {
   if (a === "addval") { valsOf(st, k, ch).push(""); return draw(); }
   if (a === "rm") { valsOf(st, k, ch).splice(i, 1); return draw(); }
   if (a === "resettext") { delete st.text[k]; return draw(); }
+  if (a === "drow") { const j = Number(el.dataset.j); st.drow = st.drow || {}; st.drow[k + ":" + j] = !rowOn(st, k, j, ch.rows[j]); return draw(); }
+  if (a === "dword") { const j = Number(el.dataset.j), r = ch.rows[j], w = [r.text].concat((r.also || []).map(x => x.text))[Number(el.dataset.w)]; st.dword = st.dword || {}; st.dword[k + ":" + j] = w; return draw(); }
   if (a === "swap" || a === "addheld") {
     const now = st.text[k] != null ? st.text[k] : ch.result;
     if (a === "addheld") st.text[k] = (now + " " + ch.held[Number(el.dataset.j)]).trim();

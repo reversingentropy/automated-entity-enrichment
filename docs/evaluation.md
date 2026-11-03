@@ -341,7 +341,7 @@ Then select anyone it missed in the article and add them, or press
 
 ## Matching {#matching}
 
-Written from `prompts/resolution.txt` (version 87536818).
+Written from `prompts/resolution.txt` (version 02d1954f).
 
 - **Same:** the name fits and something else agrees (job, employer,
   field), with nothing contradicting it.

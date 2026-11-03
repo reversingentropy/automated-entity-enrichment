@@ -210,4 +210,44 @@ def test_nothing_a_source_said_is_out_of_sight(tmp_path):
     title = next(t for t in screens if "Set the title to this?" in t)
     assert "The sources disagree. Keep the one you trust:" in title and "Ambassador-at-Large" in title and "Keep both" not in title
     text = next(t for t in screens if "description?" in t or "description like this?" in t)
-    assert "different numbers or dates" in text and "Other wording" in text and "September 28" in text
+    assert "different numbers or dates" in text and "also written" in text and "September 28" in text
+
+
+@needs_chrome
+def test_a_description_is_one_row_per_new_fact(tmp_path):
+    """docs/descriptions.md: one paragraph, TTE's words then the new sentences, the combined addition when there is one."""
+    import copy
+    from src.combine import draft_key
+    from src.export.cards import collapse, description_rows
+    c = copy.deepcopy(next(x for x in FIXTURE["cards"] if x["entity"] == "Tommy Koh"))
+    s = [x["link"] for x in c["sources"]]
+    for i, x in enumerate(c["sources"]):
+        x["pid"] = 100 + i
+    before = "Diplomat and law professor. He served as Ambassador-at-Large from 1990."
+    desc = lambda add, src: {"field": "Description", "strategy": "MERGE", "existing": [before], "adding": before + " " + add, "from": src}
+    notes = collapse([desc("He retired from the Ministry of Foreign Affairs in August 2026.", s[0]),
+                      desc("He retired from the Foreign Ministry in August 2026.", s[1]),
+                      desc("He won the Ramon Magsaysay Award in 2026.", s[2])])
+    page = lambda card: (TEMPLATE.read_text(encoding="utf-8").replace("/*__CARDS__*/[]", blob([card]))
+                         .replace("/*__INDEX__*/{ index: [], npt: {} }", blob({"index": FIXTURE["index"], "npt": FIXTURE["npt"]})))
+    # before combining: each article's sentences, wordings of one fact as one row
+    own = copy.deepcopy(c)
+    own["changes"] = copy.deepcopy(notes)
+    description_rows(own, own["changes"][0], {})
+    got = " ".join(dom(page(own), tmp_path, "#c=0&s=change&i=0&cand=0").split())
+    assert "Add this to the description?" in got and "also written" in got
+    assert "Diplomat and law professor. He served as Ambassador-at-Large from 1990. He retired from" in got
+    assert got.count("Ramon Magsaysay Award in 2026") == 1 and "Rewrite" not in got
+    # combined: its sentences, the disagreement, and the correction made in place, struck and replaced
+    draft = {"ok": True, "add": [{"text": "He retired from the Ministry of Foreign Affairs in August 2026.", "sources": [s[0], s[1]]}],
+             "left_out": [{"text": "He won the Ramon Magsaysay Award in 2026.", "sources": [s[2]]}],
+             "disagreements": [{"about": "the month he retired", "values": [{"value": "August", "sources": [s[0]]}, {"value": "July", "sources": [s[1]]}]}],
+             "corrections": [{"quote": "from 1990", "with": "from 1990 to 2026", "sources": [s[0]]}]}
+    comb = copy.deepcopy(c)
+    comb["changes"] = copy.deepcopy(notes)
+    description_rows(comb, comb["changes"][0], {draft_key(comb, comb["changes"][0]): draft})
+    got = " ".join(dom(page(comb), tmp_path, "#c=0&s=change&i=0&cand=0").split())
+    assert "The sources disagree on the month he retired" in got
+    assert "Left out to keep within five sentences" in got and "+ Add" in got
+    assert "Ambassador-at-Large from 1990 1990 to 2026" in got   # "from" kept, "1990" struck and "Correct it" not in got
+    assert "in August 2026." in got.split("Left out")[0] and "Ramon Magsaysay" in got.split("Left out")[1]

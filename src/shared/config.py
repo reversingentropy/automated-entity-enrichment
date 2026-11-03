@@ -34,6 +34,12 @@ class Resolution(_Job):
     articles_per_request: int = Field(gt=0)
 
 
+class Combine(_Job):
+    """One description addition per record from all its articles."""
+    records_per_run: int = Field(gt=0)
+    seconds_between_records: int = Field(ge=0)
+
+
 class Greeting(_Job):
     """The line of the day on the desk's home screen: one request a day."""
 
@@ -48,6 +54,7 @@ class Pipeline(BaseModel):
     relevance: Relevance
     extraction: Extraction
     resolution: Resolution
+    combine: Combine = Combine(models=["gemini-3.8-flash"], thinking="high", records_per_run=5, seconds_between_records=5)
     greeting: Greeting = Greeting(models=["gemini-3.8-flash"], thinking="low")
     notify: Notify = Notify()
 

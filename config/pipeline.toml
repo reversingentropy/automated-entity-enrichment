@@ -36,6 +36,17 @@ seconds_between_articles = 5
 # only for a backfill.
 articles_per_request = 1
 
+[combine]
+# One description addition per record from all its articles (docs/descriptions.md):
+# one request per record that two or more articles proposed description text
+# for, after Job 3. Flash only: Flash Lite was judged not good enough to write
+# these. The requests share Flash's daily allowance with the jobs above, so a
+# night combines at most this many; the rest wait for the next night.
+models = ["gemini-3.8-flash"]
+thinking = "high"
+records_per_run = 5
+seconds_between_records = 5
+
 [greeting]
 # The line of the day on the desk's home screen (src/export/greeting.py):
 # written once a day by the nightly publish, kept for the noon run.

@@ -1406,3 +1406,11 @@ def test_description_wordings_with_different_dates_are_marked_and_credited():
     assert set(note["alts"][0]["wordings"]) == {a, b, c}
     assert note["said"] == {a: ["ST"], b: ["ZB"], c: ["CNA"]}
     assert account_for(proposed, [note]) == []
+
+
+def test_senior_counsel_is_never_offered_as_an_award():
+    """Goh Yihan's article, read before the extraction rule of 15 Oct, gave "高级律师 (Senior Counsel)" as an award."""
+    from src.export.cards import delta
+    rows = delta({"Awards": "高级律师 (Senior Counsel) | Public Service Medal (2020)"}, {"Awards": ""})
+    assert [r["fresh"] for r in rows if r["field"] == "Awards"] == ["Public Service Medal (2020)"]
+    assert delta({"Awards": "Senior Counsel (2023)"}, {}) == []

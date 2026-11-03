@@ -16,6 +16,7 @@ how the parts fit ([architecture.md](architecture.md)) and how to run them
 | 1. Relevance | nightly, midnight | A model reads each headline and description and picks the ones that may change a TTE record | `prompts/relevance.txt` | `article.relevant`, `article.reason` |
 | 2. Extraction | after step 1 | Read each picked article in full; a model lists the people, organisations and so on whose records it changes, with the new facts as TTE fields | `prompts/extraction.txt`, `prompts/tte/fields_brief.txt`, `src/shared/field_names.py` | `extracted_entities` |
 | 3. Matching | after step 2 | Search TTE for each one; a model decides which record it is, if any, and writes each change | `prompts/resolution.txt`, the three files it takes in, `src/job3_resolution` | `candidate_matches` |
+| 3b. Combining descriptions | after step 3 | Where two or more articles propose sentences for one record's description, a model writes them as one addition, each fact once, with the articles that state it | `src/combine`, [descriptions.md](descriptions.md) | `description_drafts` |
 | 4. Cards | after step 3 | Gather everything about one record into one card | `src/export/cards.py` | `deck` |
 | 5. Desk | any time | A reviewer answers each card: same record? which changes? create one? | `prototype/desk.template.html` | `reviews` |
 | 6. Sheets | when asked | Approved changes go out as a spreadsheet for a cataloguer to make in TTE | `src/export/weekly.py`, the desk's Downloads page | files |
@@ -209,7 +210,7 @@ where they matter.
 | Active Years | The years the person was active in their main occupation. |
 | Achievements | Up to three key achievements, in three to five full sentences. **Not** awards (they have their own field), not a repeat of the description, not a list of posts, not relationships, not wrongdoing. |
 | Education | The institutions the person studied at, as TTE names them. |
-| Awards | An honour or prize given to the person or organisation, as "Award Name (YYYY)". **A designation is not an award**: "Senior Counsel" goes in Description. |
+| Awards | An honour or prize given to the person or organisation, as "Award Name (YYYY)". **A designation is not an award**: "Senior Counsel" goes in Description. The card builder applies the same rule to articles read before it (`NOT_AWARDS` in `src/export/cards.py`). |
 | Affiliations(groupName) | Every organisation the person is linked to, other than where they studied. |
 | Spouse | "Name (m. YYYY)", or "Name (m. YYYY-YYYY)" once the marriage has ended. "Name (div.)" or "Name (deceased)" when only that is known. In date order. |
 | Child, Parent | The person's name as TTE writes it. |
@@ -436,6 +437,24 @@ Affiliations, the post worked into Description with its year, never "will".
 
 Nothing here changes TTE. The answers are stored as proposals.
 
+## 3b. Combining descriptions
+
+Each article is matched on its own, often weeks apart, so two articles
+about one person each propose the same new fact in their own words. For a
+record with description sentences from two or more articles, one model call
+(`python -m src.combine`, Flash) is given TTE's description and every
+article's sentences, and writes what to add: each fact once, facts only,
+dates with their year, at most as many sentences as fit under five. It
+reports values the articles disagree on, and words in TTE's description
+they show are now wrong. Code then drops any sentence that is already in
+the description, has nothing the description lacks, carries praise, has a
+date with no year, or sits inside another added sentence, and takes an
+article off a sentence when what was recorded from it lacks one of the
+sentence's numbers or names. The rest is stored in `description_drafts`,
+one row per record and set of articles, and the card shows it. Until then,
+or if nothing passes, the card shows each article's sentences, one row
+each. Details: [descriptions.md](descriptions.md).
+
 ## 4. Cards
 
 **When.** Every night, after step 3 (`python -m src.export --publish`). The
@@ -473,16 +492,20 @@ record works this out again.
 - Two articles giving the same value are one change, with both as sources.
   "The same" means equal once case, spacing, punctuation and TTE's house
   style are set aside; digits and years always count.
-- Values that are only similar are all shown, each with the articles that
-  gave it, and marked "may be the same as ..." for the reviewer to judge.
-  Nothing is merged out of sight ([merging-values.md](merging-values.md)).
+- Values that are only similar are all kept, each with the articles that
+  gave it. Wordings of one value ("World's Best Economy Class", "Skytrax
+  World's Best Economy Class") are one row: the longest offered, the others
+  under it as "also written ...", one click to use instead. Nothing is
+  merged out of sight ([merging-values.md](merging-values.md)).
 - If two articles give different years for one fact, or different values
   for a field that holds one, the card says so and offers each. The
   reviewer picks. One article naming one award in two years is two awards.
 - Two articles rewriting one description are put together into one
   rewrite, sentence by sentence. Another article's wording of a sentence is
   shown beside it to swap in, marked when its numbers or dates differ, and
-  sentences held back by the five-sentence limit are shown to add.
+  sentences held back by the five-sentence limit are shown to add. The
+  reviewers found this screen too slow to read; its replacement, one
+  checked addition per record, is planned in [descriptions.md](descriptions.md).
 - Before the deck is published, a check confirms every proposed value is on
   its card, or already in TTE, and credited only to articles that gave it. A
   card that fails is left out and named.
