@@ -2044,7 +2044,7 @@ function surveyNow() {
 }
 const startLabel = d => LOG.length || d.back ? "Continue" : "Start";
 const otherLine = d => d.other ? ` ${d.other} more ${d.other === 1 ? "is" : "are"} only in other languages.` : "";
-const subLine = d => d.n ? (d.back ? `${d.back === 1 ? "One is" : d.back + " are"} on your desk from last time.` : "In the languages you read.") + otherLine(d)
+const subLine = d => d.n ? "In the languages you read." + otherLine(d)
                          : LOG.length ? "That was every record you can read. New ones arrive after each night’s run." : "New records arrive after each night’s run.";
 
 // A: minimal. One number, one button, the types as chips, and the team's progress as one thin line.
