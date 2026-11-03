@@ -159,3 +159,53 @@ def test_the_evaluation_page_deals_rows_and_saves_labels(tmp_path):
         "evalResults": [{"id": 1, "at": "2026-10-21T08:00:00Z", "report": "RELEVANCE\n  precision 0.91 <weighted>"}],
     }
     online(fake, "app2_eval_drive.js", tmp_path)
+
+
+def dom(page: str, tmp_path: Path, fragment: str) -> str:
+    """Open the page headless at one screen and return the text of what it drew."""
+    assert CHROME, "Chrome's headless shell was not found, and DESK_REQUIRE_CHROME says it should be there"
+    path = tmp_path / "screen.html"
+    path.write_text(page, encoding="utf-8")
+    done = subprocess.run([CHROME, "--headless", "--no-sandbox", "--disable-gpu", "--allow-file-access-from-files",
+                           f"--user-data-dir={tmp_path / 'profile'}", "--virtual-time-budget=20000", "--dump-dom",
+                           path.as_uri() + fragment], capture_output=True, text=True, timeout=120)
+    m = re.search(r'<div id="stage"[^>]*>(.*)', done.stdout, re.S)
+    assert m, done.stderr[-2000:]
+    return html.unescape(re.sub(r"<[^>]+>", " ", m.group(1).split("<script")[0]))
+
+
+@needs_chrome
+def test_nothing_a_source_said_is_out_of_sight(tmp_path):
+    """
+    docs/merging-values.md. Similar values are shown and linked, never merged; each carries only its own sources;
+    a single-value field given two values offers both; a description shows its other wordings and held-back sentences.
+    """
+    import copy
+    from src.export.cards import collapse
+    c = copy.deepcopy(next(x for x in FIXTURE["cards"] if x["entity"] == "Tommy Koh"))
+    s = [x["link"] for x in c["sources"]]
+    before = "Diplomat and law professor."
+    desc = lambda add, src: {"field": "Description", "strategy": "MERGE", "existing": [before], "adding": before + " " + add, "from": src}
+    aw = lambda v, src: {"field": "Awards", "strategy": "APPEND", "existing": [], "adding": v, "from": src}
+    c["changes"] = collapse([
+        aw("World's Best Economy Class (2026) | World's Best Economy Class Onboard Catering (2026)", s[0]),
+        aw("Skytrax World's Best Economy Class (2026)", s[1]),
+        {"field": "Title", "strategy": "REPLACE", "existing": ["Ambassador"], "adding": "Ambassador-at-Large", "from": s[0]},
+        {"field": "Title", "strategy": "REPLACE", "existing": ["Ambassador"], "adding": "Professor", "from": s[2]},
+        # Changi Air Base East: three papers on one runway, two dates
+        desc("It is being expanded for the relocation of Paya Lebar Air Base, and a new runway became operational on September 17, 2026.", s[0]),
+        desc("It is being expanded for the relocation of Paya Lebar Air Base, and a new 3,660-metre runway was commissioned on September 28, 2026.", s[1]),
+    ])
+    page = TEMPLATE.read_text(encoding="utf-8")
+    page = page.replace("/*__CARDS__*/[]", blob([c]))
+    page = page.replace("/*__INDEX__*/{ index: [], npt: {} }", blob({"index": FIXTURE["index"], "npt": FIXTURE["npt"]}))
+    screens = [" ".join(dom(page, tmp_path, f"#c=0&s=change&i={i}&cand=0").split()) for i in range(3)]
+    awards = next(t for t in screens if "Add this to the awards?" in t)
+    for v in ("World's Best Economy Class (2026)", "World's Best Economy Class Onboard Catering (2026)",
+              "Skytrax World's Best Economy Class (2026)"):
+        assert v in awards
+    assert awards.count("may be the same as") == 2 and "sources say this" not in awards
+    title = next(t for t in screens if "Set the title to this?" in t)
+    assert "The sources disagree. Keep the one you trust:" in title and "Ambassador-at-Large" in title and "Keep both" not in title
+    text = next(t for t in screens if "description?" in t or "description like this?" in t)
+    assert "different numbers or dates" in text and "Other wording" in text and "September 28" in text

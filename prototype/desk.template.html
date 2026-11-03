@@ -164,7 +164,9 @@
   .seg2{display:inline-flex;background:#E9E5D9;border-radius:8px;padding:.15rem}
   .seg2 button{border:none;background:none;border-radius:6px;padding:.22rem .7rem;font-size:.84rem;font-weight:650;color:var(--ink2);letter-spacing:0;text-transform:none}
   .seg2 button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,25,40,.18)}
-  .alts{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--ink2)}
+  .alts{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--ink2);margin-top:.5rem}
+  .alts span{color:var(--ink3);font-size:.8rem}
+  .vrow .maybe{flex-basis:100%;font-size:.8rem;font-weight:400;color:var(--ink2)}
   .alts button,.pick{background:#fff;border:1.5px solid var(--ink3);color:var(--ink);border-radius:8px;padding:.3rem .65rem;font-size:.88rem;text-align:left}
   .picks{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
   .pick.on{background:var(--ink);color:#fff}
@@ -752,15 +754,24 @@ function mergeRows(rows) {
   return out;
 }
 const valsOf = (st, k, ch) => st.val[k] || (st.val[k] = (ch.vals0 || splitVals(ch.adding)).slice());
+// The values a disagreement is between: a list's from listRow, a single-value field's from what each source said.
+const confOf = ch => ch.confVals || [...new Set((ch.saidBy || []).map(x => x.value))];
 // Fields that hold one value: a date part, a postal code, an address. Adding a second one writes "12 | 05".
 const SCALAR = f => /\((yyyy|mm|dd)\)$/.test(f) || ["Postal Code", "Street Address", "Place of Birth", "Feature Type", "Year", "Month", "Day", "Year First Awarded", "SN"].includes(f);
 // Prose fields hold sentences in one value; " | " is for lists. An addition is a sentence at the end, as in a description.
 const PROSE = f => f === "Achievements";
 const toSentence = t => { t = String(t || "").trim(); if (!t) return ""; t = t[0].toUpperCase() + t.slice(1); return /[.!?\u3002]$/.test(t) ? t : t + "."; };
+// Each value is a sentence, with the sources that gave it; two that may say one thing are pointed out, not merged.
 const asProse = ch => {
   if (ch.diff || !PROSE(ch.field) || (ch.strategy !== "APPEND" && ch.strategy !== "REPLACE")) return ch;
-  const was = (ch.existing || []).join(" ").trim(), add = toSentence(ch.adding), keep = ch.strategy === "APPEND" && was;
-  return { ...ch, strategy: "MERGE", verb: "Rewrite", adds: [add], result: (keep ? was + " " : "") + add,
+  const was = (ch.existing || []).join(" ").trim(), keep = ch.strategy === "APPEND" && was;
+  const adds = splitVals(ch.adding).map(toSentence).filter(Boolean), add = adds.join(" ");
+  const said = {}, alike = [];
+  (ch.perValue || []).forEach(pv => {
+    said[toSentence(pv.value)] = pv.sources || [];
+    (pv.maybe || []).forEach(w => { if (pv.value < w) alike.push([toSentence(pv.value), toSentence(w)]); });
+  });
+  return { ...ch, strategy: "MERGE", verb: "Rewrite", adds, result: (keep ? was + " " : "") + add, said, alike,
            diff: (keep ? [{ op: "same", text: was + " " }] : (was ? [{ op: "out", text: was }] : [])).concat([{ op: "in", text: add }]) };
 };
 const sentences = t => String(t || "").split(/(?<=[.!?\u3002])\s+/).filter(Boolean);
@@ -1039,6 +1050,27 @@ function sentDiff(was, now) {
 // a field TTE holds nothing for says so, rather than leaving the reviewer to infer it from a line with nothing grey
 const NONE = `<em class="none">nothing in TTE yet</em>`;
 const srcIdxOf = (c, links) => [...new Set((links || []).map(l => c.sources.findIndex(s => s.link === l)).filter(i => i >= 0))].sort((a, b) => a - b);
+const refsTxt = (c, links) => srcIdxOf(c, links).map(r => "·" + (r + 1)).join(" ");
+// Under a description: what the card builder set aside, so nothing a source said is out of sight. Each sentence
+// another source worded differently, with the other wordings to swap in; and the sentences held back because the
+// description would pass five, to add. Wordings giving different numbers or dates are marked for checking.
+function otherWordings(c, ch, text) {
+  const said = ch.said || {};
+  const alts = (ch.alts || []).map((a, j) => {
+    const used = a.wordings.find(w => text.includes(w));
+    if (!used) return "";
+    const others = a.wordings.map((w, i) => [w, i]).filter(([w]) => w !== used);
+    return `<div class="alts">${a.differ ? `<b>The sources give different numbers or dates here: check before you accept.</b>` : ""}
+      Other wording${others.length > 1 ? "s" : ""} of &ldquo;${esc(gist(used, 60))}&rdquo; <span>${refsTxt(c, said[used])}</span>:
+      ${others.map(([w, i]) => `<button data-act="swap" data-j="${j}" data-w="${i}" title="Use this wording instead">${esc(w)} <span>${refsTxt(c, said[w])}</span></button>`).join("")}</div>`;
+  }).join("");
+  const alike = (ch.alike || []).filter(p => p.every(s => text.includes(s))).map(([a, b]) =>
+    `<div class="alts">These may say the same thing: &ldquo;${esc(gist(a, 60))}&rdquo; <span>${refsTxt(c, said[a])}</span> and &ldquo;${esc(gist(b, 60))}&rdquo; <span>${refsTxt(c, said[b])}</span>. Edit out the one you do not want.</div>`).join("");
+  const held = (ch.held || []).map((h, j) => [h, j]).filter(([h]) => !text.includes(h));
+  const heldHtml = held.length ? `<div class="alts">Held back, as the description would pass five sentences:
+      ${held.map(([h, j]) => `<button data-act="addheld" data-j="${j}" title="Add this sentence">+ ${esc(h)} <span>${refsTxt(c, said[h])}</span></button>`).join("")}</div>` : "";
+  return alts + alike + heldHtml;
+}
 
 function change(c, st) {
   const o = chosenOpt(c, st), rows = rowsFor(c, o), n = rows.length, k = st.ch, ch = rows[k];
@@ -1050,6 +1082,7 @@ function change(c, st) {
   const REL = Array.isArray(ch.inTTE), linked = new Set((ch.inTTE || []).filter(x => x.uid).map(x => x.name));
   const inTte = v => linked.has(v) || idxHas(v);
   const refsOf = v => srcIdxOf(c, (ch.perValue || []).filter(x => x.value === v).flatMap(x => x.sources || []).concat((ch.saidBy || []).filter(x => x.value === v).map(x => x.from)));
+  const maybeOf = v => (ch.perValue || []).filter(x => x.value === v).flatMap(x => x.maybe || []);
   const mode = isText ? "" : modeOf(st, k, ch), replace = mode === "replace";
 
   let title, body, tools = "";
@@ -1063,7 +1096,7 @@ function change(c, st) {
                                   : `<div class="desc">${was ? "" : NONE}${st.text[k] != null ? sentDiff(was, after) : diffHtml(ch.diff, st.descFull)}</div>`}
         ${!editing && long && st.text[k] == null ? `<button class="more" data-act="descfull">${st.descFull ? "Show less &#9652;" : "Show all of it &#9662;"}</button>` : ""}
         ${editing && st.text[k] != null ? `<button class="more" data-act="resettext">Put back the proposed wording</button>` : ""}
-</div>`;
+</div>${editing ? "" : otherWordings(c, ch, after)}`;
   } else if (ch.date) {
     const now = dateOf(st, k, ch);
     title = `Set ${fq(ch.field)} to this?`;
@@ -1088,8 +1121,9 @@ function change(c, st) {
     const rowsHtml = vals.map((v, i) => {
       const out = st.out[k + ":" + i], isNew = REL && !inTte(v), refs = refsOf(v);
       if (editing) return `<div class="vrow ${isNew ? "new" : ""}"><input class="cin" data-i="${i}" value="${esc(v)}" aria-label="Value ${i + 1}"><button class="x" data-act="rm" data-i="${i}" title="Remove">&times;</button></div>`;
+      const maybe = maybeOf(v).filter(w => w !== v && vals.includes(w));
       return `<div class="vrow ${isNew ? "new" : ""} ${out ? "out" : ""}"><div class="vmain"><span class="plus">${replace ? "\u2192" : "+"}</span><b>${esc(v)}</b>${c.sources.length > 1 && refs.length ? refs.map(r => `<button class="ref" data-act="csrc" data-i="${r}" title="Said by source ${r + 1}">${r + 1}</button>`).join("") : ""}</div>
-        <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div></div>`;
+        <div class="vtags">${REL ? `<small>${isNew ? "not in TTE" : "in TTE"}</small>` : ""}<button class="x" data-act="out" data-i="${i}" title="${out ? "Put back" : "Leave out"}">${out ? "&#8634;" : "&times;"}</button></div>${maybe.length ? `<small class="maybe">may be the same as ${maybe.map(w => `&ldquo;${esc(gist(w, 60))}&rdquo;`).join(" or ")}</small>` : ""}</div>`;
     }).join("");
     // TTE's values as TTE holds them, struck when replaced, then the new ones as chips: each with its sources, whether
     // TTE has a record of that name, and × to leave it out
@@ -1103,12 +1137,16 @@ function change(c, st) {
   const warn = warnLong + (ch.overEdit ? `<div class="warn">This rewrite drops most of the current description: only ${Math.round((ch.kept || 0) * 100)}% of it survives.</div>` : "");
   let conflict = "";
   if (ch.conflict && !ch.date && (ch.saidBy || []).length) {
-    const seen = new Map(); (ch.saidBy || []).filter(x => (ch.confVals || []).includes(x.value)).forEach(x => { if (!seen.has(x.value)) seen.set(x.value, []); seen.get(x.value).push(x.from); });
-    const opts = [...seen.entries()], held = opts.filter(([v]) => vals.includes(v)).length;
-    conflict = `<div class="note">The sources disagree. Keep the one you trust, or both:<div class="picks">${opts.map(([v, links], j) => `<button class="pick ${held === 1 && vals.includes(v) ? "on" : ""}" data-act="pick" data-j="${j}">${esc(v)} <span>${srcIdxOf(c, links).map(r => "·" + (r + 1)).join(" ")}</span></button>`).join("")}<button class="pick ${held === opts.length ? "on" : ""}" data-act="pickboth">Keep both</button></div></div>`;
+    const seen = new Map(); (ch.saidBy || []).filter(x => confOf(ch).includes(x.value)).forEach(x => { if (!seen.has(x.value)) seen.set(x.value, []); seen.get(x.value).push(x.from); });
+    const opts = [...seen.entries()], held = opts.filter(([v]) => vals.includes(v)).length, one = ch.strategy === "REPLACE";
+    conflict = `<div class="note">The sources disagree. Keep the one you trust${one ? "" : ", or both"}:<div class="picks">${opts.map(([v, links], j) => `<button class="pick ${held === 1 && vals.includes(v) ? "on" : ""}" data-act="pick" data-j="${j}">${esc(v)} <span>${refsTxt(c, links)}</span></button>`).join("")}${one ? "" : `<button class="pick ${held === opts.length ? "on" : ""}" data-act="pickboth">Keep both</button>`}</div></div>`;
   }
   const valsForMark = isText ? (ch.adds || []).map(x => gist(x, 60)) : vals;
-  const support = sup.length > 1 ? ` &middot; ${sup.length} sources say this` : "";
+  // "N sources say this" only when every one of them says every value or sentence shown; otherwise each value carries
+  // its own source numbers, and the note does not credit a paper with what it never said.
+  const everySays = !ch.conflict && !ch.split && (isText ? !ch.said || (ch.adds || []).every(t => ((ch.said || {})[t] || []).length >= sup.length)
+                                                         : !(ch.perValue || []).length || vals.every(v => refsOf(v).length >= sup.length));
+  const support = sup.length > 1 && everySays ? ` &middot; ${sup.length} sources say this` : "";
   return `${stepper("change", c, st)}
   <h1>${esc(title)}</h1>
   <section class="focus">
@@ -1792,8 +1830,14 @@ function act(a, el) {
   if (a === "addval") { valsOf(st, k, ch).push(""); return draw(); }
   if (a === "rm") { valsOf(st, k, ch).splice(i, 1); return draw(); }
   if (a === "resettext") { delete st.text[k]; return draw(); }
+  if (a === "swap" || a === "addheld") {
+    const now = st.text[k] != null ? st.text[k] : ch.result;
+    if (a === "addheld") st.text[k] = (now + " " + ch.held[Number(el.dataset.j)]).trim();
+    else { const w = ch.alts[Number(el.dataset.j)].wordings, used = w.find(x => now.includes(x)); if (used) st.text[k] = now.replace(used, () => w[Number(el.dataset.w)]); }
+    return draw();
+  }
   if (a === "pick" || a === "pickboth") {
-    const conf = ch.confVals || [], v = valsOf(st, k, ch).filter(x => !conf.includes(x));
+    const conf = confOf(ch), v = valsOf(st, k, ch).filter(x => !conf.includes(x));
     const chosen = a === "pickboth" ? conf : [conf[Number(el.dataset.j)]];
     st.val[k] = v.concat(chosen);
     const from = srcIdxOf(c, (ch.saidBy || []).filter(x => chosen.includes(x.value)).map(x => x.from)); if (from.length) st.csrc[k] = from[0];

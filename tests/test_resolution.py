@@ -655,7 +655,8 @@ def test_one_proposal_per_entity_even_if_the_model_repeats_itself():
     assert len(rows) == 1
 
 
-def test_two_wordings_of_one_fact_become_one_corroborated_note():
+def test_two_wordings_of_one_fact_are_both_shown_linked():
+    """Merged, one wording was out of sight and the other credited to both papers. Both are shown, linked."""
     from src.export.cards import collapse
 
     got = collapse([
@@ -664,11 +665,11 @@ def test_two_wordings_of_one_fact_become_one_corroborated_note():
         {"field": "Awards", "strategy": "APPEND", "adding": "Ramon Magsaysay Award (2026)",
          "from": "Zaobao", "existing": []},
     ])
-    assert len(got) == 1
-    assert got[0]["adding"] == "Ramon Magsaysay Award (2026)"   # the more specific wording
-    assert got[0]["supporters"] == ["ST", "Zaobao"]
-    assert got[0]["variants"] == ["Ramon Magsaysay Award"]
-    assert got[0]["conflict"] is False
+    assert len(got) == 1 and got[0]["conflict"] is False
+    assert got[0]["adding"] == "Ramon Magsaysay Award | Ramon Magsaysay Award (2026)"
+    assert got[0]["perValue"] == [
+        {"value": "Ramon Magsaysay Award", "sources": ["ST"], "maybe": ["Ramon Magsaysay Award (2026)"]},
+        {"value": "Ramon Magsaysay Award (2026)", "sources": ["Zaobao"], "maybe": ["Ramon Magsaysay Award"]}]
 
 
 def test_sources_disagreeing_on_a_year_are_flagged_not_resolved():
@@ -680,7 +681,7 @@ def test_sources_disagreeing_on_a_year_are_flagged_not_resolved():
         {"field": "Awards", "strategy": "APPEND", "adding": "Doctor of Letters (2025)", "from": "ZB", "existing": []},
     ])
     assert len(got) == 1 and got[0]["conflict"] is True
-    assert set(got[0]["variants"] + [got[0]["adding"]]) == {"Doctor of Letters (2026)", "Doctor of Letters (2025)"}
+    assert {x["value"] for x in got[0]["saidBy"]} == {"Doctor of Letters (2026)", "Doctor of Letters (2025)"}
 
 
 def test_different_facts_on_one_list_field_are_one_note_with_both():
@@ -773,7 +774,7 @@ def test_two_articles_rewriting_one_description_become_one_note():
     y1 = {"field": "Birth Year (yyyy)", "strategy": "REPLACE", "adding": "1954", "existing": [], "from": "ST"}
     y2 = {"field": "Birth Year (yyyy)", "strategy": "REPLACE", "adding": "1955", "existing": [], "from": "ZB"}
     out = collapse([y1, y2])
-    assert len(out) == 1 and out[0]["conflict"] and set(out[0]["variants"]) | {out[0]["adding"]} == {"1954", "1955"}
+    assert len(out) == 1 and out[0]["conflict"] and {x["value"] for x in out[0]["saidBy"]} == {"1954", "1955"}
 
 
 def test_a_description_note_holds_back_sentences_beyond_the_guides_five_best_supported_first():
@@ -838,8 +839,8 @@ def test_a_rewrite_is_read_as_whole_sentences():
         {"at": 1, "to": 1, "text": "In October 2026 he was appointed chairman of the NVPC board."}]
 
 
-def test_near_identical_list_values_from_different_articles_are_one_value():
-    """Five Achievements rows for one swimmer were one achievement worded five ways."""
+def test_near_identical_list_values_from_different_articles_are_linked_not_merged():
+    """One achievement worded two ways: both shown, each with its own paper, linked as maybe the same."""
     from src.export.cards import collapse
 
     a = {"field": "Achievements", "strategy": "APPEND", "existing": [], "from": "ST",
@@ -847,8 +848,9 @@ def test_near_identical_list_values_from_different_articles_are_one_value():
     b = {"field": "Achievements", "strategy": "APPEND", "existing": [], "from": "CNA",
          "adding": "She became the first Singaporean to win a Paralympic gold medal at the 2008 Games in Beijing."}
     out = collapse([a, b])
-    assert len(out) == 1 and "|" not in out[0]["adding"] and len(out[0]["variants"]) == 1
-    assert out[0]["supporters"] == ["CNA", "ST"]
+    assert len(out) == 1 and out[0]["supporters"] == ["CNA", "ST"]
+    assert [(v["value"], v["sources"], v["maybe"]) for v in out[0]["perValue"]] == [
+        (a["adding"], ["ST"], [b["adding"]]), (b["adding"], ["CNA"], [a["adding"]])]
 
 
 def test_the_shortlist_counts_records_not_name_rows():
@@ -943,7 +945,8 @@ def test_one_sentence_worded_by_two_sources_is_added_once():
     note = lambda adds, src: {"field": "Description", "strategy": "MERGE", "existing": [before],
                               "adding": before + " " + adds, "adds": [adds], "from": src}
     got = collapse([note(st, "ST"), note(zb, "ZB")])[0]
-    assert got["adds"] == [st] and got["alts"] == [{"wordings": [st, zb]}]
+    assert got["adds"] == [st] and got["alts"] == [{"wordings": [st, zb], "differ": False}]
+    assert got["said"] == {st: ["ST"], zb: ["ZB"]}
     assert got["result"].count("Deputy Attorney-General") == 1
     # two different facts, one from each source, are both added
     got = collapse([note("She was appointed Minister for Trade in 2024.", "ST"),
@@ -1290,3 +1293,116 @@ def test_every_non_preferred_term_is_listed_under_its_record():
                 ["Tommy Koh", "18338504", "PERSON"], ["Singapore Civil Defence Force", "9", "ORGANISATION"]]
     index = [["18338504", "Koh, Tommy", "PERSON", "", ""], ["9", "Singapore. Civil Defence Force", "ORGANISATION", "", ""]]
     assert npt_map(variants, index) == {"18338504": ["许通美", "Prof. Tommy Koh"]}
+
+
+# Real proposals from the deck of 2 November 2026 (docs/merging-values.md): what four papers proposed for
+# Singapore Airlines' awards. The card once showed four of the eight awards, credited to papers that never named them.
+SIA = [
+    ("CNA", "World's Best Airline (2026) | World's Best Economy Class (2026) | World's Best Economy Class Onboard Catering (2026) | Best Airline in Asia (2026)"),
+    ("ST", "World's Best Airline (2026) | Best Airline in Asia (2026) | World's Best Economy Class (2026) | World's Best Economy Class Onboard Catering (2026)"),
+    ("ZB", "Skytrax World's Best Airline (2026) | Best Airline in Asia (2026) | World's Best Economy Class (2026) | World's Best Economy Class Onboard Catering (2026)"),
+    ("TM", "Business Traveller Global Awards World's Best Airline (2026) | Business Traveller Global Awards World's Best Business Class (2026) | "
+           "Business Traveller Global Awards World's Best Cabin Crew (2026) | Business Traveller Global Awards Best Asia-Pacific Airline (2026) | "
+           "Skytrax World Airline Awards World's Best Airline (2026) | Skytrax Best Airline in Asia (2026) | Skytrax World's Best Economy Class (2026) | "
+           "Skytrax World's Best Economy Class Onboard Catering (2026)"),
+]
+
+
+def _awards(pairs, field="Awards"):
+    return [{"field": field, "strategy": "APPEND", "existing": [], "adding": v, "from": src} for src, v in pairs]
+
+
+def test_every_award_four_papers_named_is_on_the_card_with_only_its_own_papers():
+    from src.export.accounting import account_for
+    from src.export.cards import collapse
+    proposed = _awards(SIA)
+    out = collapse([dict(p) for p in proposed])
+    assert len(out) == 1 and not out[0]["conflict"]
+    by = {v["value"]: v["sources"] for v in out[0]["perValue"]}
+    assert len(by) == 13                                  # every wording of the eight awards
+    for name in ("World's Best Business Class", "World's Best Cabin Crew", "Best Asia-Pacific Airline"):
+        assert by[f"Business Traveller Global Awards {name} (2026)"] == ["TM"]
+    assert by["World's Best Airline (2026)"] == ["CNA", "ST"]
+    assert by["Skytrax World's Best Airline (2026)"] == ["ZB"]
+    assert by["Best Airline in Asia (2026)"] == ["CNA", "ST", "ZB"]
+    links = {v["value"]: v.get("maybe", []) for v in out[0]["perValue"]}
+    assert "Skytrax World's Best Economy Class (2026)" in links["World's Best Economy Class (2026)"]
+    assert "World's Best Economy Class Onboard Catering (2026)" not in links["World's Best Economy Class (2026)"]
+    assert not links["Business Traveller Global Awards World's Best Cabin Crew (2026)"]
+    assert account_for(proposed, out) == []
+
+
+def test_the_check_finds_a_hidden_value_and_a_wrong_credit():
+    """The card as it once was: four awards, the Business Traveller ones credited to three papers that never named them."""
+    from src.export.accounting import account_for
+    shown = [{"field": "Awards", "strategy": "APPEND", "existing": [], "conflict": False,
+              "adding": "Business Traveller Global Awards World's Best Business Class (2026) | Best Airline in Asia (2026)",
+              "perValue": [{"value": "Business Traveller Global Awards World's Best Business Class (2026)", "sources": ["CNA", "ST", "TM"]},
+                           {"value": "Best Airline in Asia (2026)", "sources": ["CNA", "ST", "ZB"]}]}]
+    got = account_for(_awards(SIA), shown)
+    assert any("Best Cabin Crew (2026)" in p and "not on the card" in p for p in got)
+    assert any("Best Business Class (2026)" in p and "credited to CNA" in p for p in got)
+    assert not any("Best Airline in Asia (2026)\" is credited" in p for p in got)
+
+
+def test_one_article_naming_one_award_in_two_years_offers_both():
+    """Shanti Pereira's 200m gold of 2023 and Iskandar Jalil's Colombo Plan of 1972 were hidden behind the other year."""
+    from src.export.accounting import account_for
+    from src.export.cards import collapse
+    for value in ("Asian Games 200m gold (2026) | Asian Games 100m silver (2026) | Asian Games 200m gold (2023)",
+                  "Colombo Plan Scholarship (1966) | Colombo Plan Scholarship (1972) | Meritorious Service Medal (2015)"):
+        proposed = _awards([("ST", value)])
+        out = collapse([dict(p) for p in proposed])
+        assert len(out) == 1 and not out[0]["conflict"] and out[0]["adding"] == value
+        assert account_for(proposed, out) == []
+
+
+def test_two_papers_giving_one_award_two_years_still_disagree():
+    """Teo Chee Hean's Doctor of Letters, 2026 in one paper and 2025 in another."""
+    from src.export.cards import collapse
+    out = collapse(_awards([("ST", "Doctor of Letters (2026)"), ("ZB", "Doctor of Letters (2025)")]))
+    assert len(out) == 1 and out[0]["conflict"]
+    assert {(x["value"], x["from"]) for x in out[0]["saidBy"]} == {("Doctor of Letters (2026)", "ST"), ("Doctor of Letters (2025)", "ZB")}
+
+
+def test_a_day_the_sources_give_differently_is_a_disagreement():
+    """A death on the 14th and on the 15th once reduced to the same key, and the card said "2 sources say this"."""
+    from src.export.cards import collapse
+    day = lambda v, src: {"field": "Death Day (dd)", "strategy": "REPLACE", "existing": [], "adding": v, "from": src}
+    out = collapse([day("14", "ST"), day("15", "ZB")])
+    assert len(out) == 1 and out[0]["conflict"]
+    assert collapse([day("14", "ST"), day("14", "ZB")])[0]["conflict"] is False
+
+
+def test_a_university_and_its_law_school_are_both_shown_each_with_its_paper():
+    """Goh Yihan: the university was folded into its law school, and the school credited to a paper naming only the university."""
+    from src.export.accounting import account_for
+    from src.export.cards import collapse
+    proposed = _awards([("ST", "Singapore. Attorney-General's Chambers | Singapore Management University"),
+                        ("ZB", "Singapore. Supreme Court | National University of Singapore. Faculty of Law | "
+                               "Singapore Management University Yong Pung How School of Law | Singapore. Attorney-General's Chambers")],
+                       field="Affiliations(groupName)")
+    out = collapse([dict(p) for p in proposed])
+    by = {v["value"]: v["sources"] for v in out[0]["perValue"]}
+    assert by["Singapore Management University"] == ["ST"]
+    assert by["Singapore Management University Yong Pung How School of Law"] == ["ZB"]
+    assert by["Singapore. Attorney-General's Chambers"] == ["ST", "ZB"]
+    assert account_for(proposed, out) == []
+
+
+def test_description_wordings_with_different_dates_are_marked_and_credited():
+    """Changi Air Base East: the runway opened on 17 September in one paper and 28 September in another; one was out of sight."""
+    from src.export.accounting import account_for
+    from src.export.cards import collapse
+    before = "New facility which extends the facilities of Changi Air Base. It is being expanded to accommodate the relocation of Paya Lebar Air Base."
+    a = "It is being expanded to accommodate the relocation of Paya Lebar Air Base, incorporating a new runway designated 03/21 that became operational on September 17, 2026."
+    b = "It is being expanded to accommodate the relocation of Paya Lebar Air Base, and a new 3,660-metre military runway was commissioned on September 28, 2026."
+    c = "It is being expanded to accommodate the relocation of Paya Lebar Air Base, and a new runway became operational at the facility in September 2026."
+    rewrite = lambda s, src: {"field": "Description", "strategy": "MERGE", "existing": [before], "from": src,
+                              "adding": before.replace("It is being expanded to accommodate the relocation of Paya Lebar Air Base.", s)}
+    proposed = [rewrite(a, "ST"), rewrite(b, "ZB"), rewrite(c, "CNA")]
+    note = collapse([dict(p) for p in proposed])[0]
+    assert len(note["alts"]) == 1 and note["alts"][0]["differ"] is True
+    assert set(note["alts"][0]["wordings"]) == {a, b, c}
+    assert note["said"] == {a: ["ST"], b: ["ZB"], c: ["CNA"]}
+    assert account_for(proposed, [note]) == []

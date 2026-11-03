@@ -19,6 +19,7 @@ import re
 import unicodedata
 from pathlib import Path
 
+from src.export.accounting import account_for
 from src.export.weekly import vocab_for
 from src.shared.description import (
     SENTENCE_LIMIT, SURVIVES_FLOOR, additions, judge, over_limit, sentence_count, sentence_edits,
@@ -311,9 +312,51 @@ def derived_changes(delta_rows: list[dict], covered: set[str]) -> list[dict]:
 
 
 
-def _same_fact(value: str) -> str:
-    """Two wordings of one fact, reduced to what they share: letters, no year."""
-    return " ".join(re.sub(r"[^a-z\u4e00-\u9fff ]+", " ", YEAR.sub("", value.lower())).split())
+def value_key(value: str) -> str:
+    """
+    A value with only what cannot change its meaning set aside: case, spacing,
+    punctuation and TTE's house style. Digits and years stay. Two values are
+    merged only when these are equal; a key that dropped them once merged a
+    death on the 14th with one on the 15th, and an Asian Games gold in 2023
+    with the one in 2026.
+    """
+    return house(value) or plain(value)
+
+
+def same_value(a: str, b: str) -> bool:
+    return value_key(a) == value_key(b)
+
+
+def _family(value: str) -> str:
+    """The value without its year: values sharing one name the same thing, perhaps in different years."""
+    return value_key(without_year(value))
+
+
+def _years(value: str) -> set[str]:
+    return {y.strip("()") for y in YEAR.findall(value)}
+
+
+def maybe_same(a: str, b: str) -> bool:
+    """
+    Two different values that may name one thing, for the reviewer to judge:
+    the shorter's words all in the longer and ending it the same way ("World's
+    Best Airline" and "Skytrax World's Best Airline (2026)"), or two long
+    sentences saying one thing in other words. Never merged on this; the card
+    shows both, linked. Two values giving different years are two facts. Two
+    awards from one body ("... Best Cabin Crew", "... Best Business Class")
+    each have words the other lacks, and "Best Economy Class" does not end
+    "Best Economy Class Onboard Catering", so none of these is linked.
+    """
+    ya, yb = _years(a), _years(b)
+    if ya and yb and ya != yb:
+        return False
+    ta, tb = (re.findall(r"[\w'’-]+", without_year(x).casefold()) for x in (a, b))
+    short, long_ = sorted((ta, tb), key=len)
+    if short and _content_words(" ".join(short)) <= _content_words(" ".join(long_)):
+        n = min(3, len(short))
+        if short[-n:] == long_[-n:]:
+            return True
+    return len(short) >= 10 and near_same(a, b)        # a sentence, not a long award name
 
 
 # Words too common to say two sentences are about the same thing.
@@ -414,7 +457,7 @@ def collapse(changes: list[dict]) -> list[dict]:
             # kept as a question.
             key = (ch["field"], "APPEND", "*")
         else:
-            key = (ch["field"], ch["strategy"], _same_fact(ch["adding"]))
+            key = (ch["field"], ch["strategy"], value_key(ch["adding"]))
         groups.setdefault(key, []).append(ch)
     out = []
     for key, group in list(groups.items()):
@@ -427,20 +470,16 @@ def collapse(changes: list[dict]) -> list[dict]:
         best = max(group, key=lambda ch: len(ch["adding"]))
         merged = dict(best)
         merged["supporters"] = sorted({ch.get("from") for ch in group if ch.get("from")})
-        merged["variants"] = sorted({ch["adding"] for ch in group} - {best["adding"]})
+        merged["variants"] = []
         # Which source gave which wording, so a disagreement can be settled
         # by the source and not only by the string.
         merged["saidBy"] = [{"value": ch["adding"], "from": ch.get("from") or ""} for ch in group]
-        # A disagreement needs two sources. One description with four years
-        # in it, or one value naming two awards, is not a conflict, though
-        # the year rule once said so and put "1 articles disagree" on a card.
-        if len(group) > 1:
-            # A source that names no year does not disagree with one that does.
-            facts = {_same_fact(ch["adding"]) for ch in group}
-            years = {y.strip("()") for ch in group for y in YEAR.findall(ch["adding"])}
-            merged["conflict"] = len(facts) > 1 or len(years) > 1
-        else:
-            merged["conflict"] = False
+        # A field holding one value, given two different values, is a
+        # disagreement, and the card offers both. "Different" keeps digits: a
+        # death on the 14th and one on the 15th once counted as the same, and
+        # the card said "2 sources say this" over the 15th alone.
+        values = {value_key(ch["adding"]) for ch in group if ch["adding"].strip()}
+        merged["conflict"] = len(values) > 1
         out.append(merged)
     return out
 
@@ -450,47 +489,51 @@ def _combined_additions(group: list[dict]) -> list[dict]:
     One note per list field with every value any source named, and a
     separate question for a value the sources give different years for.
     """
-    clusters: dict[str, list[dict]] = {}
+    # Values are merged only when they are the same value (`value_key`).
+    # Similar values once were too: Singapore Airlines' eight awards became
+    # four, because awards from one body share most of their words and each
+    # merge was measured against the last, and the four left were credited to
+    # every paper in the merge. Similar values now stay, linked for the
+    # reviewer ("maybe"), and each value carries only the articles that gave it.
+    values: dict[str, dict] = {}
     for ch in group:
         for value in _values(ch["adding"]):
-            clusters.setdefault(_same_fact(value), []).append({**ch, "adding": value})
-    # Two articles word one achievement differently ("the first Singaporean to
-    # win a gold medal at the Paralympic Games in Beijing in 2008" and "became
-    # the first Singaporean to win a Paralympic gold medal at the 2008 Games in
-    # Beijing"); same_fact keeps them apart, so one record's Achievements came
-    # as five rows. Long values that say one thing are one value.
-    pooled: list[list[dict]] = []
-    for members in clusters.values():
-        best = max(members, key=lambda m: len(m["adding"]))
-        home = next((c for c in pooled if len(best["adding"].split()) >= 6
-                     and near_same(max(c, key=lambda m: len(m["adding"]))["adding"], best["adding"])), None)
-        if home is None:
-            pooled.append(list(members))
-        else:
-            home.extend(members)
-    union, out = [], []
-    for members in pooled:
-        years = {y.strip("()") for m in members for y in YEAR.findall(m["adding"])}
-        # As in collapse, a disagreement needs two sources: one description
-        # naming 2013, 2026 and 2027 put "the sources disagree" on a card with
-        # one article. Prose naming different years is not a disagreement at all.
-        sources = {m.get("from") for m in members if m.get("from")}
-        if len(years) > 1 and len(sources) > 1 and members[0]["field"] not in PROSE:
-            best = max(members, key=lambda m: len(m["adding"]))
-            note = dict(best)
-            note.update({
-                "result": result_of("APPEND", best["existing"], best["adding"]),
-                "supporters": sorted({m.get("from") for m in members if m.get("from")}),
-                "variants": sorted({m["adding"] for m in members} - {best["adding"]}),
-                "saidBy": [{"value": m["adding"], "from": m.get("from") or ""} for m in members],
-                "conflict": True,
-            })
-            out.append(note)
+            v = values.setdefault(value_key(value), {"value": value, "sources": []})
+            if ch.get("from") and ch["from"] not in v["sources"]:
+                v["sources"].append(ch["from"])
+    # One name with different years. Two articles giving one a year each is a
+    # disagreement, asked as one; one article naming both years (a gold in
+    # 2023 and again in 2026) is two additions. A value with no year disagrees
+    # with nothing. Prose naming different years is never a disagreement.
+    families: dict[str, list[dict]] = {}
+    for v in values.values():
+        families.setdefault(_family(v["value"]), []).append(v)
+    disputed: set[str] = set()
+    out = []
+    for members in families.values():
+        dated = [v for v in members if _years(v["value"])]
+        if len(dated) < 2 or group[0]["field"] in PROSE:
             continue
-        best = max(members, key=lambda m: len(m["adding"]))
-        union.append({"value": best["adding"],
-                      "sources": sorted({m.get("from") for m in members if m.get("from")}),
-                      "variants": sorted({m["adding"] for m in members} - {best["adding"]})})
+        said = [src for v in dated for src in v["sources"]]
+        if len(set(said)) < 2 or len(said) != len(set(said)):
+            continue                      # one article, or one naming more than one year
+        best = max(dated, key=lambda v: (len(v["sources"]), len(v["value"])))
+        note = dict(group[0])
+        note.update({
+            "adding": best["value"],
+            "result": result_of("APPEND", group[0]["existing"], best["value"]),
+            "supporters": sorted(set(said)), "variants": [], "conflict": True,
+            "saidBy": [{"value": v["value"], "from": src} for v in dated for src in v["sources"]],
+            "perValue": [{"value": v["value"], "sources": sorted(v["sources"])} for v in dated],
+        })
+        out.append(note)
+        disputed |= {value_key(v["value"]) for v in dated}
+    union = [{"value": v["value"], "sources": sorted(v["sources"])}
+             for k, v in values.items() if k not in disputed]
+    for v in union:
+        maybe = [w["value"] for w in union if w is not v and maybe_same(v["value"], w["value"])]
+        if maybe:
+            v["maybe"] = maybe
     if union:
         first = group[0]
         adding = DELIMITER.join(v["value"] for v in union)
@@ -498,8 +541,8 @@ def _combined_additions(group: list[dict]) -> list[dict]:
         note.update({
             "adding": adding,
             "result": result_of("APPEND", first["existing"], adding),
-            "supporters": sorted({ch.get("from") for ch in group if ch.get("from")}),
-            "variants": sorted(w for v in union for w in v["variants"]), "conflict": False,
+            "supporters": sorted({s for v in union for s in v["sources"]}),
+            "variants": [], "conflict": False,
             "saidBy": [{"value": v["value"], "from": f} for v in union for f in v["sources"]],
             "perValue": union,
         })
@@ -522,13 +565,17 @@ def _combined_rewrite(group: list[dict]) -> dict:
     before = " ".join(first["existing"]) if first["existing"] else ""
     base = split_sentences(before)
     edits: list[dict] = []
-    origin: dict[str, str] = {}
+    said: dict[str, list[str]] = {}       # each new sentence, and every article that wrote it
     for ch in group:
         for e in sentence_edits(before, ch["adding"]):
-            if e["text"] in before or any(e["text"] == x["text"] for x in edits):
+            if e["text"] in before:
                 continue
-            edits.append(e)
-            origin[e["text"]] = ch.get("from") or ""
+            if e["text"] not in said:
+                edits.append(e)
+                said[e["text"]] = []
+            if ch.get("from") and ch["from"] not in said[e["text"]]:
+                said[e["text"]].append(ch["from"])
+    origin = {t: (s[0] if s else "") for t, s in said.items()}
     # Two clippings changing the same sentence, or near-identical sentences
     # from different sources, are one edit in two wordings: the one carrying
     # the most the description lacks is used, the others offered in its place.
@@ -558,7 +605,7 @@ def _combined_rewrite(group: list[dict]) -> dict:
     # sentence adds none, so it always fits.
     had = _fact_tokens(before)
     best_of = [max(c, key=lambda e: (len(_fact_tokens(e["text"]) - had), len(e["text"]))) for c in clusters]
-    support = [len({origin[e["text"]] for e in c}) for c in clusters]
+    support = [len({s for e in c for s in said[e["text"]]}) for c in clusters]
     room = max(1, SENTENCE_LIMIT - sentence_count(before))
     keep, used = set(), 0
     for i in sorted(range(len(clusters)), key=lambda i: (-support[i], i)):
@@ -575,7 +622,13 @@ def _combined_rewrite(group: list[dict]) -> dict:
             continue
         kept.append(best)
         if len(cluster) > 1:
-            alts.append({"wordings": [best["text"]] + [e["text"] for e in cluster if e is not best]})
+            wordings = [best["text"]] + [e["text"] for e in cluster if e is not best]
+            # Other wordings are offered beside the one used, never folded
+            # into it: three papers gave Changi Air Base East's new runway as
+            # opening on 17 September, in September, and on 28 September, and
+            # only the first reached the screen. Wordings giving different
+            # numbers are marked, for the reviewer to check.
+            alts.append({"wordings": wordings, "differ": _numbers_differ(wordings)})
     # The description with the kept edits in place.
     inserts: dict[int, list[str]] = {}
     changes: dict[int, dict] = {}
@@ -608,10 +661,21 @@ def _combined_rewrite(group: list[dict]) -> dict:
         "kept": round(kept_ratio(before, value), 2) if before else 1.0,
         "overEdit": False,
         "overLimit": over_limit(before, value), "sentences": sentence_count(value),
-        "supporters": sorted({ch.get("from") for ch in group if ch.get("from")}),
+        "supporters": sorted({s for e in edits for s in said[e["text"]]}
+                             or {ch.get("from") for ch in group if ch.get("from")}),
         "variants": [], "conflict": False, "alts": alts, "held": held,
+        "said": {t: sorted(s) for t, s in said.items()},
     })
     return merged
+
+
+_NUMBER = re.compile(r"\d[\d,.]*\d|\d")
+
+
+def _numbers_differ(wordings: list[str]) -> bool:
+    """Two wordings each giving a number the other does not: 17 September against 28 September."""
+    nums = [{n.replace(",", "") for n in _NUMBER.findall(w)} for w in wordings]
+    return any(a - b and b - a for i, a in enumerate(nums) for b in nums[i + 1:])
 
 
 def identifying(fields: dict | None) -> list[dict]:
@@ -856,7 +920,8 @@ def named_as_tte(change: dict) -> None:
         elif not a.get("uid"):
             swap[a["name"]] = _english(a["name"])
     swap = {k: v for k, v in swap.items() if k != v}
-    key = lambda v: house(v) or plain(v)
+    change["named"] = swap                # every renaming, for account_for to follow
+    key = value_key
     held = {key(v) for v in change.get("existing") or []}
     named, seen = [], set()
     for v in _values(change["adding"]):
@@ -888,9 +953,14 @@ def named_as_tte(change: dict) -> None:
             pv["value"] = swap.get(pv["value"], pv["value"])
             if key(pv["value"]) in held:
                 continue
-            m = merged.setdefault(key(pv["value"]), {**pv, "sources": [], "variants": []})
+            m = merged.setdefault(key(pv["value"]), {**pv, "sources": [], "maybe": []})
             m["sources"] = sorted(set(m["sources"]) | set(pv.get("sources") or []))
-            m["variants"] = sorted(set(m["variants"]) | set(pv.get("variants") or []))
+            m["maybe"] += [w for w in (swap.get(x, x) for x in pv.get("maybe") or []) if w not in m["maybe"]]
+        for m in merged.values():
+            # a link to a value the record holds, or to itself once both are named alike, is no link
+            m["maybe"] = [w for w in m["maybe"] if key(w) in merged and key(w) != key(m["value"])]
+            if not m["maybe"]:
+                del m["maybe"]
         change["perValue"] = list(merged.values())
     if change.get("saidBy"):
         said = []
@@ -1209,6 +1279,7 @@ def build_cards(include_new: bool = True, backfill: bool = False,
 
     cards = list(grouped.values())
     for card in cards:
+        proposed = [dict(ch) for ch in card["changes"]]
         # Two articles proposing the same fact is one note, not two.
         card["changes"] = collapse(card["changes"])
         first_of = {}
@@ -1226,14 +1297,19 @@ def build_cards(include_new: bool = True, backfill: bool = False,
                     quotes[link] = better
             if quotes:
                 ch["quotes"] = quotes
-        kept = []
+        kept, settled = [], []
         for ch in card["changes"]:
             if ch["strategy"] != "MERGE":
                 ch["inTTE"] = flags_for(ch["field"], ch["adding"])
                 if ch["inTTE"] and not renames(ch):
+                    settled.append(ch)    # the record holds every value, as TTE names it
                     continue
             kept.append(ch)
         card["changes"] = kept
+        # Nothing an article proposed is lost or credited to the wrong article
+        # between here and the screen; a card where something is goes nowhere.
+        if not card["isNew"]:
+            card["unaccounted"] = account_for(proposed, kept, settled)
         card["options"].sort(key=lambda o: -(o["similarity"] or 0))
         # Every candidate answers "and what would that change?", not just the
         # one the model picked -- a reviewer who overrides the match needs the
@@ -1278,7 +1354,12 @@ def build_cards(include_new: bool = True, backfill: bool = False,
         return bool(picked and picked["extra"])
 
     dealt, noted = [], []
+    left_out = [c for c in cards if c.get("unaccounted")]
+    for card in left_out:
+        print(f"Left out of the deck, {card['entity']}: " + "; ".join(card["unaccounted"]))
+    cards = [c for c in cards if not c.get("unaccounted")]
     for card in cards:
+        card.pop("unaccounted", None)
         if card["isNew"]:
             (dealt if card["subject"] else noted).append(card)
         elif card["subject"] and not anything_to_decide(card):

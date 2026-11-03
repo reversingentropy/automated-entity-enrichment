@@ -470,11 +470,22 @@ record works this out again.
 
 **Joining what several articles said.**
 
-- Two articles giving the same fact are one change, with both as sources.
-- If they give different years for it, the card says so and offers both.
-  The reviewer picks.
+- Two articles giving the same value are one change, with both as sources.
+  "The same" means equal once case, spacing, punctuation and TTE's house
+  style are set aside; digits and years always count.
+- Values that are only similar are all shown, each with the articles that
+  gave it, and marked "may be the same as ..." for the reviewer to judge.
+  Nothing is merged out of sight ([merging-values.md](merging-values.md)).
+- If two articles give different years for one fact, or different values
+  for a field that holds one, the card says so and offers each. The
+  reviewer picks. One article naming one award in two years is two awards.
 - Two articles rewriting one description are put together into one
-  rewrite, sentence by sentence.
+  rewrite, sentence by sentence. Another article's wording of a sentence is
+  shown beside it to swap in, marked when its numbers or dates differ, and
+  sentences held back by the five-sentence limit are shown to add.
+- Before the deck is published, a check confirms every proposed value is on
+  its card, or already in TTE, and credited only to articles that gave it. A
+  card that fails is left out and named.
 
 **Changes the model did not propose.** If the article gave a fact the record
 lacks and the model did not propose it, the card offers it as well, marked
