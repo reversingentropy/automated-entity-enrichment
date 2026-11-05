@@ -434,6 +434,41 @@ def quote_for(change: dict, names: list[str], own: dict, others: list[dict]) -> 
     return {"quote": best.get("quote") or "", "original": best.get("original") or ""}
 
 
+def credit_every_source(changes: list[dict], stated: list[tuple[str, dict]], same_record=None) -> list[dict]:
+    """
+    The changes, with each list value credited to every article that states it.
+
+    Matching looks at one article at a time and may leave out a value it adds
+    for the next one. Rena Lee's card credited the Permanent Court of Arbitration
+    to one article of three that name it. `stated` is each article's link and its
+    extracted fields. Only a value some article proposed is credited here: this
+    adds sources, never values. A different year is a different value.
+    `same_record` says whether two values name one TTE record.
+    """
+    out = list(changes)
+    lists: dict[str, list[dict]] = {}
+    for ch in changes:
+        if ch["strategy"] == "APPEND":
+            lists.setdefault(ch["field"], []).append(ch)
+
+    def names_same(field: str, said: str, value: str) -> bool:
+        if value_key(said) == value_key(value) or value_key(_english(said)) == value_key(_english(value)):
+            return True
+        return bool(same_record) and _years(said) == _years(value) and same_record(field, said, value)
+
+    for field, group in lists.items():
+        proposed = list(dict.fromkeys(v for ch in group for v in _values(ch["adding"])))
+        for link, fields in stated:
+            own = {value_key(v) for ch in group if ch.get("from") == link for v in _values(ch["adding"])}
+            said = news_values(fields.get(field))
+            also = [v for v in proposed if value_key(v) not in own and any(names_same(field, s, v) for s in said)]
+            if also:
+                adding = DELIMITER.join(also)
+                out.append({**group[0], "adding": adding, "from": link,
+                            "result": result_of("APPEND", group[0]["existing"], adding)})
+    return out
+
+
 def collapse(changes: list[dict]) -> list[dict]:
     """
     One note per fact, however many clippings carried it.
@@ -1328,7 +1363,16 @@ def build_cards(include_new: bool = True, backfill: bool = False,
     cards = list(grouped.values())
     from src.combine import stored
     drafts = stored()
+    def same_record(field: str, a: str, b: str) -> bool:
+        ours, theirs = flags_for(field, a), flags_for(field, b)
+        return bool(ours and theirs and ours[0].get("uid") and ours[0]["uid"] == theirs[0].get("uid"))
+
     for card in cards:
+        stated = [((articles.get(entities[eid]["article_id"]) or {}).get("url")
+                   or (articles.get(entities[eid]["article_id"]) or {}).get("title", ""),
+                   entities[eid].get("fields") or {})
+                  for eid in card["eids"]]
+        card["changes"] = credit_every_source(card["changes"], stated, same_record)
         proposed = [dict(ch) for ch in card["changes"]]
         # Two articles proposing the same fact is one note, not two.
         card["changes"] = collapse(card["changes"])

@@ -1423,3 +1423,49 @@ def test_a_value_tte_holds_with_other_punctuation_is_not_offered():
     assert [r["state"] for r in rows] == ["same"]
     rows = delta({"Awards": "Public Service Medal (2021)"}, {"Awards": "Public Service Medal (2020)"})
     assert [r["fresh"] for r in rows] == ["Public Service Medal (2021)"]      # a different year is still new
+
+
+def test_a_value_is_credited_to_every_article_that_states_it():
+    """Rena Lee's card credited the Permanent Court of Arbitration to one article of three that name it."""
+    from src.export.accounting import account_for
+    from src.export.cards import collapse, credit_every_source
+
+    pca, icj = "Permanent Court of Arbitration", "International Court of Justice"
+    base = {"field": "Affiliations(groupName)", "strategy": "APPEND", "verb": "Add", "existing": [], "result": ""}
+    changes = [{**base, "adding": icj, "from": "st"}, {**base, "adding": f"{icj} | {pca}", "from": "cna"}]
+    stated = [("st", {"Affiliations(groupName)": f"{icj} | {pca}"}),
+              ("cna", {"Affiliations(groupName)": f"{icj} | {pca}"}),
+              ("zb", {"Affiliations(groupName)": f"常设仲裁法院 ({pca}) | 国际法院 ({icj})"})]
+    full = credit_every_source(changes, stated)
+    out = collapse(full)
+    by = {v["value"]: v["sources"] for v in out[0]["perValue"]}
+    assert by == {icj: ["cna", "st", "zb"], pca: ["cna", "st", "zb"]}
+    assert account_for(full, out) == []               # the card's own check still passes
+
+
+def test_crediting_adds_sources_never_values():
+    from src.export.cards import collapse, credit_every_source
+
+    base = {"field": "Awards", "strategy": "APPEND", "verb": "Add", "existing": [], "result": ""}
+    stated = [("st", {"Awards": "Medal (2026)"}), ("zb", {"Awards": "Another Prize (2020)"})]
+    out = collapse(credit_every_source([{**base, "adding": "Medal (2026)", "from": "st"}], stated))
+    assert [(v["value"], v["sources"]) for v in out[0]["perValue"]] == [("Medal (2026)", ["st"])]
+
+
+def test_another_year_earns_no_credit_even_for_the_same_record():
+    """The same medal in another year is another award; the record lookup ignores years, and this must not."""
+    from src.export.cards import collapse, credit_every_source
+
+    base = {"field": "Awards", "strategy": "APPEND", "verb": "Add", "existing": [], "result": ""}
+    stated = [("st", {"Awards": "Medal (2026)"}), ("zb", {"Awards": "Medal (2024)"})]
+    out = collapse(credit_every_source([{**base, "adding": "Medal (2026)", "from": "st"}], stated, lambda f, a, b: True))
+    assert out[0]["perValue"][0]["sources"] == ["st"] and not out[0]["conflict"]
+
+
+def test_one_record_under_two_names_earns_the_credit():
+    from src.export.cards import collapse, credit_every_source
+
+    base = {"field": "Affiliations(groupName)", "strategy": "APPEND", "verb": "Add", "existing": [], "result": ""}
+    stated = [("st", {"Affiliations(groupName)": "MediaCorp Pte Ltd"}), ("zb", {"Affiliations(groupName)": "新传媒 (Mediacorp)"})]
+    out = collapse(credit_every_source([{**base, "adding": "MediaCorp Pte Ltd", "from": "st"}], stated, lambda f, a, b: True))
+    assert out[0]["perValue"][0]["sources"] == ["st", "zb"]

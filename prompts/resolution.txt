@@ -145,13 +145,15 @@ RESOLUTION ACTIONS
    "incoming" into the record, and do not omit the Description update
    because the post has not begun.
 
-   Once you have decided an entity MATCHES, express whatever the article adds
-   that the record lacks. Each entity's "summary" states the change reported,
-   so check it against the candidate's fields before concluding there is
-   nothing to add. When the record already holds those facts -- the award is
-   listed, the affiliation is there, the description covers it -- return the
-   match with no field_updates. That is a correct and common answer, not a
-   failure. All of this applies only after the match is established; the
+   Once you have decided an entity MATCHES, propose every fact in the entity's
+   "fields" that the record lacks, not only the change the "summary" reports.
+   An organisation or award the article mentions in passing, past or present,
+   is proposed like the headline fact. Compare each value with the candidate's
+   fields, and leave out one the record already holds in other words. When the
+   record already holds all of it -- the award is listed, the affiliation is
+   there, the description covers it -- return the match with no field_updates.
+   That is a correct and common answer, not a failure. All of this applies
+   only after the match is established; the
    prospect of an update is never a reason to match. The other actions carry
    no field_updates at all, and that is correct.
 
