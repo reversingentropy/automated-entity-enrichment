@@ -1,6 +1,7 @@
 """
 Does a card show every value its articles proposed, and credit each value only
-to the articles that gave it?
+to the articles that gave it? `credit_every_source` runs first, so an article
+that states a value another proposed counts as giving it.
 
 The card builder once merged values it judged alike and kept one: Singapore
 Airlines' eight awards reached the reviewer as four, credited to papers that

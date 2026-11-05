@@ -98,8 +98,8 @@ for each group it judges the same, without telling the reviewer.
    and the TTE renames the code already makes (`wrote`). Digits and years are never dropped.
 2. **Similar values are shown, not merged.** If two values may be one thing, both stay on the card, marked
    "may be the same as ...", and the reviewer leaves one out with ×.
-3. **Each value carries its own sources:** the articles whose proposal contained that value. A source number
-   on screen always means "this article said this".
+3. **Each value carries its own sources:** the articles whose proposal contained that value, or whose extracted
+   fields state it (added 5 Nov, below). A source number on screen always means "this article said this".
 4. **Every proposed value is accounted for.** Each one is shown, already in TTE, or renamed to TTE's form, and
    a check says so.
 
@@ -194,3 +194,59 @@ Checked on a build of the deck from the database (3 Nov, in memory, nothing publ
 - Shanti Pereira and Iskandar Jalil: both years offered. Teo Chee Hean: still a disagreement.
 - Changi Air Base East: the three runway wordings offered, marked as giving different dates.
 - The 2 Nov audit, rerun: no value hidden, no credit wrong.
+
+## 5 Nov 2026: crediting every article that states a value
+
+**The fault.** Matching reads one article at a time, and may leave out a value on one article that it proposes on
+another. The card credited a value only to the article whose proposal named it. Rena Lee's card showed the
+Permanent Court of Arbitration with one source, though three articles state it.
+
+**The fix.** `credit_every_source` in `src/export/cards.py`. A value some article proposed is also credited to any
+other article on the card whose extracted fields state it, including the same TTE record under another name. It
+adds sources, never values. A different year is a different value.
+
+**Checked** on a build of the deck from the database (in memory, nothing published): 13 of 182 values gained
+sources, none were added or lost, and no card was left out by `account_for`. Rena Lee's two values went from one
+source to three.
+
+### Values the model leaves out
+
+118 values on record cards were extracted, are not on the record, and were not proposed by the model. Where they
+are today:
+
+| Where | Values |
+|---|---|
+| Offered unticked, because the model proposed nothing for that field | 59 |
+| Already on a proposed row, under TTE's name | 19 |
+| Reviewers cannot accept them | 40 |
+
+A random 30 of the 118 were read against their articles. All 30 are supported by them. 14 were already on the record
+or in the model's proposal under another name ("Ministry of Manpower" and "Singapore. Ministry of Manpower"). 16
+were new: 13 offered unticked, 3 that reviewers cannot accept.
+
+So listing these values by code in place of the model would add mostly duplicates. Of the 9 sampled from the 40,
+3 were real and 6 duplicates. That is too small a sample for more than a rough guide, and whether a value is a
+duplicate was one person's reading. These 40 are left as they are until reviewers have made real decisions.
+
+### Rewording the matching prompt: tried and dropped
+
+The prompt says to express "whatever the article adds", then points the model at the one-sentence summary. That can
+be read as everything new, or only the headline change. A rewording told the model to propose every fact in the
+entity's fields.
+
+It was tested by hand in AI Studio, with nothing saved, on 16 articles sent in two batches: 6 about Rena Lee, then
+10 others.
+
+| Record | Values proposed before | With the rewording |
+|---|---|---|
+| Rena Lee, two of her articles | 1 and 1 | 3 and 6 |
+| Tommy Koh | 0 | 2 (National Heritage Board still left out) |
+| Alan Chan, Affiliations | 0 | 2 of 4 |
+| Hsieh Fu Hua | 5 | 1 |
+| Gregory Vijayendran | 1 | 1 (Rajah & Tann still left out) |
+
+Record picks also differed on 3 of 20 entities in the second batch. The old wording was kept: the model still left
+values out when told not to, and one record got much worse. This was one run with articles sent together, where the
+nightly run sends them one at a time, so it does not show the rewording is worse. It gives no reason to change it.
+The likely cause is that the model varies between runs, which better wording does not stop. That is not proven: it
+would take running the same articles several times.

@@ -515,13 +515,21 @@ record works this out again.
   addition (step 3b); until that is made, each article's own sentences, with
   another article's wording of one offered under the box. Facts held back
   by the five-sentence limit are under the box to add.
+- A value in a list field is credited to every article on the card that
+  states it, even where the model left it out for that article. This adds
+  sources, never values.
 - Before the deck is published, a check confirms every proposed value is on
-  its card, or already in TTE, and credited only to articles that gave it. A
+  its card, or already in TTE, and credited only to articles that state it. A
   card that fails is left out and named.
 
 **Changes the model did not propose.** If the article gave a fact the record
-lacks and the model did not propose it, the card offers it as well, marked
-as such. Description is never offered this way.
+lacks and the model proposed nothing for that field, the card offers it as
+well, unticked and marked as such. Once the model proposes anything for a
+field, the rest of that field's facts are not offered. In a small sample,
+most of those repeated something already on the card or the record, and
+some were real facts a reviewer cannot accept
+([merging-values.md](merging-values.md)). Description is never offered this
+way.
 
 **The right quote for each change.** Each change shows the sentence that
 backs it. If the entity's own evidence sentence doesn't mention the fact,

@@ -23,6 +23,13 @@ Each of these cost at least an evening.
   is a column rather than a schedule.
 - Extraction is non-deterministic; re-running an article yields slightly
   different entities. Re-runs replace rather than accumulate.
+- Matching varies too, and rewording its prompt did not stop it
+  ([merging-values.md](merging-values.md)). Test a prompt change on the same
+  articles before pushing it: `prompts/resolution.txt` has no safeguard other
+  than the labelling guide's version check.
+- A hand prompt can be too long for one reply. 30 articles (about 126k tokens)
+  stopped partway through the sixth; 10 articles (about 28k) came back whole.
+  `src.manual ... export --limit N` makes a smaller one.
 - The guidelines and the data disagree on one field name: the document writes
   `Affiliations (groupName)`, TTE stores `Affiliations(groupName)`. The data
   wins: the stored string is what an update has to match.

@@ -237,6 +237,7 @@ Checking the cards against the articles on 2–3 November 2026 found more:
 | Found | Changed |
 |---|---|
 | Singapore Airlines' eight awards shown as four, credited to papers that never named them | Values merge only when the same; each carries its own articles; wordings of one value are one row with "also written" under it; a check leaves out any card that hides a value or credits the wrong article ([merging-values.md](merging-values.md)) |
+| Rena Lee's Permanent Court of Arbitration credited to one article of the three that state it | A value is credited to every article on the card that states it ([merging-values.md](merging-values.md)) |
 | A gold in 2023 hidden behind the gold in 2026, from one article | One article naming one award in two years is two awards |
 | A death on the 14th and on the 15th shown as "2 sources say this" | Different values for a one-value field are "The sources disagree", with a button for each |
 | "Senior Counsel" offered as an award, from articles read before the extraction rule | The card builder drops it too |

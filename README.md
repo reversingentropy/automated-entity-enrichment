@@ -229,7 +229,7 @@ between is left alone. The details are at the top of
 - [docs/load-balancing.md](docs/load-balancing.md): how the desk shares records out, for the team
 - [docs/new-record-duplicates.md](docs/new-record-duplicates.md): the same new record created twice: what happens, the fix, for and against, for the team to decide
 - [docs/numbers.md](docs/numbers.md): the funnel's figures, dated
-- [docs/merging-values.md](docs/merging-values.md): how the cards once hid values and credited the wrong articles, and the fix (built)
+- [docs/merging-values.md](docs/merging-values.md): how the cards once hid values and credited the wrong articles, and the fix (built); what the model leaves out, and a prompt rewording tried and dropped
 - [docs/descriptions.md](docs/descriptions.md): one description addition from many articles: the plan, with its trial, for discussion
 
 ## Where it stands
